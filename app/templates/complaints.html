@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% from "_list_tools.html" import table_tools %}
+{% set active = "complaints" %}
+{% block title %}Complaints · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Complaints</h1>
+    <div class="subtle">
+      Assign to an agent, they follow up here, and the dashboard shows who fixed it.
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/complaints" class="{% if not status and not mine %}on{% endif %}">All open &amp; active</a>
+  <a href="/complaints?status=open" class="{% if status == 'open' %}on{% endif %}">Unassigned</a>
+  <a href="/complaints?status=in_progress" class="{% if status == 'in_progress' %}on{% endif %}">With agent</a>
+  <a href="/complaints?mine=1" class="{% if mine %}on{% endif %}">Assigned to me</a>
+  <a href="/complaints?status=fixed" class="{% if status == 'fixed' %}on{% endif %}">Fixed</a>
+</div>
+
+<form class="filters" method="get" action="/complaints">
+  <div class="field">
+    <label>Status</label>
+    <select name="status">
+      <option value="">Any</option>
+      {% for s in statuses %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s.replace('_', ' ') }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label>Agent</label>
+    <select name="agent">
+      <option value="">Any</option>
+      {% for a in agents %}
+        <option value="{{ a.id }}" {% if assigned == a.id|string %}selected{% endif %}>{{ a.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn" type="submit">Apply</button>
+</form>
+
+{% if recent_fixed and not status %}
+<div class="card">
+  <div class="card-head"><h2>Recently fixed</h2></div>
+  <ul class="subtle" style="margin:0; padding-left:18px">
+    {% for c in recent_fixed %}
+      <li>
+        <strong>{{ c.title }}</strong> — {{ c.customer_name }}
+        · fixed by {{ c.resolved_by or "—" }}
+        <span class="subtle">{{ c.resolved_at }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if rows %}
+<div style="margin-bottom:12px">{{ table_tools(export_href, rows|length) }}</div>
+  {% for c in rows %}
+  <div class="card">
+    <div class="card-head">
+      <h2>#{{ c.id }} {{ c.title }}</h2>
+      {% if c.status == 'fixed' %}<span class="badge badge-ok">fixed</span>
+      {% elif c.status == 'in_progress' %}<span class="badge badge-warn">with agent</span>
+      {% else %}<span class="badge">open</span>{% endif %}
+    </div>
+    <p>
+      <a href="/customers/{{ c.customer_id }}">{{ c.customer_name }}</a>
+      {% if c.customer_code %}<span class="badge">{{ c.customer_code }}</span>{% endif %}
+      {% if c.customer_phone %}<span class="mono subtle">{{ c.customer_phone }}</span>{% endif %}
+    </p>
+    {% if c.details %}<p>{{ c.details }}</p>{% endif %}
+    <div class="subtle">
+      Logged by {{ c.created_by or "—" }} · {{ c.created_at }}
+      {% if c.assigned_to or c.agent_name %} · assigned to {{ c.agent_name or c.assigned_to }}{% endif %}
+    </div>
+    {% if c.last_note %}
+      <p><strong>Last follow-up:</strong> {{ c.last_note }}</p>
+    {% endif %}
+    {% if c.status == 'fixed' %}
+      <p class="subtle">Fixed by {{ c.resolved_by }} on {{ c.resolved_at }}
+        {% if c.resolution %} — {{ c.resolution }}{% endif %}</p>
+    {% else %}
+      <form method="post" action="/complaints/{{ c.id }}/assign" class="filters" style="margin-top:12px">
+        <div class="field">
+          <label>Assign to</label>
+          <select name="assigned_agent_id">
+            <option value="">— unassigned —</option>
+            {% for a in agents %}
+              <option value="{{ a.id }}" {% if c.assigned_agent_id == a.id %}selected{% endif %}>{{ a.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="btn" type="submit">Save assignment</button>
+      </form>
+      <form method="post" action="/complaints/{{ c.id }}/note" style="margin-top:8px">
+        <div class="field">
+          <label>Follow-up note</label>
+          <input type="text" name="last_note" required placeholder="Visited, asked to reboot the STB…">
+        </div>
+        <button class="btn" type="submit">Save note</button>
+      </form>
+      <form class="js-geo" method="post" action="/complaints/{{ c.id }}/fix" style="margin-top:8px"
+            onsubmit="return confirm('Mark this complaint fixed? The office will see your name.')">
+        <input type="hidden" name="lat" value="">
+        <input type="hidden" name="lng" value="">
+        <input type="hidden" name="accuracy" value="">
+        <div class="field">
+          <label>How it was fixed</label>
+          <input type="text" name="resolution" placeholder="Retracked, signal restored">
+        </div>
+        <button class="btn btn-ok" type="submit">Mark fixed</button>
+      </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+{% else %}
+<div class="card"><div class="empty">No complaints in this view. Open a customer and log one there.</div></div>
+{% endif %}
+{% endblock %}

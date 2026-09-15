@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · VK Platform</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="icon" href="/static/favicon.svg">
+</head>
+<body>
+<div class="login-wrap">
+  <form class="login-card" method="post" action="/login">
+    <h1><img src="/static/logo.svg" alt="VK Digital" width="48" height="48" style="border-radius:10px; display:block; margin:0 auto 8px"></h1>
+    {% if error %}<div class="flash flash-err">{{ error }}</div>{% endif %}
+    <div class="field">
+      <label for="username">Username</label>
+      <input id="username" type="text" name="username" value="admin" autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" type="password" name="password" autofocus required autocomplete="current-password">
+    </div>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+    <div class="subtle" style="margin-top:10px">Owner login is <span class="mono">admin</span> with the platform password.</div>
+  </form>
+</div>
+</body>
+</html>

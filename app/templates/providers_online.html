@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% from "_list_tools.html" import table_tools %}
+{% set active = 'providers' %}
+{% block title %}Railtel online · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Railtel online</h1>
+    <div class="subtle">
+      Who is on the line right now, from the Railwire
+      <span class="mono">Online subscribers</span> tile
+      (anpcntl → Click Here → dash.php).
+      {% if not live_mode %}<strong>Simulate mode — the list is not live.</strong>{% endif %}
+    </div>
+  </div>
+  <div class="spacer"></div>
+  {% if open_job %}
+    <span class="badge pill-info">{{ open_job.status }} as job #{{ open_job.id }}</span>
+    <a class="btn btn-small" href="/jobs/{{ open_job.id }}">Watch job</a>
+  {% else %}
+    <form class="inline-form" method="post" action="/providers/railtel/online">
+      <button class="btn btn-primary" type="submit">Refresh from portal</button>
+    </form>
+  {% endif %}
+</div>
+
+<div class="tabs">
+  <a href="/providers" class="{% if providers_tab == 'overview' %}on{% endif %}">Overview</a>
+  <a href="/providers/online" class="{% if providers_tab == 'online' %}on{% endif %}">Railtel online</a>
+  <a href="/stbs" class="{% if providers_tab == 'hathway' %}on{% endif %}">Hathway STBs</a>
+  <a href="/iptv" class="{% if providers_tab == 'iptv' %}on{% endif %}">ANT IPTV</a>
+  <a href="/ott" class="{% if providers_tab == 'ott' %}on{% endif %}">SmartPlay OTT</a>
+</div>
+
+{% if snapshot %}
+<div class="stats">
+  <div class="stat good">
+    <div class="label">Online now</div>
+    <div class="value">{{ snapshot.row_count }}</div>
+    <div class="hint">
+      {% if snapshot.online_count and snapshot.online_count != snapshot.row_count %}
+        portal tile {{ snapshot.online_count }}
+      {% else %}
+        sessions on this snapshot
+      {% endif %}
+    </div>
+  </div>
+  <div class="stat">
+    <div class="label">Matched here</div>
+    <div class="value">{{ matched }}</div>
+    <div class="hint">of {{ local_railtel }} local Railtel connections</div>
+  </div>
+  <div class="stat {% if unknown %}warn{% endif %}">
+    <div class="label">Not in this platform</div>
+    <div class="value">{{ unknown }}</div>
+    <div class="hint">online ids we have not imported</div>
+  </div>
+  <div class="stat">
+    <div class="label">Usage</div>
+    <div class="value" style="font-size:18px">{{ snapshot.total_gb or "—" }}</div>
+    <div class="hint">
+      up {{ snapshot.upload_gb or "—" }} · down {{ snapshot.download_gb or "—" }}
+    </div>
+  </div>
+</div>
+
+<div class="subtle" style="margin-bottom:12px">
+  Read {{ snapshot.fetched_at }}
+  {% if snapshot.job_id %}as <a href="/jobs/{{ snapshot.job_id }}">job #{{ snapshot.job_id }}</a>{% endif %}.
+  {% if snapshot.partial %}
+    <span class="badge badge-warn">partial</span>
+    {{ snapshot.note }}
+  {% endif %}
+</div>
+
+<div class="tabs">
+  <a href="/providers/online?view=all{% if q %}&q={{ q|urlencode }}{% endif %}"
+     class="{% if view == 'all' %}on{% endif %}">All ({{ snapshot.row_count }})</a>
+  <a href="/providers/online?view=known{% if q %}&q={{ q|urlencode }}{% endif %}"
+     class="{% if view == 'known' %}on{% endif %}">In this platform</a>
+  <a href="/providers/online?view=unknown{% if q %}&q={{ q|urlencode }}{% endif %}"
+     class="{% if view == 'unknown' %}on{% endif %}">Not imported</a>
+</div>
+
+<form class="filters" method="get" action="/providers/online">
+  <input type="hidden" name="view" value="{{ view }}">
+  <div class="field" style="min-width:260px">
+    <label>Search</label>
+    <input type="search" name="q" value="{{ q }}" placeholder="username, customer, IP, MAC">
+  </div>
+  <button class="btn" type="submit">Apply</button>
+  {% if q %}<a class="btn" href="/providers/online?view={{ view }}">Clear</a>{% endif %}
+</form>
+
+<div class="card">
+  {{ table_tools(export_href, rows|length) }}
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Customer</th>
+        <th>Active since</th>
+        <th>Duration</th>
+        <th>IP</th>
+        <th>MAC</th>
+        <th class="num">Up MB</th>
+        <th class="num">Down MB</th>
+        <th class="num">Total MB</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td class="mono">
+          {% if r.connection_id %}
+            <a href="/customers/{{ r.customer_id }}">{{ r.username }}</a>
+          {% else %}
+            {{ r.username }}
+          {% endif %}
+        </td>
+        <td>
+          {% if r.customer_id %}
+            <a href="/customers/{{ r.customer_id }}">{{ r.customer_name }}</a>
+            {% if r.customer_code %}<div class="subtle">{{ r.customer_code }}</div>{% endif %}
+          {% else %}
+            <span class="badge badge-warn">not imported</span>
+          {% endif %}
+        </td>
+        <td>{{ r.start_at|nice_datetime or r.start_time or "—" }}</td>
+        <td class="subtle">{{ r.total_time or "—" }}</td>
+        <td class="mono">{{ r.framed_ip or "—" }}</td>
+        <td class="mono subtle">{{ r.mac or "—" }}</td>
+        <td class="num">{{ r.upload_mb or "—" }}</td>
+        <td class="num">{{ r.download_mb or "—" }}</td>
+        <td class="num">{{ r.total_mb or "—" }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="9" class="empty">
+        {% if q %}No online session matches “{{ q }}”.
+        {% else %}No rows in this view.{% endif %}
+      </td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+{% if missing and view == 'all' and not q %}
+<div class="card">
+  <div class="card-head">
+    <h2>Local Railtel connections not on this list</h2>
+    <span class="subtle">{{ missing|length }} — line is down, or they are not a retail session</span>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Customer</th><th>Username</th><th>Status</th><th>Expiry</th></tr>
+    </thead>
+    <tbody>
+    {% for row in missing[:80] %}
+      <tr>
+        <td><a href="/customers/{{ row.customer_id }}">{{ row.customer_name }}</a></td>
+        <td class="mono"><a href="/customers/{{ row.customer_id }}">{{ row.upstream_id }}</a></td>
+        <td>{{ row.status }}</td>
+        <td>{{ row.expiry_date|nice_date }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if missing|length > 80 %}
+    <div class="subtle">Showing the first 80 of {{ missing|length }}.</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card">
+  <div class="empty">
+    The online list has not been fetched yet.
+    {% if live_mode %}
+      Click <strong>Refresh from portal</strong> — it logs into Railwire, opens
+      Online subscribers, and stores the table here.
+    {% else %}
+      Switch to live mode to read the real list, or refresh here to store a simulated one.
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if last_job and last_job.status == 'failed' %}
+<div class="flash flash-err">
+  Last refresh failed
+  (<a href="/jobs/{{ last_job.id }}">job #{{ last_job.id }}</a>):
+  {{ last_job.error }}
+</div>
+{% endif %}
+{% endblock %}

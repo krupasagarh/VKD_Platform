@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% set active = "field" %}
+{% set a = detail.agent %}
+{% block title %}{{ a.name }} · Field · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ a.name }}
+      <span class="badge">{{ a.username }}</span>
+      {% if a.role == 'admin' %}<span class="badge">admin</span>
+      {% else %}<span class="badge">collector</span>{% endif %}
+    </h1>
+    <div class="subtle">
+      {% if a.last_at %}Last seen {{ a.last_at }}
+        {% if a.last_source %} · {{ source_labels.get(a.last_source, a.last_source) }}{% endif %}
+      {% else %}No location yet{% endif %}
+    </div>
+  </div>
+  <div class="spacer"></div>
+  {% if a.maps_dir %}
+  <a class="btn btn-primary" href="{{ a.maps_dir }}" target="_blank" rel="noopener">Open in Google Maps</a>
+  {% endif %}
+  <a class="btn" href="/field?day={{ day }}">← All agents</a>
+</div>
+
+<form class="filters" method="get" action="/field/{{ a.id }}">
+  <div class="field">
+    <label>Day</label>
+    <input type="date" name="day" value="{{ day }}">
+  </div>
+  <button class="btn" type="submit">Show</button>
+</form>
+
+<div class="stats">
+  <div class="stat good">
+    <div class="label">Collected {{ day }}</div>
+    <div class="value">₹{{ a.collected_paise|rupees }}</div>
+    <div class="hint">{{ a.payment_count }} payment{{ "s" if a.payment_count != 1 else "" }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">This month</div>
+    <div class="value">₹{{ a.month_paise|rupees }}</div>
+    <div class="hint">{{ a.month_count }} payment{{ "s" if a.month_count != 1 else "" }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">Complaints fixed</div>
+    <div class="value">{{ a.complaints_fixed }}</div>
+    <div class="hint">{{ a.complaints_open }} still assigned</div>
+  </div>
+</div>
+
+{% if is_self %}
+<div class="card">
+  <div class="card-head"><h2>Share my location</h2></div>
+  <p class="subtle" style="margin-top:0">
+    Allow GPS on this phone, or paste a pin if the browser blocks location on http.
+  </p>
+  <form id="share-geo" method="post" action="/field/{{ a.id }}/location">
+    <input type="hidden" name="lat" value="">
+    <input type="hidden" name="lng" value="">
+    <input type="hidden" name="accuracy" value="">
+    <div class="form-grid">
+      <div class="field" style="min-width:260px">
+        <label>Or paste coordinates / Maps link</label>
+        <input type="text" name="paste" placeholder="13.2612, 76.4784 or a Google Maps link">
+      </div>
+    </div>
+    <div class="form-row">
+      <button class="btn btn-primary" type="button" onclick="vkShareGps('share-geo')">Use current GPS</button>
+      <button class="btn" type="submit">Save pasted location</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-head"><h2>Collections</h2></div>
+  {% if detail.payments %}
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>When</th><th>Customer</th><th>Mode</th><th class="num">Amount</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for p in detail.payments %}
+      <tr>
+        <td class="subtle">{{ p.paid_at }}</td>
+        <td>
+          <a href="/customers/{{ p.customer_id }}">{{ p.customer_name }}</a>
+          {% if p.customer_code %}<span class="badge">{{ p.customer_code }}</span>{% endif %}
+        </td>
+        <td>{{ p.mode }}</td>
+        <td class="num">₹{{ p.amount_paise|rupees }}</td>
+        <td>
+          {% if p.customer_lat and p.customer_lng %}
+          <a class="btn btn-small" target="_blank" rel="noopener"
+             href="https://www.google.com/maps/dir/?api=1&destination={{ p.customer_lat }},{{ p.customer_lng }}">House</a>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty">No collections on this day.</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>Complaints attended</h2></div>
+  {% if detail.complaints %}
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Status</th><th>Complaint</th><th>Customer</th><th>When</th></tr>
+    </thead>
+    <tbody>
+    {% for c in detail.complaints %}
+      <tr>
+        <td>
+          {% if c.status == 'fixed' %}<span class="badge badge-ok">fixed</span>
+          {% elif c.status == 'in_progress' %}<span class="badge badge-warn">with agent</span>
+          {% else %}<span class="badge">open</span>{% endif %}
+        </td>
+        <td><a href="/complaints">{{ c.title }}</a>
+          {% if c.resolution %}<div class="subtle">{{ c.resolution }}</div>{% endif %}
+          {% if c.last_note and c.status != 'fixed' %}<div class="subtle">{{ c.last_note }}</div>{% endif %}
+        </td>
+        <td><a href="/customers/{{ c.customer_id }}">{{ c.customer_name }}</a></td>
+        <td class="subtle">{{ c.resolved_at or c.updated_at }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty">No assigned or fixed complaints for this day.</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>Location trail</h2></div>
+  {% if detail.trail %}
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>When</th><th>Source</th><th>Where</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for p in detail.trail %}
+      <tr>
+        <td class="subtle">{{ p.recorded_at }}</td>
+        <td>{{ p.source_label }}</td>
+        <td class="mono">{{ "%.5f"|format(p.lat) }}, {{ "%.5f"|format(p.lng) }}
+          {% if p.customer_name %}<div class="subtle">{{ p.customer_name }}</div>{% endif %}
+          {% if p.accuracy %}<div class="subtle">±{{ p.accuracy|int }} m</div>{% endif %}
+        </td>
+        <td><a class="btn btn-small" href="{{ p.maps_dir }}" target="_blank" rel="noopener">Maps</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty">No GPS points yet. Collect, fix a complaint, or share a location.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+{% set active = 'providers' %}
+{% block title %}Providers · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Providers</h1>
+    <div class="subtle">
+      Your dealer accounts. Wallet balance comes from the provider's own dashboard —
+      renewals fail when it runs dry, so refresh before a big collection round.
+      {% if not live_mode %}<strong>Simulate mode — no balance is fetched.</strong>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/providers" class="{% if providers_tab == 'overview' %}on{% endif %}">Overview</a>
+  <a href="/providers/online" class="{% if providers_tab == 'online' %}on{% endif %}">Railtel online</a>
+  <a href="/stbs" class="{% if providers_tab == 'hathway' %}on{% endif %}">Hathway STBs</a>
+  <a href="/iptv" class="{% if providers_tab == 'iptv' %}on{% endif %}">ANT IPTV</a>
+  <a href="/ott" class="{% if providers_tab == 'ott' %}on{% endif %}">SmartPlay OTT</a>
+</div>
+
+{% for p in overview %}
+<div class="card">
+  <div class="card-head">
+    <h2>{{ p.label }}</h2>
+    {% if p.operator_name %}<span class="badge">{{ p.operator_name }}</span>{% endif %}
+    <div class="spacer"></div>
+    <form class="inline-form" method="post" action="/providers/{{ p.provider }}/wallet">
+      <button class="btn btn-small btn-primary" type="submit">Refresh wallet</button>
+    </form>
+    {% if p.provider == 'railtel' %}
+    <form class="inline-form" method="post" action="/providers/railtel/sync">
+      <button class="btn btn-small" type="submit">Sync subscribers</button>
+    </form>
+    {% elif p.provider == 'ott' %}
+    <form class="inline-form" method="post" action="/providers/ott/sync">
+      <button class="btn btn-small" type="submit">Sync subscribers</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="label">Wallet balance</div>
+      <div class="value">{{ p.wallet_balance or "—" }}</div>
+      <div class="hint">
+        {% if p.wallet_balance %}read {{ p.checked_at }}
+        {% elif not live_mode %}not fetched in simulate mode
+        {% elif p.checked_at %}last try {{ p.checked_at }} returned nothing
+        {% else %}never refreshed{% endif %}
+      </div>
+    </div>
+    <div class="stat">
+      <div class="label">Active on portal</div>
+      <div class="value">{{ p.portal_active or "—" }}</div>
+      <div class="hint">
+        {% if p.provider == 'railtel' %}
+          {% if p.subscribers_at %}My Subscribers · {{ p.subscribers_at }}
+          {% elif p.portal_inactive %}{{ p.portal_inactive }} validity end in 7 days · refresh wallet
+          {% else %}sync subscribers for renewal dates{% endif %}
+          {% if p.subscribers_expired %} · {{ p.subscribers_expired }} expired (red){% endif %}
+        {% elif p.portal_inactive %}{{ p.portal_inactive }} inactive
+        {% else %}as the portal reports{% endif %}
+      </div>
+    </div>
+    {% if p.provider == 'hathway' %}
+    <div class="stat">
+      <div class="label">Total on portal</div>
+      <div class="value">{{ p.portal_total or "—" }}</div>
+      <div class="hint">boxes the dealer account holds</div>
+    </div>
+    {% elif p.provider == 'iptv' %}
+    <div class="stat">
+      <div class="label">Subscriptions on portal</div>
+      <div class="value">{{ p.portal_total or "—" }}</div>
+      <div class="hint">ANT CRM count after a live refresh</div>
+    </div>
+    {% elif p.provider == 'ott' %}
+    <div class="stat">
+      <div class="label">On SmartPlay</div>
+      <div class="value">{{ p.portal_total or "—" }}</div>
+      <div class="hint">{% if p.portal_inactive %}{{ p.portal_inactive }} expired{% else %}dealer account{% endif %}</div>
+    </div>
+    {% endif %}
+    <div class="stat">
+      <div class="label">Connections here</div>
+      <div class="value">{{ p.local_active }}/{{ p.local_total }}</div>
+      <div class="hint">active of total in this platform</div>
+    </div>
+  </div>
+
+  {% if p.provider == 'iptv' %}
+    <p class="subtle">
+      ANT login is WhatsApp OTP. Refresh, renew, status, or subscribe opens the CRM,
+      then asks for the code in the yellow bar. Set <span class="mono">ANT_IPTV_PHONE</span>
+      in <span class="mono">.env</span> to the number that receives the partner OTP.
+    </p>
+  {% endif %}
+  {% if p.provider == 'railtel' %}
+    <p class="subtle">
+      <strong>Sync subscribers</strong> reads
+      <span class="mono">anpcntl/mysubscribers</span> — Renewal Date and red rows are the
+      authoritative expiry for term plans. That updates expiry dates here and drives the
+      expired / 1d late / 2d late counts on the dashboard.
+      Wallet refresh still reads the billing dashboard KPIs separately.
+    </p>
+  {% endif %}
+  {% if p.provider == 'ott' %}
+    <p class="subtle">
+      SmartPlay partner login is username + password
+      (<span class="mono">SMARTPLAY_USER</span> / <span class="mono">SMARTPLAY_PASS</span>
+      in the workspace <span class="mono">.env</span>).
+      Use <a href="/ott">SmartPlay OTT</a> to sync subscribers by mobile.
+      Sync reads the portal even in simulate mode; it does not spend wallet.
+      Renew is live-only: Expired list, Pay Now, cash Pay against the dealer wallet.
+    </p>
+  {% endif %}
+
+  {% if p.error %}
+    <div class="flash flash-err">Last refresh failed: {{ p.error }}</div>
+  {% endif %}
+
+  {% if p.portal_total and p.local_total and p.portal_total|string|trim|replace(',', '')|int != p.local_total %}
+    <div class="subtle">
+      The portal reports {{ p.portal_total }} boxes but this platform holds {{ p.local_total }}.
+      That gap is usually boxes you have not imported yet, or boxes returned to the provider.
+    </div>
+  {% endif %}
+
+  {% if p.unusable %}
+    <div class="subtle" style="margin-top:8px">
+      {{ p.unusable|length }} connection{{ "s" if p.unusable|length != 1 else "" }} filed under
+      {{ p.label }} cannot be looked up on this portal — listed below.
+    </div>
+  {% endif %}
+</div>
+{% endfor %}
+
+<!-- ------------------------------------------------ Bulk status check -->
+<div class="card">
+  <div class="card-head">
+    <h2>Bulk status check</h2>
+    <div class="spacer"></div>
+    <span class="subtle">reads expiry, plan and card for every connection, one login at a time</span>
+  </div>
+
+  {% if progress %}
+    {% set s = progress.sweep %}
+    <div class="flash flash-warn">
+      <strong>Sweep #{{ s.id }} is running</strong> — {{ s.providers }},
+      started {{ s.created_at }}{% if s.trigger == 'scheduled' %} by the schedule{% endif %}.
+    </div>
+    <div class="progress"><div class="progress-fill" style="width:{{ progress.percent }}%"></div></div>
+    <div class="stats" style="margin-top:12px">
+      <div class="stat">
+        <div class="label">Progress</div>
+        <div class="value">{{ progress.percent }}%</div>
+        <div class="hint">{{ progress.finished }} of {{ progress.total }}</div>
+      </div>
+      <div class="stat good">
+        <div class="label">Synced</div>
+        <div class="value">{{ progress.done }}</div>
+        <div class="hint">expiry read from the portal</div>
+      </div>
+      <div class="stat {% if progress.failed %}bad{% endif %}">
+        <div class="label">Failed</div>
+        <div class="value">{{ progress.failed }}</div>
+        <div class="hint">
+          {% if progress.terminated_found %}{{ progress.terminated_found }} reported terminated
+          {% else %}login or lookup problems{% endif %}
+        </div>
+      </div>
+      <div class="stat">
+        <div class="label">Time left</div>
+        <div class="value">{{ progress.eta_minutes }} min</div>
+        <div class="hint">{{ progress.pending }} still queued</div>
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:8px">
+      <form method="post" action="/sync/{{ s.id }}/cancel"
+            onsubmit="return confirm('Stop sweep #{{ s.id }}? Checks already done are kept.')">
+        <button class="btn btn-danger" type="submit">Stop this sweep</button>
+      </form>
+      <a class="btn" href="/providers">Refresh progress</a>
+      <a class="btn btn-small" href="/jobs?status=open">See the queue</a>
+    </div>
+  {% else %}
+    <form method="post" action="/sync/start">
+      <div class="form-grid">
+        <div class="field">
+          <label>Which providers</label>
+          <select name="providers">
+            <option value="both">Both — Railtel and Hathway</option>
+            <option value="all">Railtel, Hathway and ANT IPTV</option>
+            {% for p in overview %}
+              <option value="{{ p.provider }}">{{ p.label }} only</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Only if not synced in (days)</label>
+          <input type="text" name="stale_days" value="{{ schedule.sync_schedule_stale_days }}">
+        </div>
+        <div class="field">
+          <label>Stop after (connections)</label>
+          <input type="text" name="limit" value="{{ schedule.sync_schedule_limit }}">
+        </div>
+      </div>
+      <div class="subtle" style="margin-bottom:10px">
+        Waiting to be checked right now:
+        {% for p in overview %}
+          <strong>{{ pending_counts.get(p.provider, 0) }}</strong> {{ p.label }}{% if not loop.last %}, {% endif %}
+        {% endfor %}.
+        At roughly 25 seconds per login that is about
+        {{ ((pending_counts.values()|sum) * 25 / 60)|round|int }} minutes for all of them.
+      </div>
+      <button class="btn btn-primary" type="submit">Start bulk check now</button>
+      <span class="subtle" style="margin-left:8px">
+        Sweep checks run last in the queue, so a renewal you take at the counter still goes first.
+      </span>
+    </form>
+  {% endif %}
+</div>
+
+<!-- ------------------------------------------------ Schedule -->
+<div class="card">
+  <div class="card-head">
+    <h2>Run it on a schedule</h2>
+    {% if schedule.sync_schedule_enabled == '1' %}
+      <span class="badge badge-ok">on</span>
+    {% else %}
+      <span class="badge">off</span>
+    {% endif %}
+  </div>
+  <form method="post" action="/sync/schedule">
+    <div class="check" style="margin-bottom:12px">
+      <input type="checkbox" id="sched" name="enabled" value="1"
+             {% if schedule.sync_schedule_enabled == '1' %}checked{% endif %}>
+      <label for="sched">Check connections automatically, once a day</label>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>At this hour</label>
+        <select name="hour">
+          {% for h in sweep_hours %}
+            <option value="{{ h }}" {% if schedule.sync_schedule_hour|int == h %}selected{% endif %}>
+              {{ '%02d:00'|format(h) }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Providers</label>
+        <select name="providers">
+          <option value="both" {% if schedule.sync_schedule_providers == 'both' %}selected{% endif %}>Both — Railtel and Hathway</option>
+          <option value="all" {% if schedule.sync_schedule_providers == 'all' %}selected{% endif %}>Railtel, Hathway and ANT IPTV</option>
+          {% for p in overview %}
+            <option value="{{ p.provider }}"
+              {% if schedule.sync_schedule_providers == p.provider %}selected{% endif %}>{{ p.label }} only</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Only if not synced in (days)</label>
+        <input type="text" name="stale_days" value="{{ schedule.sync_schedule_stale_days }}">
+      </div>
+      <div class="field">
+        <label>Stop after (connections)</label>
+        <input type="text" name="limit" value="{{ schedule.sync_schedule_limit }}">
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Save schedule</button>
+    <span class="subtle" style="margin-left:8px">
+      {% if schedule.sync_last_run_date %}Last automatic run: {{ schedule.sync_last_run_date }}.
+      {% else %}It has not run automatically yet.{% endif %}
+      Pick a quiet hour — the portals are busy during the day and each check is a real login.
+    </span>
+  </form>
+</div>
+
+{% if recent_sweeps %}
+<div class="card">
+  <div class="card-head"><h2>Past bulk checks</h2></div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Sweep</th><th>Providers</th><th>Started by</th><th class="num">Queued</th>
+          <th class="num">Synced</th><th class="num">Failed</th><th class="num">Terminated</th>
+          <th>Status</th></tr>
+    </thead>
+    <tbody>
+    {% for item in recent_sweeps %}
+      {% set s = item.row %}
+      <tr>
+        <td>#{{ s.id }}<div class="subtle">{{ s.created_at }}</div></td>
+        <td>{{ s.providers }}<div class="subtle">stale &gt; {{ s.stale_days }}d</div></td>
+        <td>{{ s.trigger }}</td>
+        <td class="num">{{ s.total }}</td>
+        <td class="num">{{ item.done }}</td>
+        <td class="num">{{ item.failed }}</td>
+        <td class="num">{{ item.terminated_found or '—' }}</td>
+        <td>
+          {% if s.status == 'done' %}<span class="badge badge-ok">done</span>
+          {% elif s.status == 'running' %}<span class="badge pill-info">running</span>
+          {% else %}<span class="badge badge-warn">{{ s.status }}</span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-head">
+    <h2>Connections that cannot reach a portal</h2>
+  </div>
+  {% if broken %}
+  <div class="subtle" style="margin-bottom:10px">
+    These ids do not match their provider's format, so portal actions are blocked for them.
+    Billing is unaffected. Fix the provider or the id to automate them.
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Customer</th><th>Filed under</th><th>Provider id</th><th>Why it is blocked</th></tr>
+    </thead>
+    <tbody>
+    {% for row in broken %}
+      <tr>
+        <td>
+          <a href="/customers/{{ row.customer_id }}">{{ row.customer_name }}</a>
+          {% if row.customer_code %}<div class="subtle">{{ row.customer_code }}</div>{% endif %}
+        </td>
+        <td>{{ provider_labels.get(row.provider, row.provider) }}</td>
+        <td class="mono">{{ row.upstream_id or "—" }}</td>
+        <td class="subtle">{{ problems.get(row.id) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty">Every connection has an id its provider can look up.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% set active = "payments" %}
+{% block title %}Bix payments · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Payments</h1>
+    <div class="subtle">
+      Bix archive · {{ range_count }} payment(s)
+      {% if date_from %} from {{ date_from }}{% endif %}
+      {% if date_to %} to {{ date_to }}{% endif %}
+      · ₹{{ range_total_paise|rupees }}
+      · does not change net due here
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/payments">This app</a>
+  <a href="/payments/follow-up">Payment follow-up{% if nav.followups %} ({{ nav.followups }}){% endif %}</a>
+  <a href="/payments/bix" class="on">Bix history</a>
+</div>
+
+<form class="filters" method="get" action="/payments/bix">
+  <div class="field">
+    <label>From</label>
+    <input type="date" name="from" value="{{ date_from }}">
+  </div>
+  <div class="field">
+    <label>To</label>
+    <input type="date" name="to" value="{{ date_to }}">
+  </div>
+  <button class="btn" type="submit">Show</button>
+  {% if date_from or date_to %}<a class="btn" href="/payments/bix">Clear</a>{% endif %}
+</form>
+
+<div class="card">
+{% if rows %}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>When</th><th>Customer</th><th>Bix detail</th><th class="num">Paid</th><th class="num">Bix due after</th></tr>
+  </thead>
+  <tbody>
+  {% for p in rows %}
+    <tr>
+      <td class="subtle" style="white-space:nowrap">{{ p.occurred_at[:10]|nice_date }}</td>
+      <td>
+        {% if p.platform_customer_id %}
+          <a href="/customers/{{ p.platform_customer_id }}">{{ p.customer_name or p.bix_name }}</a>
+          {% if p.customer_code %}<div class="subtle">{{ p.customer_code }}</div>{% endif %}
+        {% else %}
+          {{ p.bix_name }}
+          <div class="subtle">{{ p.bix_phone or "not on this platform" }}</div>
+        {% endif %}
+      </td>
+      <td>{{ p.label }}</td>
+      <td class="num">₹{{ p.amount_paise|rupees }}</td>
+      <td class="num">₹{{ p.balance_paise|rupees }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+  {% if range_count > rows|length %}
+    <div class="subtle">Showing the newest {{ rows|length }} of {{ range_count }}.</div>
+  {% endif %}
+{% else %}
+  <div class="empty">
+    {% if stats.txns %}No Bix payments in this date range.
+    {% else %}Bix history is not imported yet. An admin can do that under Settings → Bix history.{% endif %}
+  </div>
+{% endif %}
+</div>
+{% endblock %}

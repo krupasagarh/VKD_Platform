@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "_list_tools.html" import table_tools %}
+{% set active = "bills" %}
+{% block title %}Bills · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Bills</h1>
+    <div class="subtle">A bill is created when a renewal succeeds, or by the bill checker
+      for connections whose paid period has ended.</div>
+  </div>
+  <div class="spacer"></div>
+  <form method="post" action="/bills/run-checker">
+    <button class="btn btn-primary" type="submit">Run bill checker</button>
+  </form>
+</div>
+
+<div class="tabs">
+  <a href="/bills?status=open" class="{% if status == 'open' %}on{% endif %}">Unpaid</a>
+  <a href="/bills?status=paid" class="{% if status == 'paid' %}on{% endif %}">Paid</a>
+  <a href="/bills?status=" class="{% if not status %}on{% endif %}">All</a>
+</div>
+
+<div class="card">
+{% if rows %}
+{% set total = rows | sum(attribute='total_paise') %}
+{% set paid = rows | sum(attribute='paid_paise') %}
+<div class="subtle" style="margin-bottom:4px">
+  {{ rows|length }} bill(s) · billed ₹{{ total|rupees }} · collected ₹{{ paid|rupees }}
+  · balance ₹{{ (total - paid)|rupees }}
+</div>
+{{ table_tools(export_href, rows|length) }}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Bill</th><th>Customer</th><th>Plan</th><th>Period</th><th>Due</th>
+        <th class="num">Total</th><th class="num">Paid</th><th>Status</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for b in rows %}
+    <tr>
+      <td class="mono">{{ b.bill_no }}<div class="subtle">{{ b.source }}</div></td>
+      <td><a href="/customers/{{ b.customer_id }}">{{ b.customer_name }}</a>
+        {% if b.phone %}<div class="subtle mono">{{ b.phone }}</div>{% endif %}</td>
+      <td>{{ b.package_name or "—" }}</td>
+      <td class="subtle">{{ b.period_start|nice_date }} → {{ b.period_end|nice_date }}</td>
+      <td class="subtle">{{ b.due_date|nice_date }}</td>
+      <td class="num">₹{{ b.total_paise|rupees }}</td>
+      <td class="num">₹{{ b.paid_paise|rupees }}</td>
+      <td>
+        {% if b.status == 'paid' %}<span class="badge badge-ok">paid</span>
+        {% elif b.status == 'partial' %}<span class="badge badge-warn">partial</span>
+        {% elif b.status == 'cancelled' %}<span class="badge">cancelled</span>
+        {% else %}<span class="badge badge-bad">pending</span>{% endif %}
+      </td>
+      <td style="white-space:nowrap">
+        <a class="btn btn-small" href="/bills/{{ b.id }}/print" target="_blank">Print</a>
+        {% if b.status != 'cancelled' %}
+        <form class="inline-form" method="post" action="/bills/{{ b.id }}/cancel"
+              onsubmit="return confirm('Cancel bill {{ b.bill_no }}? The ledger will be rebuilt.')">
+          <input type="hidden" name="next" value="/bills">
+          <button class="btn btn-small btn-danger" type="submit">Cancel</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+  <div class="empty">No bills to show.</div>
+{% endif %}
+</div>
+{% endblock %}

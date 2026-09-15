@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% set active = "settings" %}
+{% block title %}Bix update · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Bix update</h1>
+    <div class="subtle">
+      Upload today’s Bix <strong>Customer details</strong> (.xls) or
+      <strong>Customer Export</strong> (.csv). Align sets name, area, STBs,
+      due and payment-history links to match Bix. Railtel customers are never
+      changed. Product-only rows are ignored.
+    </div>
+  </div>
+</div>
+
+{% include "_settings_tabs.html" %}
+
+<div class="card">
+  <div class="card-head"><h2>Upload today’s export</h2></div>
+  <form method="post" action="/settings/bix/upload" enctype="multipart/form-data">
+    <div class="field">
+      <label>Bix Customer details or Customer Export (.xls / .csv)</label>
+      <input type="file" name="file" accept=".xls,.xlsx,.csv,.html" required>
+    </div>
+    <button class="btn btn-primary" type="submit">Read file and preview</button>
+  </form>
+</div>
+
+{% if preview %}
+<div class="card">
+  <div class="card-head">
+    <h2>Preview — {{ preview.filename }}</h2>
+    <span class="subtle">{{ preview.row_count }} customer(s) · {{ preview.created_at }}</span>
+  </div>
+  <form method="post" action="/settings/bix/{{ preview.id }}/apply">
+    <label class="check" style="margin-bottom:12px">
+      <input type="checkbox" name="create_missing" value="1" checked>
+      Also create Hathway households that are in Bix but not here (Railtel is never touched)
+    </label>
+    <button class="btn btn-primary" type="submit"
+            onclick="return confirm('Align name, area, STBs and dues with this Bix file? Railtel customers stay as they are.')">
+      Align with Bix
+    </button>
+  </form>
+  <div class="table-wrap" style="margin-top:14px">
+  <table>
+    <thead>
+      <tr>
+        <th>Bix code</th><th>Name</th><th>Match</th>
+        <th class="num">Bix due</th><th class="num">Here now</th>
+        <th class="num">Change</th><th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in preview_rows %}
+      <tr>
+        <td class="mono">{{ r.platform_code or r.code }}</td>
+        <td>
+          {% if r.customer_id %}<a href="/customers/{{ r.customer_id }}">{{ r.name }}</a>
+          {% else %}{{ r.name }}{% endif %}
+        </td>
+        <td class="subtle">{{ r.match or "—" }}</td>
+        <td class="num">₹{{ r.due_paise|rupees }}</td>
+        <td class="num">{% if r.customer_id %}₹{{ r.platform_due_paise|rupees }}{% else %}—{% endif %}</td>
+        <td class="num {% if r.delta_paise > 0 %}amount-due{% elif r.delta_paise < 0 %}amount-credit{% endif %}">
+          {% if r.customer_id %}₹{{ r.delta_paise|rupees }}{% else %}—{% endif %}
+        </td>
+        <td>
+          {% if r.action == 'adjust' %}<span class="badge badge-warn">update</span>
+          {% elif r.action == 'create' %}<span class="badge">not here</span>
+          {% else %}<span class="badge badge-ok">same</span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if preview_total > preview_rows|length %}
+    <div class="subtle">Showing the first {{ preview_rows|length }} of {{ preview_total }}.</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if batches %}
+<div class="card">
+  <div class="card-head"><h2>Past uploads</h2></div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>File</th><th>When</th><th>Rows</th><th>Status</th><th>By</th></tr>
+    </thead>
+    <tbody>
+    {% for b in batches %}
+      <tr>
+        <td>{{ b.filename }}</td>
+        <td class="subtle">{{ b.created_at }}</td>
+        <td class="num">{{ b.row_count }}</td>
+        <td>
+          {% if b.status == 'applied' %}<span class="badge badge-ok">applied {{ b.applied_at }}</span>
+          {% else %}<span class="badge badge-warn">preview</span>{% endif %}
+        </td>
+        <td>{{ b.created_by or "—" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

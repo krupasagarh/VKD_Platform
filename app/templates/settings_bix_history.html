@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% set active = "settings" %}
+{% block title %}Bix history · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Bix history</h1>
+    <div class="subtle">
+      Copy of Bix Balance History (bills and payments with the running Bix due).
+      This is a lookup only — it does not change net due on this app.
+      After you re-pull the extract, import again; already-copied rows are skipped.
+    </div>
+  </div>
+</div>
+
+{% include "_settings_tabs.html" %}
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">In this app</div>
+    <div class="value">{{ stats.txns }}</div>
+    <div class="hint">{{ stats.customers }} Bix customer(s) · {{ stats.payments }} payment(s)</div>
+  </div>
+  <div class="stat {% if stats.unmatched %}bad{% else %}good{% endif %}">
+    <div class="label">Matched by phone</div>
+    <div class="value">{{ stats.matched }}</div>
+    <div class="hint">{{ stats.unmatched }} not on this platform</div>
+  </div>
+  <div class="stat">
+    <div class="label">Coverage</div>
+    <div class="value" style="font-size:16px">
+      {% if stats.first_at %}{{ stats.first_at[:10] }} → {{ stats.last_at[:10] }}{% else %}not imported{% endif %}
+    </div>
+    <div class="hint">
+      {% if stats.latest_import %}last import {{ stats.latest_import.imported_at }}
+      ({{ stats.latest_import.txns_new }} new){% else %}import the extract to fill this{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>Import from the extract file</h2></div>
+  {% if archive.exists %}
+    <p class="subtle" style="margin-bottom:12px">
+      Found <span class="mono">{{ archive.path }}</span><br>
+      {{ archive.customers }} customer(s) · {{ archive.txns }} row(s)
+      {% if archive.first_at %} · {{ archive.first_at[:10] }} → {{ archive.last_at[:10] }}{% endif %}
+    </p>
+    <form method="post" action="/settings/bix-history/import" class="inline-form">
+      <button class="btn btn-primary" type="submit">Import / refresh from that file</button>
+    </form>
+  {% else %}
+    <p class="subtle">No extract at <span class="mono">{{ archive.path }}</span>. Re-pull history, or upload the .db below.</p>
+  {% endif %}
+  <form method="post" action="/settings/bix-history/upload" enctype="multipart/form-data" style="margin-top:16px">
+    <div class="field">
+      <label>Or upload vk_digital_history.db</label>
+      <input type="file" name="file" accept=".db,.sqlite" required>
+    </div>
+    <button class="btn" type="submit">Upload and import</button>
+  </form>
+</div>
+
+{% if unmatched %}
+<div class="card">
+  <div class="card-head">
+    <h2>Not matched to a customer here</h2>
+    <span class="subtle">unique phone not found · showing {{ unmatched|length }}</span>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Bix name</th><th>Phone</th><th class="num">Last Bix due</th><th>Last row</th></tr></thead>
+    <tbody>
+    {% for c in unmatched %}
+      <tr>
+        <td>{{ c.name }}</td>
+        <td class="mono">{{ c.phone or "—" }}</td>
+        <td class="num">{% if c.last_balance_paise is not none %}₹{{ c.last_balance_paise|rupees }}{% else %}—{% endif %}</td>
+        <td class="subtle">{{ c.last_txn_at or "—" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

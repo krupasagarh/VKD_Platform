@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% set active = "customers" %}
+{% block title %}New customer · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>New customer</h1>
+    <div class="subtle">Add the person first, then attach Railtel, Hathway, ANT IPTV, or SmartPlay OTT on their page.</div></div>
+</div>
+
+<form method="post" action="/customers/new">
+  <div class="card">
+    <div class="form-grid">
+      <div class="field"><label>Name *</label><input type="text" name="name" required autofocus></div>
+      <div class="field"><label>Customer code</label><input type="text" name="code" placeholder="e.g. AJ-1"></div>
+      <div class="field"><label>Phone</label><input type="text" name="phone" inputmode="numeric"></div>
+      <div class="field"><label>Alternate phone</label><input type="text" name="alt_phone"></div>
+      <div class="field"><label>Locality / street</label><input type="text" name="sub_area"></div>
+      <div class="field"><label>Area / town</label><input type="text" name="area" value="Tiptur"></div>
+      <div class="field"><label>Pincode</label><input type="text" name="pincode" value="572201"></div>
+      <div class="field"><label>Email</label><input type="email" name="email"></div>
+    </div>
+    <div class="field"><label>Address</label><textarea name="address"></textarea></div>
+    <div class="field"><label>Notes</label><textarea name="notes"></textarea></div>
+    <div class="form-row">
+      <button class="btn btn-primary" type="submit">Create customer</button>
+      <a class="btn" href="/customers">Cancel</a>
+    </div>
+  </div>
+</form>
+{% endblock %}

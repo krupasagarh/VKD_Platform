@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% from "_list_tools.html" import table_tools, late_badge %}
+{% set active = "iptv" %}
+{% block title %}ANT IPTV · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>ANT IPTV</h1>
+    <div class="subtle">
+      {{ stats.total }} subscription{{ "s" if stats.total != 1 else "" }} on file ·
+      {{ stats.packages }} packs.
+      Status, renew, subscribe, and wallet open ANT and ask for the WhatsApp OTP here.
+    </div>
+  </div>
+  <div class="spacer"></div>
+  {% if can('customers_edit') %}
+  <a class="btn btn-primary" href="#new-iptv">+ New subscription</a>
+  {% endif %}
+</div>
+
+<div class="tabs">
+  <a href="/providers" class="{% if providers_tab == 'overview' %}on{% endif %}">Overview</a>
+  <a href="/providers/online" class="{% if providers_tab == 'online' %}on{% endif %}">Railtel online</a>
+  <a href="/stbs" class="{% if providers_tab == 'hathway' %}on{% endif %}">Hathway STBs</a>
+  <a href="/iptv" class="{% if providers_tab == 'iptv' %}on{% endif %}">ANT IPTV</a>
+  <a href="/ott" class="{% if providers_tab == 'ott' %}on{% endif %}">SmartPlay OTT</a>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">All</div>
+    <div class="value"><a href="/iptv">{{ stats.total }}</a></div>
+    <div class="hint">{{ stats.customers }} household{{ "s" if stats.customers != 1 else "" }}</div>
+  </div>
+  <div class="stat good">
+    <div class="label">Active</div>
+    <div class="value"><a href="/iptv?view=active">{{ stats.running }}</a></div>
+    <div class="hint">not due in the next {{ settings.expiring_soon_days }} days</div>
+  </div>
+  <div class="stat {% if stats.expiring %}warn{% endif %}">
+    <div class="label">Expiring</div>
+    <div class="value"><a href="/iptv?view=expiring">{{ stats.expiring }}</a></div>
+    <div class="hint">within {{ settings.expiring_soon_days }} days</div>
+  </div>
+  <div class="stat {% if stats.expired %}bad{% endif %}">
+    <div class="label">Expired</div>
+    <div class="value"><a href="/iptv?view=expired">{{ stats.expired }}</a></div>
+    <div class="hint">due a recharge</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/iptv{% if q %}?q={{ q|urlencode }}{% endif %}" class="{% if view == 'all' %}on{% endif %}">
+    All ({{ stats.total }})</a>
+  <a href="/iptv?view=active{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if view == 'active' %}on{% endif %}">
+    Active ({{ stats.running }})</a>
+  <a href="/iptv?view=expiring{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if view == 'expiring' %}on{% endif %}">
+    Expiring ({{ stats.expiring }})</a>
+  <a href="/iptv?view=expired{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if view == 'expired' %}on{% endif %}">
+    Expired ({{ stats.expired }})</a>
+</div>
+
+<form class="filters" method="get" action="/iptv">
+  <input type="hidden" name="view" value="{{ view }}">
+  {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+  {% if late_days %}<input type="hidden" name="late_days" value="{{ late_days }}">{% endif %}
+  <div class="field" style="min-width:260px">
+    <label>Search</label>
+    <input type="search" name="q" value="{{ q }}" placeholder="Search name or mobile...">
+  </div>
+  <button class="btn" type="submit">Apply</button>
+  {% if q %}<a class="btn" href="/iptv?view={{ view }}">Clear</a>{% endif %}
+</form>
+
+{% if can('customers_edit') %}
+<details class="box" id="new-iptv">
+  <summary>+ New IPTV subscription</summary>
+  <div>
+    <p class="subtle" style="margin-top:0">
+      Same fields as ANT: mobile, name, pack, city. If this mobile already exists,
+      the pack is added on that customer (Railtel stays as it is).
+    </p>
+    <form method="post" action="/iptv/subscribe">
+      <div class="form-grid">
+        <div class="field">
+          <label>Package *</label>
+          <select name="package_name" required>
+            <option value="">Select package</option>
+            {% for p in packages %}
+              <option value="{{ p.name }}">{{ p.name }} — ₹{{ p.price_paise|rupees }} / {{ p.validity_days }}d</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Mobile No *</label>
+          <input type="text" name="phone" inputmode="numeric" required placeholder="10-digit mobile">
+        </div>
+        <div class="field">
+          <label>Subscriber Name *</label>
+          <input type="text" name="name" required placeholder="Name">
+        </div>
+        <div class="field">
+          <label>State *</label>
+          <input type="text" name="state" value="Karnataka" required>
+        </div>
+        <div class="field">
+          <label>City *</label>
+          <input type="text" name="city" value="Tiptur" required>
+        </div>
+        <div class="field">
+          <label>Pincode</label>
+          <input type="text" name="pincode" value="572201">
+        </div>
+        <div class="field">
+          <label>Expiry (if already on ANT)</label>
+          <input type="text" name="expiry_date" placeholder="YYYY-MM-DD">
+        </div>
+      </div>
+      <div class="field"><label>Address</label><input type="text" name="address" placeholder="Address"></div>
+      <button class="btn btn-primary" type="submit">Add subscription</button>
+      <span class="subtle" style="margin-left:8px">Does not click Subscribe on ANT yet.</span>
+    </form>
+  </div>
+</details>
+{% endif %}
+
+<div class="card">
+{% if result.rows %}
+{{ table_tools(export_href, result.total) }}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Subscriber</th>
+      <th>Mobile</th>
+      <th>Package</th>
+      <th><a class="sort-link" href="/iptv?{{ list_qs }}&sort=late" title="Sort by days late">Expiry</a></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in result.rows %}
+    {% set left = r.expiry_date|days_until %}
+    <tr>
+      <td>
+        <a href="/customers/{{ r.customer_id }}"><strong>{{ r.customer_name }}</strong></a>
+        {% if r.customer_code %}<span class="badge">{{ r.customer_code }}</span>{% endif %}
+        {% if r.area %}<div class="subtle">{{ r.sub_area or r.area }}</div>{% endif %}
+      </td>
+      <td class="mono">{{ r.upstream_id or r.phone }}</td>
+      <td>
+        {{ r.package_name or r.upstream_plan_name or "—" }}
+        {% if r.package_price_paise %}
+          <div class="subtle">₹{{ r.package_price_paise|rupees }} / 30 days</div>
+        {% endif %}
+      </td>
+      <td>
+        {{ r.expiry_date|nice_date }}
+        {{ late_badge(left, "/iptv", list_qs) }}
+        {% if left is not none and left > 7 %}<span class="badge badge-ok">active</span>{% endif %}
+      </td>
+      <td style="white-space:nowrap">
+        {% if can('portal_actions') %}
+        <form class="inline-form" method="post" action="/connections/{{ r.id }}/action">
+          <input type="hidden" name="action" value="status">
+          <input type="hidden" name="next" value="/iptv">
+          <button class="btn btn-small" type="submit">Check Status</button>
+        </form>
+        <form class="inline-form" method="post" action="/connections/{{ r.id }}/action">
+          <input type="hidden" name="action" value="renew">
+          <input type="hidden" name="next" value="/iptv">
+          <button class="btn btn-small btn-primary" type="submit">Renew</button>
+        </form>
+        <form class="inline-form" method="post" action="/connections/{{ r.id }}/collect-later"
+              onsubmit="return confirm('Renew now and collect payment later?')">
+          <input type="hidden" name="next" value="/iptv">
+          <button class="btn btn-small" type="submit">Pre-Renew</button>
+        </form>
+        {% endif %}
+        <a class="btn btn-small" href="/customers/{{ r.customer_id }}">Open</a>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if result.pages > 1 %}
+<div class="form-row" style="margin-top:14px">
+  {% set base = '/iptv?view=' ~ view ~ ('&q=' ~ q|urlencode if q else '') %}
+  {% if result.page > 1 %}<a class="btn btn-small" href="{{ base }}&page={{ result.page - 1 }}">← Previous</a>{% endif %}
+  <span class="subtle">Page {{ result.page }} of {{ result.pages }} · {{ result.total }} listed</span>
+  {% if result.page < result.pages %}<a class="btn btn-small" href="{{ base }}&page={{ result.page + 1 }}">Next →</a>{% endif %}
+</div>
+{% endif %}
+
+{% else %}
+  <div class="empty">No IPTV subscriptions in this view.</div>
+{% endif %}
+</div>
+{% endblock %}

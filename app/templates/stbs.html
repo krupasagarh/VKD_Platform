@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% from "_list_tools.html" import table_tools %}
+{% set active = "stbs" %}
+{% block title %}Hathway STBs · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Hathway STBs</h1>
+    <div class="subtle">
+      Only Hathway set-top boxes — Railtel accounts are not on this list.
+      Portal last said
+      <strong>{{ mapping.portal_active }}</strong> active +
+      <strong>{{ mapping.portal_inactive }}</strong> inactive
+      = {{ mapping.portal_total }} boxes
+      {% if mapping.checked_at %}({{ mapping.checked_at }}){% endif %}.
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/providers" class="{% if providers_tab == 'overview' %}on{% endif %}">Overview</a>
+  <a href="/providers/online" class="{% if providers_tab == 'online' %}on{% endif %}">Railtel online</a>
+  <a href="/stbs" class="{% if providers_tab == 'hathway' %}on{% endif %}">Hathway STBs</a>
+  <a href="/iptv" class="{% if providers_tab == 'iptv' %}on{% endif %}">ANT IPTV</a>
+  <a href="/ott" class="{% if providers_tab == 'ott' %}on{% endif %}">SmartPlay OTT</a>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">Portal</div>
+    <div class="value">{{ mapping.portal_active }}+{{ mapping.portal_inactive }}</div>
+    <div class="hint">{{ mapping.portal_total }} on last refresh</div>
+  </div>
+  <div class="stat good">
+    <div class="label">Mapped here</div>
+    <div class="value"><a href="/stbs?view=all">{{ mapping.mapped_total }}</a></div>
+    <div class="hint"><a href="/customers?view=hathway">{{ mapping.hathway_customers }} customers</a></div>
+  </div>
+  <div class="stat">
+    <div class="label">Live customers</div>
+    <div class="value"><a href="/customers?view=hathway_live">{{ mapping.live_customers }}</a></div>
+    <div class="hint">{{ mapping.mapped_active }} running STBs</div>
+  </div>
+  <div class="stat {% if mapping.unmapped %}warn{% endif %}">
+    <div class="label">Unmapped</div>
+    <div class="value"><a href="/stbs?view=unmapped">{{ mapping.unmapped }}</a></div>
+    <div class="hint">
+      {% if mapping.unmapped_local %}{{ mapping.unmapped_local }} bad id{{ "s" if mapping.unmapped_local != 1 else "" }}{% endif %}
+      {% if mapping.unmapped_local and mapping.portal_gap %} · {% endif %}
+      {% if mapping.portal_gap %}{{ mapping.portal_gap }} missing from this app{% endif %}
+      {% if not mapping.unmapped %}none{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/stbs{% if q %}?q={{ q|urlencode }}{% endif %}" class="{% if view == 'running' %}on{% endif %}">
+    Running ({{ mapping.mapped_active }})
+  </a>
+  <a href="/stbs?view=inactive{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if view == 'inactive' %}on{% endif %}">
+    Not running ({{ mapping.mapped_inactive }})
+  </a>
+  <a href="/stbs?view=all{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if view == 'all' %}on{% endif %}">
+    All mapped ({{ mapping.mapped_total }})
+  </a>
+  <a href="/stbs?view=unmapped{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if view == 'unmapped' %}on{% endif %}">
+    Unmapped ({{ mapping.unmapped }})
+  </a>
+</div>
+
+<form class="filters" method="get" action="/stbs">
+  <input type="hidden" name="view" value="{{ view }}">
+  <div class="field" style="min-width:260px">
+    <label>Search</label>
+    <input type="search" name="q" value="{{ q }}" placeholder="STB, VC, name, phone">
+  </div>
+  <button class="btn" type="submit">Apply</button>
+  {% if q %}<a class="btn" href="/stbs?view={{ view }}">Clear</a>{% endif %}
+</form>
+
+{% if view == 'unmapped' %}
+<div class="card">
+  <p class="subtle" style="margin-top:0">
+    Unmapped means a Hathway row we cannot match to the portal census:
+    an id that is not an <span class="mono">N</span> + 11-digit STB,
+    or a portal box this app does not hold.
+    Hathway’s dashboard only gives counts ({{ mapping.portal_active }}+{{ mapping.portal_inactive }}),
+    not the missing serials — add those when you next see the box.
+    {% if mapping.extra_local %}
+      This app also has {{ mapping.extra_local }} more valid STBs than the portal count.
+    {% endif %}
+  </p>
+  {% if mapping.portal_gap and not result.rows %}
+  <div class="flash flash-warn">
+    Portal reports {{ mapping.portal_gap }} box{{ "es" if mapping.portal_gap != 1 else "" }}
+    that are not in this app. Serials are not published on the dashboard —
+    import or add them when you have the STB number.
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+{% if result.rows %}
+{{ table_tools(export_href, result.total) }}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>STB</th>
+      <th>VC</th>
+      <th>Customer</th>
+      <th>Area</th>
+      <th>Plan</th>
+      <th>Status</th>
+      <th>Expiry</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in result.rows %}
+    <tr>
+      <td class="mono">
+        <a href="/customers/{{ r.customer_id }}">{{ r.upstream_id or "—" }}</a>
+        {% if r.problem %}<div class="subtle">{{ r.problem }}</div>{% endif %}
+      </td>
+      <td class="mono">{{ r.card_number or "—" }}</td>
+      <td>
+        <a href="/customers/{{ r.customer_id }}">{{ r.customer_name }}</a>
+        {% if r.customer_code %}<span class="badge">{{ r.customer_code }}</span>{% endif %}
+        <div class="subtle">{{ r.phone or "" }}</div>
+      </td>
+      <td>{{ r.sub_area or "—" }}</td>
+      <td>{{ r.package_name or r.upstream_plan_name or "—" }}</td>
+      <td>
+        {% if r.status == 'active' %}<span class="badge badge-ok">{{ r.status }}</span>
+        {% elif r.status == 'terminated' %}<span class="badge badge-bad">{{ r.status }}</span>
+        {% else %}<span class="badge badge-warn">{{ r.status }}</span>{% endif %}
+      </td>
+      <td>{{ r.expiry_date|nice_date }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if result.pages > 1 %}
+<div class="form-row" style="margin-top:14px">
+  {% set base = '/stbs?view=' ~ view ~ ('&q=' ~ q|urlencode if q else '') %}
+  {% if result.page > 1 %}<a class="btn btn-small" href="{{ base }}&page={{ result.page - 1 }}">← Previous</a>{% endif %}
+  <span class="subtle">Page {{ result.page }} of {{ result.pages }} · {{ result.total }} listed</span>
+  {% if result.page < result.pages %}<a class="btn btn-small" href="{{ base }}&page={{ result.page + 1 }}">Next →</a>{% endif %}
+</div>
+{% endif %}
+
+{% else %}
+  <div class="empty">
+    {% if view == 'unmapped' %}
+      No unmapped Hathway ids in this app.
+      {% if mapping.portal_gap %}{{ mapping.portal_gap }} portal box(es) still have no serial here.{% endif %}
+    {% else %}
+      No Hathway STBs match.
+    {% endif %}
+  </div>
+{% endif %}
+</div>
+{% endblock %}

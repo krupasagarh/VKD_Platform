@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% set active = "field" %}
+{% block title %}Field agents · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{% if everyone %}Field agents{% else %}My field day{% endif %}</h1>
+    <div class="subtle">
+      GPS last seen, cash collected, and complaints attended
+      {% if everyone %} · {{ office.seen }} of {{ office.agents }} seen today{% endif %}
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <form class="filters" method="get" action="/field" style="margin:0">
+    <div class="field">
+      <label>Day</label>
+      <input type="date" name="day" value="{{ day }}">
+    </div>
+    <button class="btn" type="submit">Show</button>
+  </form>
+</div>
+
+<div class="stats">
+  <div class="stat good">
+    <div class="label">Collected this day</div>
+    <div class="value">₹{{ office.collected_paise|rupees }}</div>
+    <div class="hint">{{ office.payments }} payment{{ "s" if office.payments != 1 else "" }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">Complaints fixed</div>
+    <div class="value">{{ office.complaints_fixed }}</div>
+    <div class="hint">{{ office.complaints_open }} still assigned</div>
+  </div>
+  <div class="stat {% if office.seen %}good{% endif %}">
+    <div class="label">Agents with a pin today</div>
+    <div class="value">{{ office.seen }}</div>
+    <div class="hint">GPS, house pin, collection or visit</div>
+  </div>
+</div>
+
+<p class="subtle">
+  On a phone, allow location so the office can see where the collector last was.
+  If GPS is blocked on this Wi‑Fi (plain http), save a house pin or paste a Maps link
+  on the agent page. Collections and complaint fixes still count even without GPS.
+</p>
+
+{% if rows %}
+  {% for a in rows %}
+  <div class="card">
+    <div class="card-head">
+      <h2><a href="/field/{{ a.id }}?day={{ day }}">{{ a.name }}</a>
+        <span class="badge">{{ a.username }}</span></h2>
+      {% if a.role == 'admin' %}<span class="badge">admin</span>
+      {% else %}<span class="badge">collector</span>{% endif %}
+      {% if a.seen_today %}<span class="badge badge-ok">seen today</span>
+      {% elif a.last_at %}<span class="badge badge-warn">last {{ a.last_at }}</span>
+      {% else %}<span class="badge">no GPS yet</span>{% endif %}
+      <div class="spacer"></div>
+      {% if a.maps_dir %}
+      <a class="btn btn-small btn-primary" href="{{ a.maps_dir }}" target="_blank" rel="noopener">Open in Maps</a>
+      {% endif %}
+      <a class="btn btn-small" href="/field/{{ a.id }}?day={{ day }}">Day sheet</a>
+    </div>
+    <div class="stats">
+      <div class="stat good">
+        <div class="label">Collected</div>
+        <div class="value">₹{{ a.collected_paise|rupees }}</div>
+        <div class="hint">{{ a.payment_count }} today · ₹{{ a.month_paise|rupees }} this month</div>
+      </div>
+      <div class="stat">
+        <div class="label">Complaints</div>
+        <div class="value">{{ a.complaints_fixed }}</div>
+        <div class="hint">fixed today · {{ a.complaints_open }} still with them</div>
+      </div>
+      <div class="stat">
+        <div class="label">Last location</div>
+        <div class="value" style="font-size:16px">
+          {% if a.lat %}{{ "%.4f"|format(a.lat) }}, {{ "%.4f"|format(a.lng) }}
+          {% else %}—{% endif %}
+        </div>
+        <div class="hint">
+          {% if a.last_at %}{{ a.last_at }}{% endif %}
+          {% if a.last_source %} · {{ a.last_source }}{% endif %}
+          {% if a.accuracy %} · ±{{ a.accuracy|int }} m{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+<div class="card"><div class="empty">No agents to show.</div></div>
+{% endif %}
+{% endblock %}

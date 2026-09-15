@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bill {{ bill.bill_no }} · VK Platform</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="no-print">
+  <button class="btn btn-primary" onclick="window.print()">Print</button>
+  <a class="btn" href="/customers/{{ bill.customer_id }}">Back to customer</a>
+</div>
+
+<div class="receipt">
+  <div style="display:flex; align-items:flex-start; gap:16px">
+    <div>
+      <h1 style="margin:0">{{ settings.operator }}</h1>
+      <div style="color:#666; font-size:13px">Cable TV &amp; Broadband · Tiptur</div>
+    </div>
+    <div style="margin-left:auto; text-align:right">
+      <div style="font-weight:700">BILL</div>
+      <div style="font-size:13px; color:#666">{{ bill.bill_no }}</div>
+      <div style="font-size:13px; color:#666">{{ bill.created_at }}</div>
+    </div>
+  </div>
+
+  <hr style="border:none; border-top:1px solid #ddd; margin:18px 0">
+
+  <table style="margin-bottom:18px">
+    <tbody>
+      <tr><th style="width:35%">Bill to</th>
+          <td><strong>{{ bill.customer_name }}</strong>
+            {% if bill.customer_code %} ({{ bill.customer_code }}){% endif %}</td></tr>
+      {% if bill.phone %}<tr><th>Phone</th><td>{{ bill.phone }}</td></tr>{% endif %}
+      {% if bill.address %}<tr><th>Address</th><td>{{ bill.address }}</td></tr>{% endif %}
+    </tbody>
+  </table>
+
+  <div style="font-weight:600; margin-bottom:6px">Plan billed</div>
+  <table style="margin-bottom:18px">
+    <tbody>
+      <tr><th style="width:35%">Plan</th><td><strong>{{ bill.package_name or "—" }}</strong></td></tr>
+      {% if bill.notes %}<tr><th>Details</th><td>{{ bill.notes }}</td></tr>{% endif %}
+      <tr><th>Period</th>
+          <td>{{ bill.period_start|nice_date }} → {{ bill.period_end|nice_date }}</td></tr>
+      {% if bill.gst_paise %}
+      <tr><th>Amount</th><td>₹{{ bill.amount_paise|rupees }}</td></tr>
+      <tr><th>GST</th><td>₹{{ bill.gst_paise|rupees }}</td></tr>
+      {% endif %}
+      <tr><th>Total</th><td class="total">₹{{ bill.total_paise|rupees }}</td></tr>
+      <tr><th>Paid</th><td>₹{{ bill.paid_paise|rupees }}</td></tr>
+      <tr><th>Balance</th><td>₹{{ (bill.total_paise - bill.paid_paise)|rupees }}</td></tr>
+    </tbody>
+  </table>
+
+  {% if connections %}
+  <div style="font-weight:600; margin-bottom:6px">Provider services (reference)</div>
+  <table style="margin-bottom:18px">
+    <thead>
+      <tr><th>Provider</th><th>Id</th><th>Provider plan</th><th>Expiry</th></tr>
+    </thead>
+    <tbody>
+    {% for cn in connections %}
+      <tr>
+        <td>{{ provider_labels.get(cn.provider, cn.provider) }}</td>
+        <td class="mono">{{ cn.upstream_id }}</td>
+        <td>{{ cn.package_name or cn.upstream_plan_name or "—" }}</td>
+        <td>{{ cn.expiry_date|nice_date }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <p style="color:#666; font-size:12px; margin-top:22px">
+    Computer generated bill. Please retain for your records.
+  </p>
+</div>
+</body>
+</html>

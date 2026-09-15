@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "_list_tools.html" import table_tools %}
+{% set active = "payments" %}
+{% block title %}Payments · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Payments</h1>
+    <div class="subtle">
+      {% if date_from or date_to %}
+        {{ range_count }} payment(s)
+        {% if date_from %} from {{ date_from }}{% endif %}
+        {% if date_to %} to {{ date_to }}{% endif %}
+        · ₹{{ range_total_paise|rupees }}
+      {% else %}
+        Today ₹{{ stats.collected_today_paise|rupees }} ·
+        this month ₹{{ stats.collected_month_paise|rupees }}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/payments" class="on">This app</a>
+  <a href="/payments/follow-up">Payment follow-up{% if nav.followups %} ({{ nav.followups }}){% endif %}</a>
+  <a href="/payments/bix">Bix history</a>
+</div>
+
+<form class="filters" method="get" action="/payments">
+  <div class="field">
+    <label>From</label>
+    <input type="date" name="from" value="{{ date_from }}">
+  </div>
+  <div class="field">
+    <label>To</label>
+    <input type="date" name="to" value="{{ date_to }}">
+  </div>
+  <button class="btn" type="submit">Show</button>
+  {% if date_from or date_to %}<a class="btn" href="/payments">Clear</a>{% endif %}
+  <a class="btn" href="/payments?from={{ stats.today }}&to={{ stats.today }}">Today</a>
+  <a class="btn" href="/payments?from={{ stats.month_start }}&to={{ stats.today }}">This month</a>
+</form>
+
+<div class="card">
+{% if rows %}
+{{ table_tools(export_href, range_count) }}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Receipt</th><th>Customer</th><th>When</th><th>Mode</th><th>By</th><th>Reference</th>
+        <th class="num">Amount</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for p in rows %}
+    <tr>
+      <td class="mono">{{ p.receipt_no }}</td>
+      <td><a href="/customers/{{ p.customer_id }}">{{ p.customer_name }}</a>
+        {% if p.customer_code %}<div class="subtle">{{ p.customer_code }}</div>{% endif %}</td>
+      <td class="subtle">{{ p.paid_at }}</td>
+      <td>{{ p.mode }}</td>
+      <td class="subtle">{{ p.collected_by or "—" }}</td>
+      <td class="mono subtle">{{ p.reference or "—" }}</td>
+      <td class="num">₹{{ p.amount_paise|rupees }}</td>
+      <td style="white-space:nowrap">
+        <a class="btn btn-small" href="/payments/{{ p.id }}/receipt" target="_blank">Receipt</a>
+        {% if can('payments') or can('customers_edit') %}
+        <form class="inline-form" method="post" action="/payments/{{ p.id }}/delete"
+              onsubmit="return confirm('Delete receipt {{ p.receipt_no }} for {{ p.customer_name }}? The customer ledger will be rebuilt.')">
+          <input type="hidden" name="next" value="/payments">
+          <button class="btn btn-small btn-danger" type="submit">Delete</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+  <div class="empty">No payments in this date range.</div>
+{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_list_tools.html" import table_tools %}
+{% set active = "activity" %}
+{% block title %}Activity · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>Activity</h1><div class="subtle">Everything the platform did, newest first.</div></div>
+</div>
+
+<div class="card">
+{% if rows %}
+{{ table_tools(export_href, rows|length) }}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>When</th><th>Who</th><th>Kind</th><th>What</th><th>Customer</th></tr></thead>
+  <tbody>
+  {% for a in rows %}
+    <tr>
+      <td class="subtle" style="white-space:nowrap">{{ a.at }}</td>
+      <td class="subtle">{{ a.actor or "—" }}</td>
+      <td><span class="badge">{{ a.kind }}</span></td>
+      <td>{{ a.message }}</td>
+      <td>{% if a.customer_id %}<a href="/customers/{{ a.customer_id }}">{{ a.customer_name or a.customer_id }}</a>
+          {% else %}—{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+  <div class="empty">Nothing yet.</div>
+{% endif %}
+</div>
+{% endblock %}

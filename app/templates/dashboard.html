@@ -1,0 +1,554 @@
+{% extends "base.html" %}
+{% set active = "dashboard" %}
+{% block title %}Dashboard · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Dashboard</h1>
+    <div class="subtle">
+      {{ stats.customers_total }} customers ·
+      {{ stats.connections_active }} of {{ stats.connections_total }} connections active
+      {% for p in stats.by_provider %}
+        · {{ provider_labels.get(p.provider, p.provider) }}: {{ p.n }}
+      {% endfor %}
+    </div>
+  </div>
+  <div class="spacer"></div>
+  {% if can('bills') %}
+  <form method="post" action="/bills/run-checker">
+    <button class="btn" type="submit" title="Create bills for connections whose paid period has ended">
+      Run bill checker
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="stats">
+  <div class="stat {% if stats.outstanding_paise > 0 %}bad{% endif %}">
+    <div class="label">Outstanding</div>
+    <div class="value">₹{{ stats.outstanding_paise|rupees }}</div>
+    <div class="hint">{{ stats.open_bills }} open bill(s)</div>
+  </div>
+  <div class="stat good">
+    <div class="label">Collected today</div>
+    <div class="value"><a href="/payments?from={{ stats.today }}&to={{ stats.today }}">₹{{ stats.collected_today_paise|rupees }}</a></div>
+    <div class="hint">
+      <a href="/payments?from={{ stats.month_start }}&to={{ stats.today }}">this month ₹{{ stats.collected_month_paise|rupees }}</a>
+      · cash / UPI / cheque
+    </div>
+  </div>
+  <div class="stat {% if stats.expired %}bad{% endif %}">
+    <div class="label">Expired</div>
+    <div class="value">{{ stats.expired }}</div>
+    <div class="hint"><a href="/customers?view=expired">view customers</a></div>
+  </div>
+  <div class="stat {% if stats.expiring %}warn{% endif %}">
+    <div class="label">Expiring in {{ stats.expiring_soon_days }} days</div>
+    <div class="value">{{ stats.expiring }}</div>
+    <div class="hint"><a href="/customers?view=expiring">view customers</a></div>
+  </div>
+  {% if can('portal_actions') %}
+  <div class="stat {% if stats.jobs_awaiting %}warn{% endif %}">
+    <div class="label">Waiting for approval</div>
+    <div class="value">{{ stats.jobs_awaiting }}</div>
+    <div class="hint"><a href="/jobs?status=awaiting_confirm">provider jobs</a></div>
+  </div>
+  <div class="stat {% if stats.jobs_failed %}bad{% endif %}">
+    <div class="label">Failed jobs</div>
+    <div class="value">{{ stats.jobs_failed }}</div>
+    <div class="hint">{{ stats.jobs_queued }} running or queued</div>
+  </div>
+  {% endif %}
+</div>
+
+{% set rt = stats.railtel %}
+{% set hw = stats.hathway %}
+{% set iptv = stats.iptv %}
+{% set ott = stats.ott %}
+{% set fu = stats.followups %}
+{% set fld = stats.field %}
+
+<div class="dash-group">
+  <div class="stats">
+    <button type="button" class="stat stat-btn {% if rt.late_1d or rt.late_2d %}bad{% elif rt.expired %}bad{% endif %}" data-dash="railtel" aria-expanded="false">
+      <div class="label">Railtel</div>
+      <div class="value">{{ rt.portal_active or rt.live }}</div>
+      <div class="hint">
+        {% if rt.online %}{{ rt.online }} online · {% endif %}
+        {% if rt.late_1d %}{{ rt.late_1d }}× 1d late{% if rt.late_2d %} · {% endif %}{% endif %}
+        {% if rt.late_2d %}{{ rt.late_2d }}× 2d late{% elif rt.expired %}{{ rt.expired }} expired{% endif %}
+      </div>
+    </button>
+    <button type="button" class="stat stat-btn {% if hw.unmapped %}warn{% endif %}" data-dash="hathway" aria-expanded="false">
+      <div class="label">Hathway</div>
+      <div class="value">{{ hw.live_customers }}</div>
+      <div class="hint">{{ hw.mapped_total }} mapped · {{ hw.unmapped }} unmapped</div>
+    </button>
+    <button type="button" class="stat stat-btn {% if iptv.expired %}bad{% endif %}" data-dash="iptv" aria-expanded="false">
+      <div class="label">ANT IPTV</div>
+      <div class="value">{{ iptv.live }}</div>
+      <div class="hint">{{ iptv.expired }} expired · {{ iptv.expiring }} soon</div>
+    </button>
+    <button type="button" class="stat stat-btn {% if ott.expired %}bad{% endif %}" data-dash="ott" aria-expanded="false">
+      <div class="label">SmartPlay TV</div>
+      <div class="value">{{ ott.live }}</div>
+      <div class="hint">{{ ott.expired }} expired · {{ ott.expiring }} soon</div>
+    </button>
+  </div>
+
+  <div class="card dash-panel" data-dash-panel="railtel" hidden>
+    <div class="dash-panel-head">
+      <strong>Railtel</strong>
+      <div class="spacer"></div>
+      <a class="btn btn-small" href="/customers?provider=railtel">Customers</a>
+      <a class="btn btn-small" href="/providers/online">Online</a>
+      <a class="btn btn-small" href="/providers">Wallet</a>
+      <form class="inline-form" method="post" action="/providers/railtel/sync">
+        <button class="btn btn-small btn-primary" type="submit">Sync subscribers</button>
+      </form>
+    </div>
+    <div class="stats stats-compact">
+      <div class="stat good">
+        <div class="label">Portal active</div>
+        <div class="value">{{ rt.portal_active or "—" }}</div>
+        <div class="hint">
+          {% if rt.subscribers_at %}My Subscribers · {{ rt.subscribers_at }}
+          {% else %}<a href="/providers">Sync subscribers</a> on Providers{% endif %}
+        </div>
+      </div>
+      <div class="stat {% if rt.online %}good{% endif %}">
+        <div class="label">Online now</div>
+        <div class="value">{{ rt.online or "—" }}</div>
+        <div class="hint">{% if rt.online_at %}{{ rt.online_at }}{% else %}refresh on Providers{% endif %}</div>
+      </div>
+      <div class="stat {% if rt.portal_expiring_7d %}warn{% endif %}">
+        <div class="label">Renewal in 7d</div>
+        <div class="value">{{ rt.portal_expiring_7d or "—" }}</div>
+        <div class="hint">from My Subscribers{% if not rt.subscribers_at %} · sync on Providers{% endif %}</div>
+      </div>
+      <div class="stat {% if rt.late_1d %}bad{% endif %}">
+        <div class="label">1 day late</div>
+        <div class="value">{{ rt.late_1d }}</div>
+        <div class="hint"><a href="/customers?view=expired&provider=railtel&sort=late&late_days=1">view &amp; WhatsApp</a></div>
+      </div>
+      <div class="stat {% if rt.late_2d %}bad{% endif %}">
+        <div class="label">2 days late</div>
+        <div class="value">{{ rt.late_2d }}</div>
+        <div class="hint"><a href="/customers?view=expired&provider=railtel&sort=late&late_days=2">view &amp; WhatsApp</a></div>
+      </div>
+      <div class="stat {% if rt.expired %}bad{% endif %}">
+        <div class="label">Expired (red)</div>
+        <div class="value">{{ rt.expired }}</div>
+        <div class="hint"><a href="/customers?view=expired&provider=railtel">expired list</a></div>
+      </div>
+      <div class="stat">
+        <div class="label">Imported here</div>
+        <div class="value">{{ rt.live }}/{{ rt.total }}</div>
+        <div class="hint">{{ rt.customers }} customer{{ "s" if rt.customers != 1 else "" }} · local active/not expired</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card dash-panel" data-dash-panel="hathway" hidden>
+    <div class="dash-panel-head">
+      <strong>Hathway</strong>
+      <div class="spacer"></div>
+      <a class="btn btn-small" href="/stbs?view=all">STBs</a>
+      <a class="btn btn-small" href="/customers?view=hathway_live">Live customers</a>
+      <a class="btn btn-small" href="/stbs?view=unmapped">Unmapped</a>
+    </div>
+    <div class="stats stats-compact">
+      <div class="stat">
+        <div class="label">Portal active</div>
+        <div class="value">{{ hw.portal_active or "—" }}</div>
+        <div class="hint">{% if hw.portal_inactive %}{{ hw.portal_inactive }} inactive{% else %}last refresh{% endif %}</div>
+      </div>
+      <div class="stat good">
+        <div class="label">Mapped here</div>
+        <div class="value">{{ hw.mapped_total }}</div>
+        <div class="hint">{{ hw.hathway_customers }} customers · {{ hw.mapped_active }} running</div>
+      </div>
+      <div class="stat">
+        <div class="label">Live customers</div>
+        <div class="value">{{ hw.live_customers }}</div>
+        <div class="hint">active STB in this app</div>
+      </div>
+      <div class="stat {% if hw.unmapped %}warn{% endif %}">
+        <div class="label">Unmapped</div>
+        <div class="value">{{ hw.unmapped }}</div>
+        <div class="hint">{% if hw.portal_gap %}{{ hw.portal_gap }} on portal only{% elif not hw.unmapped %}all boxes mapped{% else %}{{ hw.unmapped_local }} local ids{% endif %}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card dash-panel" data-dash-panel="iptv" hidden>
+    <div class="dash-panel-head">
+      <strong>ANT IPTV</strong>
+      <div class="spacer"></div>
+      <a class="btn btn-small" href="/iptv">Open</a>
+      <a class="btn btn-small" href="/iptv?view=expired">Expired</a>
+      <a class="btn btn-small" href="/packages?provider=iptv">Packages</a>
+    </div>
+    <div class="stats stats-compact">
+      <div class="stat">
+        <div class="label">Active here</div>
+        <div class="value">{{ iptv.live }}/{{ iptv.total }}</div>
+        <div class="hint">{{ iptv.customers }} customer{{ "s" if iptv.customers != 1 else "" }}</div>
+      </div>
+      <div class="stat {% if iptv.expired %}bad{% endif %}">
+        <div class="label">Expired</div>
+        <div class="value">{{ iptv.expired }}</div>
+        <div class="hint"><a href="/iptv?view=expired">due a recharge</a></div>
+      </div>
+      <div class="stat {% if iptv.expiring %}warn{% endif %}">
+        <div class="label">Expiring</div>
+        <div class="value">{{ iptv.expiring }}</div>
+        <div class="hint">in {{ stats.expiring_soon_days }} days</div>
+      </div>
+      <div class="stat">
+        <div class="label">Packs</div>
+        <div class="value">{{ iptv.packages }}</div>
+        <div class="hint">30-day prepaid</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card dash-panel" data-dash-panel="ott" hidden>
+    <div class="dash-panel-head">
+      <strong>SmartPlay TV</strong>
+      <div class="spacer"></div>
+      <a class="btn btn-small" href="/ott">Open</a>
+      <a class="btn btn-small" href="/ott?view=expired">Expired</a>
+      <a class="btn btn-small" href="/packages?provider=ott">Packages</a>
+    </div>
+    <div class="stats stats-compact">
+      <div class="stat">
+        <div class="label">Active here</div>
+        <div class="value">{{ ott.live }}/{{ ott.total }}</div>
+        <div class="hint">{{ ott.customers }} customer{{ "s" if ott.customers != 1 else "" }}</div>
+      </div>
+      <div class="stat {% if ott.expired %}bad{% endif %}">
+        <div class="label">Expired</div>
+        <div class="value">{{ ott.expired }}</div>
+        <div class="hint"><a href="/ott?view=expired">due a recharge</a></div>
+      </div>
+      <div class="stat {% if ott.expiring %}warn{% endif %}">
+        <div class="label">Expiring</div>
+        <div class="value">{{ ott.expiring }}</div>
+        <div class="hint">in {{ stats.expiring_soon_days }} days</div>
+      </div>
+      <div class="stat">
+        <div class="label">Wallet</div>
+        <div class="value">{% if ott.wallet_balance %}{{ ott.wallet_balance }}{% else %}—{% endif %}</div>
+        <div class="hint">{% if ott.portal_active %}portal {{ ott.portal_active }} active{% endif %}{% if ott.portal_expired %} · {{ ott.portal_expired }} expired{% endif %}{% if not ott.wallet_balance %}sync from portal{% endif %}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="dash-group">
+  <div class="stats">
+    {% if can('payments') %}
+    <button type="button" class="stat stat-btn {% if fu.count %}warn{% endif %}" data-dash="followup" aria-expanded="false">
+      <div class="label">Follow-up</div>
+      <div class="value">{{ fu.count }}</div>
+      <div class="hint">₹{{ fu.due_paise|rupees }} · {{ fu.customers }} customer{{ "s" if fu.customers != 1 else "" }}</div>
+    </button>
+    {% endif %}
+    {% if can('complaints') %}
+    <button type="button" class="stat stat-btn {% if stats.complaints_open %}warn{% endif %}" data-dash="complaints" aria-expanded="false">
+      <div class="label">Complaints</div>
+      <div class="value">{{ stats.complaints_open }}</div>
+      <div class="hint">{% if stats.complaints_fixed_today %}{{ stats.complaints_fixed_today }} fixed today{% else %}open{% endif %}</div>
+    </button>
+    {% endif %}
+    {% if can('payments') or can('agents') %}
+    <button type="button" class="stat stat-btn {% if fld.seen %}good{% endif %}" data-dash="field" aria-expanded="false">
+      <div class="label">Field agents</div>
+      <div class="value">₹{{ fld.collected_paise|rupees }}</div>
+      <div class="hint">{{ fld.seen }}/{{ fld.agents }} on map today</div>
+    </button>
+    {% endif %}
+  </div>
+
+  {% if can('payments') %}
+  <div class="card dash-panel" data-dash-panel="followup" hidden>
+    <div class="dash-panel-head">
+      <strong>Follow-up</strong>
+      <div class="spacer"></div>
+      <a class="btn btn-small" href="/payments/follow-up">Open list</a>
+      <a class="btn btn-small" href="/customers?view=followup">Customers</a>
+    </div>
+    <div class="stats stats-compact">
+      <div class="stat {% if fu.renew %}warn{% endif %}">
+        <div class="label">Renewed, not paid</div>
+        <div class="value"><a href="/payments/follow-up?kind=renew">{{ fu.renew }}</a></div>
+        <div class="hint">portal renew / enable</div>
+      </div>
+      <div class="stat {% if fu.manual %}warn{% endif %}">
+        <div class="label">Manual</div>
+        <div class="value"><a href="/payments/follow-up?kind=manual">{{ fu.manual }}</a></div>
+        <div class="hint">added by hand</div>
+      </div>
+      <div class="stat {% if fu.count %}warn{% endif %}">
+        <div class="label">Still to collect</div>
+        <div class="value"><a href="/payments/follow-up">₹{{ fu.due_paise|rupees }}</a></div>
+        <div class="hint">{{ fu.customers }} customer{{ "s" if fu.customers != 1 else "" }}</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if can('complaints') %}
+  <div class="card dash-panel" data-dash-panel="complaints" hidden>
+    <div class="dash-panel-head">
+      <strong>Complaints</strong>
+      <div class="spacer"></div>
+      <a class="btn btn-small" href="/complaints?status=open">Open ({{ stats.complaints_open }})</a>
+      <a class="btn btn-small" href="/complaints?status=fixed">Fixed</a>
+    </div>
+    <div class="stats stats-compact">
+      <div class="stat {% if stats.complaints_open %}warn{% endif %}">
+        <div class="label">Open</div>
+        <div class="value"><a href="/complaints?status=open">{{ stats.complaints_open }}</a></div>
+        <div class="hint">still assigned</div>
+      </div>
+      <div class="stat {% if stats.complaints_fixed_today %}good{% endif %}">
+        <div class="label">Fixed today</div>
+        <div class="value">{{ stats.complaints_fixed_today }}</div>
+        <div class="hint">marked fixed</div>
+      </div>
+      {% if fld %}
+      <div class="stat">
+        <div class="label">Field still open</div>
+        <div class="value">{{ fld.complaints_open }}</div>
+        <div class="hint">{{ fld.complaints_fixed }} fixed by agents</div>
+      </div>
+      {% endif %}
+    </div>
+    {% if recent_fixed %}
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Fixed</th><th>Customer</th><th>By</th><th>When</th></tr></thead>
+      <tbody>
+      {% for c in recent_fixed %}
+        <tr>
+          <td>{{ c.title }}</td>
+          <td><a href="/customers/{{ c.customer_id }}">{{ c.customer_name }}</a></td>
+          <td>{{ c.resolved_by or c.assigned_to or "—" }}</td>
+          <td class="subtle">{{ c.resolved_at }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="empty" style="padding:8px 0">No complaints marked fixed yet.</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if can('payments') or can('agents') %}
+  <div class="card dash-panel" data-dash-panel="field" hidden>
+    <div class="dash-panel-head">
+      <strong>Field agents</strong>
+      <div class="spacer"></div>
+      <a class="btn btn-small" href="/field">Roster</a>
+    </div>
+    <div class="stats stats-compact">
+      <div class="stat good">
+        <div class="label">Collected today</div>
+        <div class="value"><a href="/field">₹{{ fld.collected_paise|rupees }}</a></div>
+        <div class="hint">{{ fld.payments }} payment{{ "s" if fld.payments != 1 else "" }}</div>
+      </div>
+      <div class="stat">
+        <div class="label">Complaints fixed</div>
+        <div class="value">{{ fld.complaints_fixed }}</div>
+        <div class="hint">{{ fld.complaints_open }} still assigned</div>
+      </div>
+      <div class="stat {% if fld.seen %}good{% endif %}">
+        <div class="label">On the map</div>
+        <div class="value">{{ fld.seen }}</div>
+        <div class="hint">of {{ fld.agents }} signed-in</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if awaiting_otp and can('portal_actions') %}
+<div class="card" style="border-color:rgba(240,169,46,.5)">
+  <div class="card-head">
+    <h2>Waiting for ANT WhatsApp OTP</h2>
+    <div class="spacer"></div>
+    <a class="btn btn-small" href="/jobs?status=awaiting_otp">All</a>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Job</th><th>Customer</th><th>Action</th><th>Phone</th><th></th></tr></thead>
+    <tbody>
+    {% for j in awaiting_otp %}
+      <tr>
+        <td>#{{ j.id }}</td>
+        <td>{% if j.customer_id %}<a href="/customers/{{ j.customer_id }}">{{ j.customer_name }}</a>{% else %}dealer account{% endif %}</td>
+        <td>{{ action_labels.get(j.action, j.action) }}</td>
+        <td class="mono">{{ j.upstream_id or "—" }}</td>
+        <td>
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/otp">
+            <input type="hidden" name="next" value="/">
+            <input type="text" name="otp" inputmode="numeric" maxlength="6" pattern="[0-9]{6}"
+                   placeholder="OTP" required style="width:6.5rem">
+            <button class="btn btn-small btn-ok" type="submit">Submit</button>
+          </form>
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/cancel">
+            <button class="btn btn-small btn-danger" type="submit">Cancel</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+{% if awaiting and can('portal_actions') %}
+<div class="card">
+  <div class="card-head">
+    <h2>Waiting for your approval</h2>
+    <div class="spacer"></div>
+    <a class="btn btn-small" href="/jobs?status=awaiting_confirm">All</a>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Job</th><th>Customer</th><th>Provider</th><th>Action</th><th>Provider id</th><th></th></tr></thead>
+    <tbody>
+    {% for j in awaiting %}
+      <tr>
+        <td>#{{ j.id }}</td>
+        <td><a href="/customers/{{ j.customer_id }}">{{ j.customer_name }}</a></td>
+        <td>{{ provider_labels.get(j.provider, j.provider) }}</td>
+        <td>{{ action_labels.get(j.action, j.action) }}</td>
+        <td class="mono">{{ j.upstream_id or "—" }}</td>
+        <td>
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/confirm">
+            <button class="btn btn-small btn-ok" type="submit">Confirm &amp; run</button>
+          </form>
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/cancel">
+            <button class="btn btn-small btn-danger" type="submit">Cancel</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+{% if failed and can('portal_actions') %}
+<div class="card">
+  <div class="card-head"><h2>Recent failures</h2><div class="spacer"></div>
+    <a class="btn btn-small" href="/jobs?status=failed">All</a></div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Job</th><th>Customer</th><th>Action</th><th>Error</th><th></th></tr></thead>
+    <tbody>
+    {% for j in failed %}
+      <tr>
+        <td><a href="/jobs/{{ j.id }}">#{{ j.id }}</a></td>
+        <td><a href="/customers/{{ j.customer_id }}">{{ j.customer_name }}</a></td>
+        <td>{{ action_labels.get(j.action, j.action) }}</td>
+        <td class="subtle">{{ j.error or "—" }}</td>
+        <td>
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/retry">
+            <button class="btn btn-small" type="submit">Retry</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><h2>Renewals due</h2><div class="spacer"></div>
+      <a class="btn btn-small" href="/customers?view=expiring">All</a></div>
+    {% if expiring %}
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Customer</th><th>Provider id</th><th>Plan</th><th>Expiry</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+      {% for c in expiring %}
+        {% set left = c.expiry_date|days_until %}
+        <tr>
+          <td><a href="/customers/{{ c.customer_id }}">{{ c.customer_name }}</a>
+              <div class="subtle">{{ c.phone or "" }}</div></td>
+          <td class="mono">{{ c.upstream_id }}</td>
+          <td>{{ c.package_name or c.upstream_plan_name or "—" }}</td>
+          <td>
+            {{ c.expiry_date|nice_date }}
+            {% if left is not none %}
+              {% if left < 0 %}<span class="badge badge-bad">{{ -left }}d late</span>
+              {% elif left == 0 %}<span class="badge badge-warn">today</span>
+              {% else %}<span class="badge badge-warn">in {{ left }}d</span>{% endif %}
+            {% endif %}
+          </td>
+          <td class="num">₹{{ (c.package_price_paise or c.amount_paise or 0)|rupees }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}<div class="empty">Nothing expiring in the next {{ stats.expiring_soon_days }} days.</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Recent activity</h2><div class="spacer"></div>
+      {% if can('activity') %}<a class="btn btn-small" href="/activity">All</a>{% endif %}</div>
+    {% if activity %}
+    <table>
+      <tbody>
+      {% for a in activity %}
+        <tr>
+          <td style="width:130px" class="subtle">{{ a.at }}</td>
+          <td>{{ a.message }}
+            {% if a.customer_name %}<div class="subtle">
+              <a href="/customers/{{ a.customer_id }}">{{ a.customer_name }}</a></div>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="empty">No activity yet.</div>{% endif %}
+  </div>
+</div>
+<script>
+(function () {
+  document.querySelectorAll(".dash-group").forEach(function (group) {
+    group.querySelectorAll("[data-dash]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-dash");
+        var open = btn.classList.contains("on");
+        group.querySelectorAll("[data-dash]").forEach(function (b) {
+          b.classList.remove("on");
+          b.setAttribute("aria-expanded", "false");
+        });
+        group.querySelectorAll("[data-dash-panel]").forEach(function (p) {
+          p.hidden = true;
+        });
+        if (open) return;
+        btn.classList.add("on");
+        btn.setAttribute("aria-expanded", "true");
+        var panel = group.querySelector('[data-dash-panel="' + id + '"]');
+        if (panel) panel.hidden = false;
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

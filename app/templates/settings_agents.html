@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% set active = "settings" %}
+{% block title %}Agents · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Agents &amp; access</h1>
+    <div class="subtle">
+      Each agent gets their own login. Collectors can take payments;
+      only tick portal or Bix access when that person should touch those.
+      Their GPS, collections and complaints show on <a href="/field">Field agents</a>.
+    </div>
+  </div>
+</div>
+
+{% include "_settings_tabs.html" %}
+
+<div class="card">
+  <div class="card-head"><h2>Add an agent</h2></div>
+  <form method="post" action="/settings/agents/new">
+    <div class="form-grid">
+      <div class="field"><label>Name</label><input type="text" name="name" required placeholder="Ramesh"></div>
+      <div class="field"><label>Username</label><input type="text" name="username" required placeholder="ramesh" autocomplete="off"></div>
+      <div class="field"><label>Password</label><input type="password" name="password" required autocomplete="new-password"></div>
+      <div class="field"><label>Role</label>
+        <select name="role">
+          <option value="collector" selected>Collector — payments only</option>
+          <option value="admin">Admin — everything</option>
+        </select>
+      </div>
+    </div>
+    <div class="subtle" style="margin:8px 0 6px">Extra access for a collector (ignored if you pick Admin)</div>
+    <div class="form-grid">
+      {% for key, label in permissions %}
+        {% if key not in ('customers_view', 'payments') %}
+        <label class="check"><input type="checkbox" name="perm" value="{{ key }}"> {{ label }}</label>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div style="margin-top:12px">
+      <button class="btn btn-primary" type="submit">Create agent</button>
+    </div>
+  </form>
+</div>
+
+{% for a in agents %}
+<div class="card">
+  <div class="card-head">
+    <h2>{{ a.name }} <span class="badge">{{ a.username }}</span></h2>
+    {% if a.role == 'admin' %}<span class="badge badge-ok">admin</span>
+    {% else %}<span class="badge">collector</span>{% endif %}
+    {% if not a.active %}<span class="badge badge-bad">disabled</span>{% endif %}
+  </div>
+  <form method="post" action="/settings/agents/{{ a.id }}/edit">
+    <div class="form-grid">
+      <div class="field"><label>Name</label><input type="text" name="name" value="{{ a.name }}" required></div>
+      <div class="field"><label>Role</label>
+        <select name="role" {% if current_agent and current_agent.id == a.id %}disabled{% endif %}>
+          <option value="collector" {% if a.role == 'collector' %}selected{% endif %}>Collector</option>
+          <option value="admin" {% if a.role == 'admin' %}selected{% endif %}>Admin</option>
+        </select>
+        {% if current_agent and current_agent.id == a.id %}
+          <input type="hidden" name="role" value="{{ a.role }}">
+        {% endif %}
+      </div>
+      <div class="field"><label>New password (blank = keep)</label>
+        <input type="password" name="password" autocomplete="new-password"></div>
+      <div class="field">
+        <label class="check" style="margin-top:22px">
+          <input type="checkbox" name="active" value="1" {% if a.active %}checked{% endif %}
+                 {% if current_agent and current_agent.id == a.id %}disabled{% endif %}>
+          Can sign in
+        </label>
+        {% if current_agent and current_agent.id == a.id %}
+          <input type="hidden" name="active" value="1">
+        {% endif %}
+      </div>
+    </div>
+    {% if a.role != 'admin' %}
+    <div class="form-grid" style="margin-top:8px">
+      {% for key, label in permissions %}
+      <label class="check">
+        <input type="checkbox" name="perm" value="{{ key }}"
+               {% if key in a.permissions %}checked{% endif %}>
+        {{ label }}
+      </label>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div style="margin-top:12px">
+      <button class="btn btn-primary" type="submit">Save</button>
+    </div>
+  </form>
+</div>
+{% endfor %}
+{% endblock %}

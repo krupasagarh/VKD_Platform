@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% from "_list_tools.html" import table_tools %}
+{% set active = "payments" %}
+{% block title %}Payment follow-up · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Payment follow-up</h1>
+    <div class="subtle">
+      People you still need to collect from — portal renewals promised later, or added by hand.
+      {{ stats.followups.customers }} customer(s) · ₹{{ stats.followups.due_paise|rupees }} still to collect.
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/payments">This app</a>
+  <a href="/payments/follow-up" class="on">Payment follow-up{% if nav.followups %} ({{ nav.followups }}){% endif %}</a>
+  <a href="/payments/bix">Bix history</a>
+</div>
+
+<div class="tabs">
+  <a href="/payments/follow-up" class="{% if not followup_kind %}on{% endif %}">
+    All{% if stats.followups.count %} ({{ stats.followups.count }}){% endif %}
+  </a>
+  <a href="/payments/follow-up?kind=renew" class="{% if followup_kind == 'renew' %}on{% endif %}">
+    Renewed, not paid{% if stats.followups.renew %} ({{ stats.followups.renew }}){% endif %}
+  </a>
+  <a href="/payments/follow-up?kind=manual" class="{% if followup_kind == 'manual' %}on{% endif %}">
+    Manual follow-up{% if stats.followups.manual %} ({{ stats.followups.manual }}){% endif %}
+  </a>
+</div>
+
+{% if can('payments') %}
+<div class="card">
+  <div class="card-head"><h2>Add to manual follow-up</h2></div>
+  <p class="subtle">
+    Puts them on this list as <strong>Manual follow-up</strong>.
+    If they already have unpaid bills, those are flagged — no extra charge.
+    Enter an amount only when they have nothing outstanding.
+  </p>
+  <form method="post" action="/payments/follow-up">
+    <div class="form-grid">
+      <div class="field" style="min-width:240px">
+        <label>Customer *</label>
+        <input type="text" name="customer" required
+               placeholder="Name, phone, or customer code">
+      </div>
+      <div class="field">
+        <label>Amount (₹)</label>
+        <input type="text" name="amount" inputmode="decimal" placeholder="Only if nothing is due">
+      </div>
+      <div class="field" style="min-width:240px">
+        <label>Note</label>
+        <input type="text" name="notes" placeholder="Why you are chasing them">
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Add to follow-up</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+{% if rows %}
+{{ table_tools(export_href, rows|length) }}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Customer</th>
+      <th>Connection</th>
+      <th>Kind</th>
+      <th>Plan</th>
+      <th>When</th>
+      <th class="num">Still due</th>
+      <th>WhatsApp</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for b in rows %}
+    <tr>
+      <td>
+        <a href="/customers/{{ b.customer_id }}"><strong>{{ b.customer_name }}</strong></a>
+        {% if b.customer_code %}<span class="badge">{{ b.customer_code }}</span>{% endif %}
+        <div class="subtle">{{ b.phone or "" }}</div>
+      </td>
+      <td class="mono">
+        {{ b.upstream_id or "—" }}
+        {% if b.provider %}<div class="subtle">{{ provider_labels.get(b.provider, b.provider) }}</div>{% endif %}
+      </td>
+      <td>
+        {% if b.followup_kind == 'manual' %}
+          <span class="badge">Manual follow-up</span>
+        {% else %}
+          <span class="badge badge-warn">Renewed, not paid</span>
+        {% endif %}
+        {% if b.notes %}<div class="subtle">{{ b.notes }}</div>{% endif %}
+      </td>
+      <td>{{ b.package_name or "—" }}</td>
+      <td class="subtle">{{ b.created_at }}</td>
+      <td class="num"><strong style="color:var(--bad)">₹{{ (b.total_paise - b.paid_paise)|rupees }}</strong></td>
+      <td style="white-space:nowrap">
+        {% if b.followup_kind != 'manual' %}
+          {% set wa = whatsapp_renew_followup_url(b.customer_name, b.phone, b.provider) %}
+          {% if wa %}
+          <a class="btn btn-small btn-wa" href="{{ wa }}" target="_blank" rel="noopener"
+             title="Send renewed — please pay reminder">WhatsApp</a>
+          {% else %}<span class="subtle">—</span>{% endif %}
+        {% else %}<span class="subtle">—</span>{% endif %}
+      </td>
+      <td style="white-space:nowrap">
+        <a class="btn btn-small btn-primary" href="/customers/{{ b.customer_id }}#collect">Collect</a>
+        {% if b.followup_kind == 'manual' and can('payments') %}
+        <form class="inline-form" method="post" action="/bills/{{ b.id }}/drop-followup"
+              onsubmit="return confirm('Take this off the follow-up list? The bill stays.')">
+          <input type="hidden" name="next" value="/payments/follow-up{% if followup_kind %}?kind={{ followup_kind }}{% endif %}">
+          <button class="btn btn-small" type="submit">Drop</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+  <div class="empty">
+    {% if followup_kind == 'manual' %}
+      Nobody is on manual follow-up. Use the form above to add someone.
+    {% elif followup_kind == 'renew' %}
+      Nobody is waiting for a promised payment after a portal renew or enable.
+    {% else %}
+      The follow-up list is empty. Add someone above, or renew with collect later.
+    {% endif %}
+  </div>
+{% endif %}
+</div>
+{% endblock %}

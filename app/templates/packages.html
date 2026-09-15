@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% from "_list_tools.html" import table_tools %}
+{% set active = "packages" %}
+{% block title %}Plans · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Plans</h1>
+    <div class="subtle">Price is what the customer pays for one full term.
+      Railtel term plans (" x3", " x6", " x10") get their validity from the plan name automatically.
+      ANT IPTV and SmartPlay OTT packs are 30-day prepaid.</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/packages?view=in_use" class="{% if view == 'in_use' %}on{% endif %}">
+    In use ({{ counts.in_use }})</a>
+  <a href="/packages?view=unused" class="{% if view == 'unused' %}on{% endif %}">
+    Not used ({{ counts.unused }})</a>
+  <a href="/packages?view=all" class="{% if view == 'all' %}on{% endif %}">
+    All ({{ counts.total }})</a>
+</div>
+
+<form class="filters" method="get" action="/packages">
+  <input type="hidden" name="view" value="{{ view }}">
+  <div class="field"><label>Provider</label>
+    <select name="provider">
+      <option value="">Any</option>
+      {% for p in providers %}
+        <option value="{{ p }}" {% if provider == p %}selected{% endif %}>{{ provider_labels.get(p, p) }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field" style="min-width:220px"><label>Search</label>
+    <input type="search" name="q" value="{{ q }}" placeholder="Plan name"></div>
+  <button class="btn" type="submit">Apply</button>
+  {% if provider or q %}<a class="btn" href="/packages">Clear</a>{% endif %}
+</form>
+
+<details class="box">
+  <summary>+ Add a plan</summary>
+  <div>
+    <form method="post" action="/packages/new">
+      <div class="form-grid">
+        <div class="field"><label>Provider *</label>
+          <select name="provider" required>
+            {% for p in providers %}<option value="{{ p }}">{{ provider_labels.get(p, p) }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field"><label>Plan name *</label><input type="text" name="name" required></div>
+        <div class="field"><label>Price for the term (₹)</label><input type="text" name="price" value="0"></div>
+        <div class="field"><label>Validity days (blank = from name)</label><input type="text" name="validity_days"></div>
+        <div class="field"><label>GST %</label><input type="text" name="gst_percentage" value="0"></div>
+      </div>
+      <div class="field"><label>Notes</label><input type="text" name="notes"></div>
+      <button class="btn btn-primary" type="submit">Add plan</button>
+    </form>
+  </div>
+</details>
+
+<div class="card">
+{% if rows %}
+<div class="subtle" style="margin-bottom:4px">
+  {{ rows|length }} plan(s)
+  {% if truncated %} — showing the first {{ limit }}; narrow it down with the search box{% endif %}
+</div>
+{{ table_tools(export_href, rows|length) }}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Provider</th><th>Plan</th><th class="num">Price</th><th class="num">Validity</th>
+        <th class="num">GST</th><th class="num">In use</th><th>Status</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for p in rows %}
+    <tr>
+      <td>{{ provider_labels.get(p.provider, p.provider) }}</td>
+      <td>{{ p.name }}{% if p.notes %}<div class="subtle">{{ p.notes }}</div>{% endif %}</td>
+      <td class="num">₹{{ p.price_paise|rupees }}</td>
+      <td class="num">{{ p.validity_days }}d</td>
+      <td class="num">{{ p.gst_percentage }}%</td>
+      <td class="num">{{ p.subscriber_count }}</td>
+      <td>{% if p.active %}<span class="badge badge-ok">active</span>
+          {% else %}<span class="badge">hidden</span>{% endif %}</td>
+      <td style="white-space:nowrap">
+        <details>
+          <summary class="btn btn-small" style="display:inline-block">Edit</summary>
+          <form method="post" action="/packages/{{ p.id }}/edit" style="margin-top:8px; min-width:260px">
+            <div class="field"><label>Name</label><input type="text" name="name" value="{{ p.name }}"></div>
+            <div class="field"><label>Price (₹)</label><input type="text" name="price" value="{{ p.price_paise|rupees_plain }}"></div>
+            <div class="field"><label>Validity days</label><input type="text" name="validity_days" value="{{ p.validity_days }}"></div>
+            <div class="field"><label>GST %</label><input type="text" name="gst_percentage" value="{{ p.gst_percentage }}"></div>
+            <div class="check"><input type="checkbox" name="active" value="1" id="act{{ p.id }}"
+                 {% if p.active %}checked{% endif %}><label for="act{{ p.id }}">Active</label></div>
+            <div class="field"><label>Notes</label><input type="text" name="notes" value="{{ p.notes or '' }}"></div>
+            <button class="btn btn-small btn-primary" type="submit">Save</button>
+          </form>
+          {% if not p.subscriber_count %}
+          <form method="post" action="/packages/{{ p.id }}/delete" style="margin-top:6px">
+            <button class="btn btn-small btn-danger" type="submit">Delete plan</button>
+          </form>
+          {% endif %}
+        </details>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+  <div class="empty">No plans yet. Add one above, or run
+    <span class="mono">python -m scripts.import_seed_data</span> to load your existing catalogs.</div>
+{% endif %}
+</div>
+{% endblock %}

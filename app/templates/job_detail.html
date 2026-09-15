@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% set active = "jobs" %}
+{% block title %}Job #{{ job.id }} · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Job #{{ job.id }} — {{ action_labels.get(job.action, job.action) }}</h1>
+    <div class="subtle">{{ provider_labels.get(job.provider, job.provider) }} ·
+      {% if job.customer_id %}
+        <a href="/customers/{{ job.customer_id }}">{{ job.customer_name }}</a>
+      {% else %}dealer account (not tied to a customer){% endif %}</div>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn btn-small" href="/jobs">← All jobs</a>
+</div>
+
+{% set simulated = job.result_json|was_simulated %}
+{% if simulated %}
+<div class="flash flash-warn">
+  <strong>This ran in simulate mode.</strong> The {{ provider_labels.get(job.provider, job.provider) }}
+  portal was never opened, so the "success" below is synthetic — any expiry date came from
+  the plan's validity, not from the provider.
+</div>
+{% endif %}
+
+<div class="card">
+  <dl class="kv">
+    <dt>Status</dt>
+    <dd>{{ job.status }}
+      {% if simulated %}<span class="badge badge-warn">simulated</span>
+      {% elif job.status == 'done' %}<span class="badge badge-ok">portal confirmed</span>{% endif %}
+    </dd>
+    <dt>Provider id</dt><dd class="mono">{{ job.upstream_id or "—" }}</dd>
+    <dt>Attempts</dt><dd>{{ job.attempts }} of {{ job.max_attempts }}</dd>
+    <dt>Requested by</dt><dd>{{ job.requested_by or "—" }}</dd>
+    <dt>Created</dt><dd>{{ job.created_at }}</dd>
+    <dt>Scheduled for</dt><dd>{{ job.scheduled_for or "—" }}</dd>
+    <dt>Started</dt><dd>{{ job.started_at or "—" }}</dd>
+    <dt>Finished</dt><dd>{{ job.completed_at or "—" }}</dd>
+    {% if job.bill_id %}<dt>Bill</dt><dd><a href="/bills">bill #{{ job.bill_id }}</a></dd>{% endif %}
+    {% if job.payment_id %}<dt>Payment</dt><dd>payment #{{ job.payment_id }}</dd>{% endif %}
+    {% if job.error %}<dt>Error</dt><dd style="color:var(--bad)">{{ job.error }}</dd>{% endif %}
+  </dl>
+
+  <div class="form-row" style="margin-top:16px">
+    {% if job.status == 'awaiting_otp' %}
+      <form method="post" action="/jobs/{{ job.id }}/otp">
+        <input type="hidden" name="next" value="/jobs/{{ job.id }}">
+        <input type="text" name="otp" inputmode="numeric" maxlength="6" pattern="[0-9]{6}"
+               placeholder="6-digit OTP" required>
+        <button class="btn btn-ok" type="submit">Submit OTP</button>
+      </form>
+      <form method="post" action="/jobs/{{ job.id }}/cancel">
+        <button class="btn btn-danger" type="submit">Cancel</button></form>
+    {% elif job.status == 'awaiting_confirm' %}
+      <form method="post" action="/jobs/{{ job.id }}/confirm">
+        <button class="btn btn-ok" type="submit">Confirm &amp; run</button></form>
+      <form method="post" action="/jobs/{{ job.id }}/cancel">
+        <button class="btn btn-danger" type="submit">Cancel</button></form>
+    {% elif job.status in ('failed', 'cancelled') %}
+      <form method="post" action="/jobs/{{ job.id }}/retry">
+        <button class="btn" type="submit">Retry</button></form>
+    {% endif %}
+  </div>
+</div>
+
+{% if result_pretty %}
+<div class="card">
+  <div class="card-head">
+    <h2>{% if simulated %}Simulated result (no portal involved)
+        {% else %}What the provider portal returned{% endif %}</h2>
+  </div>
+  <pre class="log">{{ result_pretty }}</pre>
+</div>
+{% endif %}
+{% endblock %}

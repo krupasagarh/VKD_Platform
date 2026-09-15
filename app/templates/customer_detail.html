@@ -1,0 +1,1131 @@
+{% extends "base.html" %}
+{% set active = "customers" %}
+{% block title %}{{ customer.name }} · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ customer.name }}
+      {% if customer.code %}<span class="badge">{{ customer.code }}</span>{% endif %}
+      {% if customer.status != 'active' %}<span class="badge badge-warn">{{ customer.status }}</span>{% endif %}
+    </h1>
+    <div class="subtle">
+      {{ customer.phone or "no phone" }}
+      {% if customer.sub_area %} · {{ customer.sub_area }}{% endif %}
+      {% if customer.area %}, {{ customer.area }}{% endif %}
+      {% if custom_plan %} · {{ custom_plan.name }} ₹{{ custom_plan.amount_paise|rupees }}{% endif %}
+    </div>
+  </div>
+  <div class="spacer"></div>
+  {% if connections and can('portal_actions') %}
+  <form class="inline-form" method="post" action="/customers/{{ customer.id }}/check-all">
+    <button class="btn btn-small" type="submit" title="Ask each provider about every connection this customer has">
+      Check all with provider
+    </button>
+  </form>
+  {% endif %}
+  <a class="btn btn-small" href="/customers">← All customers</a>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2>House location</h2>
+    <div class="spacer"></div>
+    {% if maps_nav %}
+    <a class="btn btn-primary" href="{{ maps_nav }}" target="_blank" rel="noopener">Open in Google Maps</a>
+    <a class="btn btn-small" href="{{ maps_view }}" target="_blank" rel="noopener">View pin</a>
+    {% endif %}
+  </div>
+  {% if maps_nav %}
+  <p class="subtle">
+    Saved{% if customer.geo_at %} {{ customer.geo_at }}{% endif %}
+    {% if customer.geo_by %} by {{ customer.geo_by }}{% endif %}
+    {% if customer.geo_accuracy %} · ±{{ customer.geo_accuracy|int }} m{% endif %}
+    · {{ "%.5f"|format(customer.lat) }}, {{ "%.5f"|format(customer.lng) }}
+  </p>
+  {% else %}
+  <p class="subtle">No pin yet. An agent at the house can save GPS so the next visit opens in Google Maps.</p>
+  {% endif %}
+  <form id="geo-form" method="post" action="/customers/{{ customer.id }}/location">
+    <input type="hidden" name="lat" id="geo-lat" value="">
+    <input type="hidden" name="lng" id="geo-lng" value="">
+    <input type="hidden" name="accuracy" id="geo-acc" value="">
+    <div class="form-grid">
+      <div class="field" style="min-width:260px">
+        <label>Or paste coordinates / Maps link</label>
+        <input type="text" name="paste" placeholder="13.2612, 76.4784 or a Google Maps link">
+      </div>
+    </div>
+    <div class="form-row">
+      <button class="btn btn-primary" type="button" onclick="saveCustomerGps()">Save my current GPS</button>
+      <button class="btn" type="submit">Save pasted location</button>
+      {% if maps_nav and can('customers_edit') %}
+      <button class="btn btn-danger" type="submit" form="geo-clear"
+              onclick="return confirm('Remove this house pin?')">Clear pin</button>
+      {% endif %}
+    </div>
+  </form>
+  {% if maps_nav and can('customers_edit') %}
+  <form id="geo-clear" method="post" action="/customers/{{ customer.id }}/location/clear"></form>
+  {% endif %}
+</div>
+<script>
+function saveCustomerGps() {
+  if (!navigator.geolocation) {
+    alert("This phone cannot read GPS. Paste a Google Maps pin instead.");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(function (pos) {
+    document.getElementById("geo-lat").value = pos.coords.latitude.toFixed(6);
+    document.getElementById("geo-lng").value = pos.coords.longitude.toFixed(6);
+    document.getElementById("geo-acc").value = pos.coords.accuracy || "";
+    document.getElementById("geo-form").submit();
+  }, function () {
+    alert("Could not read GPS on this connection. Stand at the house, allow location, or paste a Google Maps link.");
+  }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+}
+</script>
+
+<div class="stats">
+  <div class="stat {% if ledger.net_due_paise > 0 %}bad{% elif ledger.net_due_paise < 0 %}good{% endif %}">
+    <div class="label">Net due</div>
+    <div class="value">₹{{ ledger.net_due_paise|rupees }}</div>
+    <div class="hint">
+      outstanding ₹{{ ledger.outstanding_paise|rupees }}
+      {% if ledger.credit_paise %} · advance ₹{{ ledger.credit_paise|rupees }}{% endif %}
+    </div>
+  </div>
+  <div class="stat">
+    <div class="label">Connections</div>
+    <div class="value">{{ customer.active_count }}/{{ customer.connection_count }}</div>
+    <div class="hint">{{ (customer.providers or "").replace(',', ' + ') or "none yet" }}</div>
+  </div>
+  {% set cover_expiry = plan_cover.expiry if plan_cover and plan_cover.expiry else customer.next_expiry %}
+  {% set left = cover_expiry|days_until %}
+  <div class="stat {% if left is not none and left < 0 %}bad{% elif left is not none and left <= 7 %}warn{% endif %}">
+    <div class="label">Next expiry</div>
+    <div class="value" style="font-size:18px">{{ cover_expiry|nice_date }}</div>
+    <div class="hint">
+      {% if plan_cover and plan_cover.label %}{{ plan_cover.label }}{% endif %}
+      {% if left is none %}{% if not plan_cover or not plan_cover.label %}no active plan{% endif %}
+      {% elif left < 0 %}{% if plan_cover and plan_cover.label %} · {% endif %}{{ -left }} days late
+      {% else %}{% if plan_cover and plan_cover.label %} · {% endif %}{{ left }} days left{% endif %}
+    </div>
+  </div>
+  {% set ns = namespace(last_paid=none) %}
+  {% for p in payments %}
+    {% if ns.last_paid is none and (p.mode or '')|lower != 'adjustment' %}
+      {% set ns.last_paid = p %}
+    {% endif %}
+  {% endfor %}
+  <div class="stat {% if ns.last_paid %}good{% endif %}">
+    <div class="label">Last paid</div>
+    {% if ns.last_paid %}
+    <div class="value">₹{{ ns.last_paid.amount_paise|rupees }}</div>
+    <div class="hint">on {{ ns.last_paid.paid_at|nice_date }}</div>
+    {% else %}
+    <div class="value">—</div>
+    <div class="hint">no payment yet</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card" id="customer-plan">
+  <div class="card-head">
+    <h2>Customer plan</h2>
+    <div class="spacer"></div>
+    <span class="subtle">Used for collection and the printed bill. Provider plans stay below.</span>
+  </div>
+  {% if custom_plan %}
+  <p>
+    <strong>{{ custom_plan.name }}</strong>
+    · ₹{{ custom_plan.amount_paise|rupees }}
+    {% if custom_plan.validity_days %} · {{ custom_plan.validity_days }} days{% endif %}
+    {% if plan_cover and plan_cover.label %} · {{ plan_cover.label }}{% endif %}
+  </p>
+  {% if custom_plan.details %}<p class="subtle">{{ custom_plan.details }}</p>{% endif %}
+  {% else %}
+  <p class="subtle">No household plan yet. Example: Railtel + IPTV, 6 months + 1 month free, ₹3600.</p>
+  {% endif %}
+  {% if can('customers_edit') or can('payments') %}
+  <form method="post" action="/customers/{{ customer.id }}/custom-plan">
+    <div class="form-grid">
+      <div class="field" style="min-width:240px">
+        <label>Plan name</label>
+        <input type="text" name="plan_name"
+               value="{{ custom_plan.name if custom_plan and custom_plan.name != 'Custom plan' else '' }}"
+               placeholder="Railtel + IPTV bundle">
+      </div>
+      <div class="field">
+        <label>Amount they pay (₹)</label>
+        <input type="text" name="amount" inputmode="decimal"
+               value="{% if custom_plan and custom_plan.amount_paise %}{{ custom_plan.amount_paise|rupees_plain }}{% endif %}"
+               placeholder="3600">
+      </div>
+      <div class="field">
+        <label>Term</label>
+        <select name="validity_days">
+          <option value="">— no fixed term —</option>
+          {% for days, label in plan_terms %}
+            <option value="{{ days }}" {% if custom_plan and custom_plan.validity_days == days %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+          {% if custom_plan and custom_plan.validity_days and custom_plan.validity_days not in [30, 100, 210, 360] %}
+            <option value="{{ custom_plan.validity_days }}" selected>{{ custom_plan.validity_days }} days</option>
+          {% endif %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Services</label>
+        <select name="bundle">
+          <option value="">From connections</option>
+          {% for key, label in plan_bundles %}
+            <option value="{{ key }}" {% if custom_plan and custom_plan.bundle == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Details printed on the bill</label>
+      <input type="text" name="details"
+             value="{{ custom_plan.details if custom_plan else '' }}"
+             placeholder="Railtel broadband + ANT IPTV · 6 months + 1 month free">
+    </div>
+    <button class="btn btn-primary" type="submit">Save customer plan</button>
+    <span class="subtle" style="margin-left:8px">Collect and renew bills use this amount, not each provider catalog price.</span>
+  </form>
+  {% endif %}
+</div>
+
+{% set follow_manual = followups | selectattr('followup_kind', 'equalto', 'manual') | list %}
+{% set follow_renew = followups | rejectattr('followup_kind', 'equalto', 'manual') | list %}
+{% if followups %}
+<div class="card" style="border-color:rgba(240,169,46,.5)">
+  <div class="card-head">
+    <h2 style="color:var(--warn)">
+      {% if follow_manual and follow_renew %}Payment follow-up
+      {% elif follow_manual %}Manual follow-up
+      {% else %}Renewed, not paid{% endif %}
+    </h2>
+    <div class="spacer"></div>
+    <a class="btn btn-small" href="/payments/follow-up">All follow-ups</a>
+  </div>
+  <p>
+    {% if follow_manual and follow_renew %}
+      Some items were promised after a portal renew; others were added by hand.
+    {% elif follow_manual %}
+      This customer was added to manual follow-up and still owes the amount below.
+    {% else %}
+      This customer was renewed or enabled and still owes the promised payment.
+    {% endif %}
+  </p>
+  <ul>
+    {% for b in followups %}
+      <li>
+        {% if b.followup_kind == 'manual' %}
+          <span class="badge">Manual follow-up</span>
+        {% else %}
+          <span class="badge badge-warn">Renewed, not paid</span>
+        {% endif %}
+        {{ b.upstream_id or "connection" }}
+        · ₹{{ (b.total_paise - b.paid_paise)|rupees }}
+        <span class="subtle">{{ b.package_name or "" }}</span>
+        {% if b.followup_kind != 'manual' %}
+          {% set wa = whatsapp_renew_followup_url(customer.name, customer.phone, b.provider) %}
+          {% if wa %}
+          <a class="btn btn-small btn-wa" href="{{ wa }}" target="_blank" rel="noopener"
+             title="Send renewed — please pay reminder">WhatsApp</a>
+          {% endif %}
+        {% endif %}
+        {% if b.followup_kind == 'manual' and can('payments') %}
+        <form class="inline-form" method="post" action="/bills/{{ b.id }}/drop-followup"
+              onsubmit="return confirm('Take this off the follow-up list? The bill stays.')">
+          <input type="hidden" name="next" value="/customers/{{ customer.id }}">
+          <button class="btn btn-small" type="submit">Drop</button>
+        </form>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  <a class="btn btn-primary" href="#collect">Collect now</a>
+</div>
+{% endif %}
+
+{% set otp_pending = jobs | selectattr('status', 'equalto', 'awaiting_otp') | list %}
+{% if otp_pending and can('portal_actions') %}
+<div class="card" style="border-color:rgba(240,169,46,.5)">
+  <div class="card-head"><h2 style="color:var(--warn)">Waiting for WhatsApp OTP</h2></div>
+  <table>
+    <tbody>
+    {% for j in otp_pending %}
+      <tr>
+        <td>
+          <strong>{{ action_labels.get(j.action, j.action) }}</strong>
+          on ANT IPTV <span class="mono">{{ j.upstream_id }}</span>
+          <div class="subtle">Job #{{ j.id }} · {{ j.error or "Enter the 6-digit code ANT sent." }}</div>
+        </td>
+        <td style="width:1%; white-space:nowrap">
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/otp">
+            <input type="hidden" name="next" value="/customers/{{ customer.id }}">
+            <input type="text" name="otp" inputmode="numeric" maxlength="6" pattern="[0-9]{6}"
+                   placeholder="OTP" required style="width:6.5rem">
+            <button class="btn btn-small btn-ok" type="submit">Submit OTP</button>
+          </form>
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/cancel">
+            <button class="btn btn-small btn-danger" type="submit">Cancel</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% set pending_jobs = jobs | selectattr('status', 'equalto', 'awaiting_confirm') | list %}
+{% if pending_jobs and can('portal_actions') %}
+<div class="card" style="border-color:rgba(240,169,46,.5)">
+  <div class="card-head"><h2 style="color:var(--warn)">Waiting for your approval</h2></div>
+  <table>
+    <tbody>
+    {% for j in pending_jobs %}
+      <tr>
+        <td>
+          <strong>{{ action_labels.get(j.action, j.action) }}</strong>
+          on {{ provider_labels.get(j.provider, j.provider) }}
+          <span class="mono">{{ j.upstream_id }}</span>
+          {% if j.collect_later %}
+            <span class="badge badge-warn">collect later</span>
+          {% endif %}
+          <div class="subtle">Job #{{ j.id }} created {{ j.created_at }}
+            {% if j.payment_id %} · linked to a payment{% elif not j.collect_later and j.action == 'renew' %}
+              · portal renew only — no payment follow-up{% endif %}</div>
+        </td>
+        <td style="width:1%; white-space:nowrap">
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/confirm">
+            <button class="btn btn-small btn-ok" type="submit">Confirm &amp; run</button>
+          </form>
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/cancel">
+            <button class="btn btn-small btn-danger" type="submit">Cancel</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if railtel_invoices %}
+<div class="card">
+  <div class="card-head">
+    <h2>Railtel portal bills</h2>
+    <div class="spacer"></div>
+    <span class="subtle">Downloaded from Sub Invoice on ka.railwire.co.in</span>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Invoice</th>
+        <th>Receipt date</th>
+        <th>Amount</th>
+        <th>Login</th>
+        <th>Downloaded</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for inv in railtel_invoices %}
+      {% set dl = public_base_url ~ '/railtel-invoices/' ~ inv.id ~ '/pdf' %}
+      <tr>
+        <td class="mono"><strong>{{ inv.invoice_no or "—" }}</strong></td>
+        <td class="subtle">{{ inv.receipt_date|nice_date if inv.receipt_date else "—" }}</td>
+        <td class="num">{% if inv.gross_amount %}₹{{ inv.gross_amount }}{% else %}—{% endif %}</td>
+        <td class="mono subtle">{{ inv.upstream_id }}</td>
+        <td class="subtle">{{ inv.created_at|nice_datetime }}</td>
+        <td style="white-space:nowrap">
+          <a class="btn btn-small" href="/railtel-invoices/{{ inv.id }}/pdf" target="_blank" rel="noopener">PDF</a>
+          {% if inv.whatsapp_sent_at %}
+          <span class="badge badge-ok" title="Sent {{ inv.whatsapp_sent_at|nice_datetime }}">WhatsApp sent</span>
+          {% else %}
+          <form class="inline-form" method="post" action="/railtel-invoices/{{ inv.id }}/whatsapp">
+            <input type="hidden" name="next" value="/customers/{{ customer.id }}">
+            <button class="btn btn-small btn-wa" type="submit"
+                    title="Attach PDF and send on WhatsApp{% if settings.railtel_invoice_whatsapp_test %} → {{ settings.railtel_invoice_whatsapp_test }}{% endif %}">
+              Send WhatsApp
+            </button>
+          </form>
+          {% if inv.whatsapp_error %}<div class="subtle" style="color:var(--bad)">{{ inv.whatsapp_error }}</div>{% endif %}
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ------------------------------------------------ Connections -->
+<div class="card">
+  <div class="card-head">
+    <h2>Provider connections</h2>
+    <div class="spacer"></div>
+    <span class="subtle">Railtel plan is read from the portal on payment or renew. Catalog price is only a reference if a customer plan is set.</span>
+    {% if can('customers_edit') %}
+    <a class="btn btn-small" href="#add-stb">+ Add</a>
+    {% endif %}
+  </div>
+  {% if connections %}
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Provider</th>
+        <th>Id / phone</th>
+        <th>VC</th>
+        <th>Plan</th>
+        <th class="num">Plan amount</th>
+        <th>Term</th>
+        <th>Expiry</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for cn in connections %}
+      {% set left = cn.expiry_date|days_until %}
+      {% set id_issue = id_problems.get(cn.id) %}
+      <tr>
+        <td>{{ provider_labels.get(cn.provider, cn.provider) }}</td>
+        <td>
+          <span class="mono">{{ cn.upstream_id }}</span>
+          {% if cn.label %}<div class="subtle">{{ cn.label }}</div>{% endif %}
+          {% if cn.status != 'active' %}<span class="badge badge-warn">{{ cn.status }}</span>{% endif %}
+        </td>
+        <td class="mono subtle">{{ cn.card_number or "—" }}</td>
+        <td>
+          {% if cn.provider == 'railtel' and cn.last_synced_at and cn.upstream_plan_name %}
+            {{ cn.upstream_plan_name }}
+            <div class="subtle">from portal</div>
+          {% else %}
+            {{ cn.package_name or cn.upstream_plan_name or "—" }}
+            {% if cn.provider == 'railtel' and (cn.package_name or cn.upstream_plan_name) %}
+              <div class="subtle">import / catalog — updates on payment or renew</div>
+            {% endif %}
+          {% endif %}
+        </td>
+        <td class="num">
+          {% set q = collect_quotes.get(cn.id) %}
+          {% if q and q.total %}
+            ₹{{ q.base|rupees }}{% if cn.amount_paise %}<div class="subtle">this customer</div>{% endif %}
+            {% if q.exclusive and q.gst %}<div class="subtle">+ GST → ₹{{ q.total|rupees }}</div>{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td class="subtle">
+          {% set term = cn.validity_days if cn.validity_days else cn.package_validity_days %}
+          {% if term %}{{ term }}d{% if cn.validity_days %}<div class="subtle">this customer</div>{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td class="subtle">{{ cn.expiry_date|nice_date }}
+          {% if left is not none and left < 0 %}<span class="badge badge-bad">late</span>
+          {% elif left is not none and left <= 7 %}<span class="badge badge-warn">{{ left }}d</span>{% endif %}
+        </td>
+        <td style="white-space:nowrap">
+          {% if can('portal_actions') and not id_issue %}
+            {% if 'download_bill' in provider_actions.get(cn.provider, []) %}
+            <form class="inline-form" method="post" action="/connections/{{ cn.id }}/action">
+              <input type="hidden" name="action" value="download_bill">
+              <input type="hidden" name="next" value="/customers/{{ customer.id }}">
+              <button class="btn btn-small" type="submit" title="Download latest bill from Railtel Sub Invoice">Portal bill</button>
+            </form>
+            {% endif %}
+            {% if 'renew' in provider_actions.get(cn.provider, []) %}
+            <form class="inline-form" method="post" action="/connections/{{ cn.id }}/action">
+              <input type="hidden" name="action" value="renew">
+              <input type="hidden" name="next" value="/customers/{{ customer.id }}">
+              <button class="btn btn-small btn-primary" type="submit">Renew</button>
+            </form>
+            <form class="inline-form" method="post" action="/connections/{{ cn.id }}/collect-later"
+                  onsubmit="return confirm('Renew on {{ provider_labels.get(cn.provider, cn.provider) }} now and collect payment later?')">
+              <input type="hidden" name="next" value="/customers/{{ customer.id }}">
+              <button class="btn btn-small" type="submit">Collect later</button>
+            </form>
+            {% endif %}
+          {% endif %}
+          {% if can('customers_edit') %}
+          <details class="box" style="display:inline-block; margin:0">
+            <summary>Edit</summary>
+            <div>
+              {% if can('portal_actions') and not id_issue %}
+              <div class="form-row" style="margin-bottom:12px">
+                {% for action in provider_actions.get(cn.provider, []) %}
+                  {% if action != 'renew' and action != 'download_bill' %}
+                  <form class="inline-form" method="post" action="/connections/{{ cn.id }}/action"
+                        {% if action in destructive_actions %}
+                        onsubmit="return confirm('{{ action_labels.get(action, action) }} for {{ cn.upstream_id }}?')"
+                        {% endif %}>
+                    <input type="hidden" name="action" value="{{ action }}">
+                    <button class="btn btn-small{% if action in destructive_actions %} btn-danger{% endif %}" type="submit">
+                      {{ action_labels.get(action, action) }}
+                    </button>
+                  </form>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              {% endif %}
+              <form method="post" action="/connections/{{ cn.id }}/edit">
+                <div class="form-grid">
+                  <div class="field"><label>{% if cn.provider == 'ott' %}OTT phone{% elif cn.provider == 'iptv' %}IPTV phone{% elif cn.provider == 'railtel' %}Railtel login{% else %}STB / login{% endif %}</label>
+                    <input type="text" name="upstream_id" value="{{ cn.upstream_id }}" required></div>
+                  <div class="field"{% if cn.provider in ('iptv', 'ott') %} style="display:none"{% endif %}><label>VC / card</label>
+                    <input type="text" name="card_number" value="{{ cn.card_number or '' }}"></div>
+                  <div class="field"><label>Plan</label>
+                    <input type="text" name="package_name" list="plans-{{ cn.provider }}"
+                           value="{{ cn.package_name or cn.upstream_plan_name or '' }}"></div>
+                  <div class="field"><label>Label</label>
+                    <input type="text" name="label" value="{{ cn.label or '' }}"></div>
+                  <div class="field"><label>Status</label>
+                    <select name="status">
+                      {% for s in connection_statuses %}
+                        <option value="{{ s }}" {% if cn.status == s %}selected{% endif %}>{{ s }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="field"><label>Expiry</label>
+                    <input type="text" name="expiry_date" value="{{ cn.expiry_date or '' }}" placeholder="YYYY-MM-DD"></div>
+                  <div class="field">
+                    <label>Plan amount (₹)</label>
+                    <input type="text" name="amount" inputmode="decimal"
+                           value="{% if cn.amount_paise %}{{ cn.amount_paise|rupees_plain }}{% endif %}"
+                           placeholder="{% if cn.package_price_paise %}catalog {{ cn.package_price_paise|rupees_plain }}{% else %}e.g. 499{% endif %}">
+                    <div class="subtle">Before GST on Railtel. Leave blank to use the catalog plan price.</div>
+                  </div>
+                  <div class="field">
+                    <label>Plan term</label>
+                    <select name="validity_days">
+                      <option value="">Catalog term{% if cn.package_validity_days %} ({{ cn.package_validity_days }}d){% endif %}</option>
+                      {% for days, label in plan_terms %}
+                        <option value="{{ days }}" {% if cn.validity_days == days %}selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                      {% if cn.validity_days and cn.validity_days not in [30, 100, 210, 360] %}
+                        <option value="{{ cn.validity_days }}" selected>{{ cn.validity_days }} days</option>
+                      {% endif %}
+                    </select>
+                    <div class="subtle">How long this custom plan runs when you renew.</div>
+                  </div>
+                  <input type="hidden" name="notes" value="{{ cn.notes or '' }}">
+                </div>
+                <button class="btn btn-primary" type="submit">Save</button>
+              </form>
+            </div>
+          </details>
+          <form class="inline-form" method="post" action="/connections/{{ cn.id }}/delete"
+                onsubmit="return confirm('Remove {{ cn.upstream_id }}?')">
+            <button class="btn btn-small btn-danger" type="submit">Delete</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty">No connections yet.</div>
+  {% endif %}
+
+  {% if can('customers_edit') %}
+  {% set existing_providers = connections | map(attribute='provider') | list %}
+  {% set default_add_provider = 'iptv' if existing_providers and 'iptv' not in existing_providers else ('ott' if existing_providers and 'ott' not in existing_providers else (existing_providers[0] if existing_providers else 'railtel')) %}
+  <details class="box" id="add-stb" style="margin-top:12px">
+    <summary>+ Add connection</summary>
+    <div>
+      <p class="subtle" style="margin-top:0">
+        Railtel internet and Hathway cable stay as they are. Add ANT IPTV or
+        SmartPlay OTT as an extra service on the same customer — phone plus a pack.
+      </p>
+      <form method="post" action="/customers/{{ customer.id }}/connections">
+        <div class="form-grid">
+          <div class="field"><label>Provider</label>
+            <select name="provider" id="new-conn-provider" required>
+              {% for p in providers %}
+                <option value="{{ p }}" {% if p == default_add_provider %}selected{% endif %}>{{ provider_labels.get(p, p) }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field"><label id="new-conn-id-label">STB / login</label>
+            <input type="text" name="upstream_id" id="new-conn-id" required
+                   placeholder="N70130838231"
+                   data-phone="{{ customer.phone or '' }}"></div>
+          <div class="field" id="new-conn-card-wrap"><label>VC / card</label>
+            <input type="text" name="card_number" id="new-conn-card" placeholder="T1234567890"></div>
+          <div class="field"><label>Plan</label>
+            <input type="text" name="package_name" id="new-conn-plan"
+                   list="plans-{{ default_add_provider }}"
+                   placeholder="ADN All Channels HD"></div>
+          <div class="field"><label>Expiry</label>
+            <input type="text" name="expiry_date" placeholder="YYYY-MM-DD"></div>
+          <div class="field">
+            <label>Plan amount (₹)</label>
+            <input type="text" name="amount" inputmode="decimal" placeholder="e.g. 499 — blank = catalog">
+          </div>
+          <div class="field">
+            <label>Plan term</label>
+            <select name="validity_days">
+              <option value="">Catalog term</option>
+              {% for days, label in plan_terms %}
+                <option value="{{ days }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <input type="hidden" name="label" value="">
+        <button class="btn btn-primary" type="submit">Add connection</button>
+      </form>
+    </div>
+  </details>
+  <script>
+  (function () {
+    var sel = document.getElementById('new-conn-provider');
+    var id = document.getElementById('new-conn-id');
+    var label = document.getElementById('new-conn-id-label');
+    var cardWrap = document.getElementById('new-conn-card-wrap');
+    var plan = document.getElementById('new-conn-plan');
+    if (!sel || !id) return;
+    function sync() {
+      var p = sel.value;
+      plan.setAttribute('list', 'plans-' + p);
+      if (p === 'iptv' || p === 'ott') {
+        label.textContent = p === 'ott' ? 'OTT phone' : 'IPTV phone';
+        id.placeholder = p === 'ott' ? '10-digit mobile on SmartPlay' : '10-digit mobile on ANT';
+        if (!id.value && id.getAttribute('data-phone')) id.value = id.getAttribute('data-phone');
+        cardWrap.style.display = 'none';
+      } else if (p === 'railtel') {
+        label.textContent = 'Railtel login';
+        id.placeholder = 'ka.username';
+        cardWrap.style.display = '';
+      } else {
+        label.textContent = 'STB / login';
+        id.placeholder = 'N70130838231';
+        cardWrap.style.display = '';
+      }
+    }
+    sel.addEventListener('change', sync);
+    sync();
+  })();
+  </script>
+  {% endif %}
+</div>
+
+<!-- ------------------------------------------------ Account statement -->
+<details class="box" id="statement">
+  <summary>
+    Account statement
+    <span class="subtle" style="font-weight:400">
+      · net due ₹{{ ledger.net_due_paise|rupees }}
+      {% if statement %} · {{ statement|length }} rows{% endif %}
+    </span>
+  </summary>
+  <div>
+  <p class="subtle" style="margin-top:0">Newest first · balance is what the customer owes after each row</p>
+  {% if statement %}
+  <div class="table-wrap">
+  <table class="statement">
+    <thead>
+      <tr>
+        <th>Date</th><th>Detail</th>
+        <th class="num">Billed</th><th class="num">Paid</th><th class="num">Balance</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in statement %}
+      <tr class="{% if row.kind == 'payment' %}row-credit{% else %}row-debit{% endif %}">
+        <td class="subtle" style="white-space:nowrap">{{ row.at[:10]|nice_date }}</td>
+        <td>
+          {{ row.description }}
+          <div class="subtle mono">
+            {% if row.kind == 'payment' %}
+              <a href="/payments/{{ row.ref_id }}/receipt" target="_blank">{{ row.ref }}</a>
+              {% if can('payments') or can('customers_edit') %}
+              <form class="inline-form" method="post" action="/payments/{{ row.ref_id }}/delete"
+                    onsubmit="return confirm('Delete receipt {{ row.ref }}? The ledger will be rebuilt.')">
+                <input type="hidden" name="next" value="/customers/{{ customer.id }}">
+                <button class="btn btn-small btn-danger" type="submit">Delete</button>
+              </form>
+              {% endif %}
+            {% else %}
+              {{ row.ref }}
+              {% if can('bills') or can('customers_edit') %}
+              <form class="inline-form" method="post" action="/bills/{{ row.ref_id }}/cancel"
+                    onsubmit="return confirm('Cancel bill {{ row.ref }}? The ledger will be rebuilt.')">
+                <input type="hidden" name="next" value="/customers/{{ customer.id }}">
+                <button class="btn btn-small btn-danger" type="submit">Cancel</button>
+              </form>
+              {% endif %}
+            {% endif %}
+          </div>
+        </td>
+        <td class="num">{% if row.debit_paise %}₹{{ row.debit_paise|rupees }}{% endif %}</td>
+        <td class="num">{% if row.credit_paise %}₹{{ row.credit_paise|rupees }}{% endif %}</td>
+        <td class="num {% if row.balance_paise > 0 %}amount-due{% elif row.balance_paise < 0 %}amount-credit{% endif %}">
+          ₹{{ row.balance_paise|rupees }}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty">Nothing billed or collected yet.</div>
+  {% endif %}
+
+  {% if can('customers_edit') or can('bills') %}
+  <details class="box" id="set-balance" style="margin-top:12px">
+    <summary>Set balance</summary>
+    <div>
+      <p class="subtle">
+        Current net due ₹{{ ledger.net_due_paise|rupees }}.
+        The difference is written on this statement as a balance adjustment — not as cash collected.
+      </p>
+      <form method="post" action="/customers/{{ customer.id }}/balance"
+            onsubmit="return confirm('Set this customer balance to the new amount? It will show in the statement.')">
+        <div class="form-grid">
+          <div class="field">
+            <label>New balance (₹) *</label>
+            <input type="text" name="amount" inputmode="decimal" required
+                   value="{{ ledger.net_due_paise|rupees_plain }}">
+          </div>
+          <div class="field">
+            <label>Reason *</label>
+            <input type="text" name="reason" required placeholder="Correction / waiver / opening due">
+          </div>
+        </div>
+        <button class="btn btn-primary" type="submit">Save balance</button>
+      </form>
+    </div>
+  </details>
+  {% endif %}
+  </div>
+</details>
+
+{% if bix_history.accounts %}
+<details class="box" id="bix-history"{% if bix_kind %} open{% endif %}>
+  <summary>
+    Bix history
+    <span class="subtle" style="font-weight:400">
+      {% for a in bix_history.accounts %}
+        {% if a.last_balance_paise is not none %} · last due ₹{{ a.last_balance_paise|rupees }}{% endif %}
+        {% if a.last_txn_at %} on {{ a.last_txn_at[:10]|nice_date }}{% endif %}
+      {% endfor %}
+      · does not change net due
+    </span>
+  </summary>
+  <div>
+    <div class="subtle" style="margin-bottom:10px">
+      {% for a in bix_history.accounts %}
+        {{ a.name }}{% if a.last_balance_paise is not none %} · last Bix due ₹{{ a.last_balance_paise|rupees }}{% endif %}
+        {% if a.last_txn_at %} on {{ a.last_txn_at[:10]|nice_date }}{% endif %}
+        {% if not loop.last %}<br>{% endif %}
+      {% endfor %}
+    </div>
+    <div class="tabs" style="margin-bottom:10px">
+      <a href="/customers/{{ customer.id }}#bix-history" class="{% if not bix_kind %}on{% endif %}">All</a>
+      <a href="/customers/{{ customer.id }}?bix=payment#bix-history" class="{% if bix_kind == 'payment' %}on{% endif %}">Payments</a>
+      <a href="/customers/{{ customer.id }}?bix=bill#bix-history" class="{% if bix_kind == 'bill' %}on{% endif %}">Bills</a>
+    </div>
+    {% if bix_history.rows %}
+    <div class="table-wrap">
+    <table class="statement">
+      <thead>
+        <tr>
+          <th>Date</th><th>Detail</th>
+          <th class="num">Billed</th><th class="num">Paid</th><th class="num">Bix due</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for row in bix_history.rows %}
+        <tr class="{% if row.kind == 'payment' %}row-credit{% elif row.kind == 'adjustment' %}{% else %}row-debit{% endif %}">
+          <td class="subtle" style="white-space:nowrap">{{ row.occurred_at[:10]|nice_date }}</td>
+          <td>
+            {{ row.label }}
+            <div class="subtle">{{ row.kind }}</div>
+          </td>
+          <td class="num">
+            {% if row.kind == 'bill' or (row.kind == 'adjustment' and row.amount_paise > 0) or (row.kind == 'other' and row.amount_paise > 0) %}
+              ₹{{ row.amount_paise|rupees }}
+            {% endif %}
+          </td>
+          <td class="num">
+            {% if row.kind == 'payment' or (row.kind == 'adjustment' and row.amount_paise < 0) %}
+              ₹{{ row.amount_paise|abs|rupees }}
+            {% endif %}
+          </td>
+          <td class="num {% if row.balance_paise > 0 %}amount-due{% endif %}">₹{{ row.balance_paise|rupees }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="empty">No Bix {{ bix_kind or 'history' }} rows for this customer.</div>
+    {% endif %}
+  </div>
+</details>
+{% endif %}
+
+{% if can('complaints') %}
+{% set open_complaints = complaints | rejectattr('status', 'equalto', 'fixed') | list %}
+<details class="box" id="complaints">
+  <summary>
+    Complaints
+    <span class="subtle" style="font-weight:400">
+      {% if open_complaints %} · {{ open_complaints|length }} open
+      {% elif complaints %} · {{ complaints|length }} logged
+      {% else %} · none{% endif %}
+    </span>
+  </summary>
+  <div>
+    <div class="form-row" style="margin-bottom:10px">
+      <a class="btn btn-small" href="/complaints">All complaints</a>
+    </div>
+    {% if complaints %}
+    <table>
+      <tbody>
+      {% for c in complaints %}
+        <tr>
+          <td>
+            <strong>{{ c.title }}</strong>
+            {% if c.status == 'fixed' %}<span class="badge badge-ok">fixed by {{ c.resolved_by }}</span>
+            {% elif c.agent_name or c.assigned_to %}<span class="badge badge-warn">{{ c.agent_name or c.assigned_to }}</span>
+            {% else %}<span class="badge">open</span>{% endif %}
+            {% if c.details %}<div class="subtle">{{ c.details }}</div>{% endif %}
+          </td>
+          <td class="subtle">{{ c.created_at }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+    <form method="post" action="/customers/{{ customer.id }}/complaints" style="margin-top:12px">
+      <div class="form-grid">
+        <div class="field">
+          <label>Issue *</label>
+          <input type="text" name="title" required placeholder="No signal / buffer / bill dispute">
+        </div>
+        <div class="field">
+          <label>Assign to</label>
+          <select name="assigned_agent_id">
+            <option value="">— assign later —</option>
+            {% for a in agents %}
+              <option value="{{ a.id }}">{{ a.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Details</label><input type="text" name="details" placeholder="What the customer said"></div>
+      <button class="btn" type="submit">Log complaint</button>
+    </form>
+  </div>
+</details>
+{% endif %}
+
+{% if can('payments') %}
+<!-- ------------------------------------------------ Collect payment -->
+<details class="box" id="collect">
+  <summary>
+    Collect payment
+    {% if usual_collect_paise %}
+      <span class="subtle" style="font-weight:400"> · usual ₹{{ usual_collect_paise|rupees }}</span>
+    {% elif ledger.net_due_paise > 0 %}
+      <span class="subtle" style="font-weight:400"> · due ₹{{ ledger.net_due_paise|rupees }}</span>
+    {% endif %}
+  </summary>
+  <div>
+  <form class="js-geo" id="collect-form" method="post" action="/customers/{{ customer.id }}/collect">
+    <input type="hidden" name="lat" value="">
+    <input type="hidden" name="lng" value="">
+    <input type="hidden" name="accuracy" value="">
+    <div class="form-grid">
+      <div class="field" id="collect-amount-field">
+        <label>Amount (₹) *</label>
+        <input type="text" name="amount" inputmode="decimal" required
+               placeholder="Plan + GST, or type what you collect"
+               value="{% if usual_collect_paise %}{{ usual_collect_paise|rupees_plain }}{% elif ledger.net_due_paise > 0 %}{{ ledger.net_due_paise|rupees_plain }}{% endif %}">
+      </div>
+      <div class="field">
+        <label>Mode</label>
+        <select name="mode" id="collect-mode">
+          {% for m in payment_modes %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
+          {% if can('portal_actions') and connections %}
+          <option value="collect_later">renew and collect later</option>
+          {% endif %}
+        </select>
+      </div>
+      <div class="field">
+        <label>For connection</label>
+        <select name="connection_id" id="collect-connection">
+          <option value="">— not tied to one connection —</option>
+          {% for cn in connections %}
+            <option value="{{ cn.id }}">
+              {{ provider_labels.get(cn.provider, cn.provider) }} · {{ cn.upstream_id }}
+              {% if cn.package_name %}({{ cn.package_name }}){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field"><label>Reference / UTR</label><input type="text" name="reference"></div>
+    </div>
+    <div class="field"><label>Note</label><input type="text" name="notes"></div>
+    <div class="check" style="margin-bottom:12px">
+      <input type="checkbox" id="remember_collect" name="remember_collect" value="1">
+      <label for="remember_collect">Remember this amount as their usual payment</label>
+    </div>
+    {% if can('portal_actions') %}
+    <div class="check" id="collect-renew-row" style="margin-bottom:12px">
+      <input type="checkbox" id="renew" name="renew" value="1" checked>
+      <label for="renew">Queue a renewal on the provider portal for the selected connection</label>
+    </div>
+    {% endif %}
+    <button class="btn btn-primary" id="collect-submit" type="submit">Save payment</button>
+    <span class="subtle" style="margin-left:8px" id="collect-hint">
+      {% if can('portal_actions') %}
+      Queued renewals wait for your confirmation before the portal is touched.
+      {% endif %}
+    </span>
+  </form>
+  {% if connections %}
+  <script>
+  (function () {
+    var quotes = {{ collect_quotes | tojson }};
+    var usual = {{ usual_collect_paise or 0 }};
+    var mode = document.getElementById("collect-mode");
+    var amountField = document.getElementById("collect-amount-field");
+    var amount = amountField && amountField.querySelector("input");
+    var conn = document.getElementById("collect-connection");
+    var renewRow = document.getElementById("collect-renew-row");
+    var submit = document.getElementById("collect-submit");
+    var hint = document.getElementById("collect-hint");
+    var cashHint = hint ? hint.textContent : "";
+    function rupees(paise) {
+      return (Number(paise || 0) / 100).toFixed(2);
+    }
+    function applyQuote() {
+      if (!amount) return;
+      var q = conn && quotes ? quotes[conn.value] : null;
+      var later = mode && mode.value === "collect_later";
+      if (later) return;
+      if (usual > 0) {
+        amount.value = rupees(usual);
+        if (hint) {
+          var plan = (q && q.total) ? ("Plan + GST is ₹" + rupees(q.total) + ". ") : "";
+          hint.textContent = "Usual collect ₹" + rupees(usual) + ". " + plan + "Type 600 or any other amount for this visit.";
+        }
+        return;
+      }
+      if (q && q.total) {
+        amount.value = rupees(q.total);
+        if (q.exclusive && q.gst && hint) {
+          hint.textContent = "Plan ₹" + rupees(q.base) + " + " + q.rate + "% GST ₹" + rupees(q.gst)
+            + " = ₹" + rupees(q.total) + ". Type a different amount if you collect more.";
+        }
+      }
+    }
+    function sync() {
+      var later = mode && mode.value === "collect_later";
+      if (amount) amount.required = !later;
+      if (amountField) amountField.style.display = later ? "none" : "";
+      if (renewRow) renewRow.style.display = later ? "none" : "";
+      if (conn) {
+        var empty = conn.querySelector('option[value=""]');
+        if (empty) empty.textContent = later ? "— pick the connection to renew —" : "— not tied to one connection —";
+        if (later && !conn.value) {
+          var usable = [].filter.call(conn.options, function (o) { return o.value; });
+          if (usable.length === 1) conn.value = usable[0].value;
+        }
+      }
+      if (submit) submit.textContent = later ? "Renew and collect later" : "Save payment";
+      if (hint) {
+        hint.textContent = later
+          ? "They go on Payment follow-up as Renewed, not paid after the renew succeeds. No cash is recorded."
+          : cashHint;
+      }
+      applyQuote();
+    }
+    if (mode) mode.addEventListener("change", sync);
+    if (conn) conn.addEventListener("change", sync);
+    sync();
+  })();
+  </script>
+  {% endif %}
+  </div>
+</details>
+<script>
+(function () {
+  var box = document.getElementById("collect");
+  if (box && location.hash === "#collect") box.open = true;
+})();
+</script>
+{% endif %}
+
+<!-- ------------------------------------------------ Bills / payments / jobs -->
+{# The statement above is the everyday view; these two are for chasing a specific
+   bill's paid/pending state or reprinting a receipt. #}
+<details class="box" id="bills-receipts" open>
+  <summary>Bills and receipts in detail</summary>
+  <div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><h2>Bills</h2></div>
+    {% if bills %}
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Bill</th><th>Period</th><th class="num">Total</th><th class="num">Paid</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for b in bills %}
+        <tr>
+          <td><span class="mono">{{ b.bill_no }}</span>
+            <div class="subtle">{{ b.package_name or "" }} · {{ b.source }}</div></td>
+          <td class="subtle">{{ b.period_start|nice_date }} → {{ b.period_end|nice_date }}</td>
+          <td class="num">₹{{ b.total_paise|rupees }}
+            {% if b.gst_paise %}<div class="subtle">incl. GST ₹{{ b.gst_paise|rupees }}</div>{% endif %}</td>
+          <td class="num">₹{{ b.paid_paise|rupees }}</td>
+          <td>
+            {% if b.status == 'paid' %}<span class="badge badge-ok">paid</span>
+            {% elif b.status == 'partial' %}<span class="badge badge-warn">partial</span>
+            {% elif b.status == 'cancelled' %}<span class="badge">cancelled</span>
+            {% else %}<span class="badge badge-bad">pending</span>{% endif %}
+          </td>
+          <td style="white-space:nowrap">
+            <a class="btn btn-small" href="/bills/{{ b.id }}/print" target="_blank">Print</a>
+            {% if b.status != 'cancelled' and (can('bills') or can('customers_edit')) %}
+            <form class="inline-form" method="post" action="/bills/{{ b.id }}/cancel"
+                  onsubmit="return confirm('Cancel bill {{ b.bill_no }}? The ledger will be rebuilt.')">
+              <input type="hidden" name="next" value="/customers/{{ customer.id }}">
+              <button class="btn btn-small btn-danger" type="submit">Cancel</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}<div class="empty">No bills yet.</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Receipts</h2></div>
+    {% if payments %}
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Receipt</th><th>When</th><th>Mode</th><th class="num">Amount</th><th></th></tr></thead>
+      <tbody>
+      {% for p in payments %}
+        <tr>
+          <td class="mono">{{ p.receipt_no }}</td>
+          <td class="subtle">{{ p.paid_at }}</td>
+          <td>{{ p.mode }}{% if p.reference %}<div class="subtle mono">{{ p.reference }}</div>{% endif %}</td>
+          <td class="num">₹{{ p.amount_paise|rupees }}</td>
+          <td style="white-space:nowrap">
+            <a class="btn btn-small" href="/payments/{{ p.id }}/receipt" target="_blank">Receipt</a>
+            {% if can('payments') or can('customers_edit') %}
+            <form class="inline-form" method="post" action="/payments/{{ p.id }}/delete"
+                  onsubmit="return confirm('Delete receipt {{ p.receipt_no }}? The ledger will be rebuilt.')">
+              <input type="hidden" name="next" value="/customers/{{ customer.id }}">
+              <button class="btn btn-small btn-danger" type="submit">Delete</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}<div class="empty">No receipts recorded.</div>{% endif %}
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="box" id="job-history">
+  <summary>
+    Provider job history
+    {% if jobs %}<span class="subtle" style="font-weight:400"> · {{ jobs|length }}</span>{% endif %}
+  </summary>
+  <div>
+  {% if jobs %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Job</th><th>Action</th><th>Provider id</th><th>Status</th><th>Finished</th><th>Detail</th></tr></thead>
+    <tbody>
+    {% for j in jobs %}
+      <tr>
+        <td><a href="/jobs/{{ j.id }}">#{{ j.id }}</a></td>
+        <td>{{ action_labels.get(j.action, j.action) }}</td>
+        <td class="mono">{{ j.upstream_id or "—" }}</td>
+        <td>
+          {% if j.status == 'done' %}<span class="badge badge-ok">done</span>
+          {% elif j.status == 'failed' %}<span class="badge badge-bad">failed</span>
+          {% elif j.status == 'awaiting_confirm' %}<span class="badge badge-warn">needs approval</span>
+          {% elif j.status == 'awaiting_otp' %}<span class="badge badge-warn">needs OTP</span>
+          {% elif j.status == 'running' %}<span class="badge pill-info">running</span>
+          {% else %}<span class="badge">{{ j.status }}</span>{% endif %}
+        </td>
+        <td class="subtle">{{ j.completed_at or "—" }}</td>
+        <td class="subtle">{{ j.error or "" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<div class="empty">No provider jobs yet.</div>{% endif %}
+  </div>
+</details>
+
+{% if can('customers_edit') %}
+<details class="box">
+  <summary>Edit customer details</summary>
+  <div>
+    <form method="post" action="/customers/{{ customer.id }}/edit">
+      <div class="form-grid">
+        <div class="field"><label>Name *</label><input type="text" name="name" value="{{ customer.name }}" required></div>
+        <div class="field"><label>Customer code</label><input type="text" name="code" value="{{ customer.code or '' }}"></div>
+        <div class="field"><label>Phone</label><input type="text" name="phone" value="{{ customer.phone or '' }}"></div>
+        <div class="field"><label>Alternate phone</label><input type="text" name="alt_phone" value="{{ customer.alt_phone or '' }}"></div>
+        <div class="field"><label>Locality</label><input type="text" name="sub_area" value="{{ customer.sub_area or '' }}"></div>
+        <div class="field"><label>Area</label><input type="text" name="area" value="{{ customer.area or '' }}"></div>
+        <div class="field"><label>Pincode</label><input type="text" name="pincode" value="{{ customer.pincode or '' }}"></div>
+        <div class="field"><label>Email</label><input type="text" name="email" value="{{ customer.email or '' }}"></div>
+        <div class="field">
+          <label>Usual collect (₹)</label>
+          <input type="text" name="collect_amount" inputmode="decimal"
+                 value="{% if usual_collect_paise %}{{ usual_collect_paise|rupees_plain }}{% endif %}"
+                 placeholder="e.g. 600 — blank = plan + GST">
+        </div>
+        <div class="field"><label>Status</label>
+          <select name="status">
+            {% for s in ['active', 'inactive', 'suspended'] %}
+              <option value="{{ s }}" {% if customer.status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Address</label><textarea name="address">{{ customer.address or '' }}</textarea></div>
+      <div class="field"><label>Notes</label><textarea name="notes">{{ customer.notes or '' }}</textarea></div>
+      <button class="btn btn-primary" type="submit">Save customer</button>
+    </form>
+    <form method="post" action="/customers/{{ customer.id }}/delete" style="margin-top:12px"
+          onsubmit="return confirm('Delete this customer with all connections, bills and payments?')">
+      <button class="btn btn-small btn-danger" type="submit">Delete customer</button>
+    </form>
+  </div>
+</details>
+{% endif %}
+
+{# Plan name lists, emitted once and shared by every plan field above. #}
+{% for provider, names in plan_names.items() %}
+  <datalist id="plans-{{ provider }}">
+    {% for name in names %}<option value="{{ name }}"></option>{% endfor %}
+  </datalist>
+{% endfor %}
+{% endblock %}

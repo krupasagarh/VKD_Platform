@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% from "_list_tools.html" import table_tools %}
+{% set active = "jobs" %}
+{% block title %}Provider jobs · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Provider jobs</h1>
+    <div class="subtle">
+      Everything that touches Railtel, Hathway, ANT IPTV, or SmartPlay OTT runs here, one at a time.
+    </div>
+    {% if settings.upstream_mode != 'live' %}
+    <div class="flash flash-warn" style="margin-top:10px">
+      <strong>Simulate mode.</strong> No portal is contacted and no provider wallet is spent.
+      A job marked <span class="badge badge-warn">simulated</span> reported success without
+      ever opening Railtel or Hathway, so its expiry date came from the plan's validity
+      rather than the portal. Set <span class="mono">VK_PLATFORM_UPSTREAM_MODE=live</span>
+      in <span class="mono">.env</span> and restart to run these for real.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/jobs" class="{% if not status %}on{% endif %}">All</a>
+  <a href="/jobs?status=awaiting_otp" class="{% if status == 'awaiting_otp' %}on{% endif %}">
+    Needs OTP{% if stats.jobs_otp %} ({{ stats.jobs_otp }}){% endif %}</a>
+  <a href="/jobs?status=awaiting_confirm" class="{% if status == 'awaiting_confirm' %}on{% endif %}">
+    Needs approval{% if stats.jobs_awaiting %} ({{ stats.jobs_awaiting }}){% endif %}</a>
+  <a href="/jobs?status=open" class="{% if status == 'open' %}on{% endif %}">Open</a>
+  <a href="/jobs?status=failed" class="{% if status == 'failed' %}on{% endif %}">
+    Failed{% if stats.jobs_failed %} ({{ stats.jobs_failed }}){% endif %}</a>
+  <a href="/jobs?status=done" class="{% if status == 'done' %}on{% endif %}">Done</a>
+</div>
+
+<div class="card">
+{% if rows %}
+{{ table_tools(export_href, rows|length) }}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Job</th><th>Customer</th><th>Provider</th><th>Action</th><th>Provider id</th>
+        <th>Status</th><th>Bill</th><th>Detail</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for j in rows %}
+    <tr>
+      <td><a href="/jobs/{{ j.id }}">#{{ j.id }}</a>
+        <div class="subtle">{{ j.created_at }}</div></td>
+      <td>
+        {% if j.customer_id %}
+          <a href="/customers/{{ j.customer_id }}">{{ j.customer_name }}</a>
+          {% if j.customer_code %}<div class="subtle">{{ j.customer_code }}</div>{% endif %}
+        {% else %}
+          <span class="badge">dealer account</span>
+        {% endif %}
+      </td>
+      <td>{{ provider_labels.get(j.provider, j.provider) }}</td>
+      <td>{{ action_labels.get(j.action, j.action) }}</td>
+      <td class="mono">{{ j.upstream_id or "—" }}</td>
+      <td>
+        {% if j.status == 'done' %}<span class="badge badge-ok">done</span>
+        {% elif j.status == 'failed' %}<span class="badge badge-bad">failed</span>
+        {% elif j.status == 'awaiting_confirm' %}<span class="badge badge-warn">needs approval</span>
+        {% elif j.status == 'awaiting_otp' %}<span class="badge badge-warn">needs OTP</span>
+        {% elif j.status == 'running' %}<span class="badge pill-info">running</span>
+        {% elif j.status == 'queued' %}<span class="badge pill-info">queued</span>
+        {% else %}<span class="badge">{{ j.status }}</span>{% endif %}
+        {% if j.result_json|was_simulated %}
+          <div><span class="badge badge-warn">simulated</span></div>
+        {% endif %}
+        {% if j.attempts %}<div class="subtle">try {{ j.attempts }}/{{ j.max_attempts }}</div>{% endif %}
+      </td>
+      <td>{% if j.bill_no %}<span class="mono">{{ j.bill_no }}</span>
+        <div class="subtle">₹{{ j.bill_total_paise|rupees }}</div>{% else %}—{% endif %}</td>
+      <td class="subtle" style="max-width:280px">{{ j.error or "" }}</td>
+      <td style="white-space:nowrap">
+        {% if j.status == 'awaiting_otp' %}
+          {% set want_phone = '10-digit' in (j.error or '') %}
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/otp">
+            <input type="hidden" name="next" value="/jobs">
+            <input type="text" name="otp" inputmode="numeric"
+                   maxlength="{{ 10 if want_phone else 6 }}"
+                   pattern="{{ '[0-9]{10}' if want_phone else '[0-9]{6}' }}"
+                   placeholder="{{ 'phone' if want_phone else 'OTP' }}" required style="width:7.5rem">
+            <button class="btn btn-small btn-ok" type="submit">Submit</button>
+          </form>
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/cancel">
+            <button class="btn btn-small btn-danger" type="submit">Cancel</button>
+          </form>
+        {% elif j.status == 'awaiting_confirm' %}
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/confirm">
+            <button class="btn btn-small btn-ok" type="submit">Confirm</button>
+          </form>
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/cancel">
+            <button class="btn btn-small btn-danger" type="submit">Cancel</button>
+          </form>
+        {% elif j.status == 'queued' %}
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/cancel">
+            <button class="btn btn-small btn-danger" type="submit">Cancel</button>
+          </form>
+        {% elif j.status in ('failed', 'cancelled') %}
+          <form class="inline-form" method="post" action="/jobs/{{ j.id }}/retry">
+            <button class="btn btn-small" type="submit">Retry</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+  <div class="empty">No jobs to show.</div>
+{% endif %}
+</div>
+{% endblock %}

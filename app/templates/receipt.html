@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Receipt {{ payment.receipt_no }}</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="no-print">
+  <button class="btn btn-primary" onclick="window.print()">Print</button>
+  <a class="btn" href="/customers/{{ payment.customer_id }}">Back to customer</a>
+  <form class="inline-form" method="post" action="/payments/{{ payment.id }}/delete"
+        onsubmit="return confirm('Delete receipt {{ payment.receipt_no }}? The ledger will be rebuilt.')">
+    <button class="btn btn-danger" type="submit">Delete payment</button>
+  </form>
+</div>
+
+<div class="receipt">
+  <div style="display:flex; align-items:flex-start; gap:16px">
+    <div>
+      <h1 style="margin:0">{{ settings.operator }}</h1>
+      <div style="color:#666; font-size:13px">Cable TV &amp; Broadband · Tiptur</div>
+    </div>
+    <div style="margin-left:auto; text-align:right">
+      <div style="font-weight:700">PAYMENT RECEIPT</div>
+      <div style="font-size:13px; color:#666">{{ payment.receipt_no }}</div>
+      <div style="font-size:13px; color:#666">{{ payment.paid_at }}</div>
+    </div>
+  </div>
+
+  <hr style="border:none; border-top:1px solid #ddd; margin:18px 0">
+
+  <table style="margin-bottom:18px">
+    <tbody>
+      <tr><th style="width:35%">Received from</th>
+          <td><strong>{{ payment.customer_name }}</strong>
+            {% if payment.customer_code %} ({{ payment.customer_code }}){% endif %}</td></tr>
+      {% if payment.phone %}<tr><th>Phone</th><td>{{ payment.phone }}</td></tr>{% endif %}
+      {% if payment.address %}<tr><th>Address</th><td>{{ payment.address }}</td></tr>{% endif %}
+      <tr><th>Mode</th><td>{{ payment.mode }}{% if payment.reference %} · {{ payment.reference }}{% endif %}</td></tr>
+      {% if payment.notes %}<tr><th>Note</th><td>{{ payment.notes }}</td></tr>{% endif %}
+      <tr><th>Collected by</th><td>{{ payment.collected_by or settings.operator }}</td></tr>
+    </tbody>
+  </table>
+
+  {% if allocations %}
+  <div style="font-weight:600; margin-bottom:6px">Applied to</div>
+  <table style="margin-bottom:18px">
+    <thead><tr><th>Bill</th><th>Period</th><th>Plan</th><th style="text-align:right">Applied</th></tr></thead>
+    <tbody>
+    {% for a in allocations %}
+      <tr>
+        <td>{{ a.bill_no }}</td>
+        <td>{{ a.period_start|nice_date }} → {{ a.period_end|nice_date }}</td>
+        <td>{{ a.package_name or "—" }}
+            {% if a.notes %}<div style="color:#666; font-size:12px">{{ a.notes }}</div>{% endif %}</td>
+        <td style="text-align:right">₹{{ a.amount_paise|rupees }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <table>
+    <tbody>
+      <tr><th style="width:65%">Amount received</th>
+          <td class="total" style="text-align:right">₹{{ payment.amount_paise|rupees }}</td></tr>
+      <tr><th>Balance outstanding after this payment</th>
+          <td style="text-align:right">₹{{ ledger.net_due_paise|rupees }}</td></tr>
+    </tbody>
+  </table>
+
+  <p style="color:#666; font-size:12px; margin-top:22px">
+    Computer generated receipt. Please retain for your records.
+  </p>
+</div>
+</body>
+</html>

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% from "_list_tools.html" import table_tools, late_badge %}
+{% set active = "customers" %}
+{% block title %}Customers · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Customers</h1>
+    <div class="subtle">
+      {{ result.total }} matching · page {{ result.page }} of {{ result.pages }}
+      {% if view == 'hathway_live' %} · live on Hathway (active STB){% endif %}
+      {% if view == 'hathway' %} · any mapped Hathway STB{% endif %}
+      {% if view == 'iptv_live' %} · active ANT IPTV{% endif %}
+      {% if view == 'iptv' %} · any ANT IPTV connection{% endif %}
+      {% if view == 'ott_live' %} · active SmartPlay OTT{% endif %}
+      {% if view == 'ott' %} · any SmartPlay OTT connection{% endif %}
+      {% if view == 'followup' %} · on the payment follow-up list{% endif %}
+      {% if sort == 'late' %}
+        · sorted by lateness{% if late_days %} · {{ late_days }}d late first{% endif %}
+        <a class="subtle" href="/customers?{{ filter_q }}&view={{ view }}">clear sort</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="spacer"></div>
+  {% if can('customers_edit') %}
+  <a class="btn btn-primary" href="/customers/new">+ New customer</a>
+  {% endif %}
+</div>
+
+<div class="tabs">
+  <a href="/customers{% if filter_q %}?{{ filter_q }}{% endif %}" class="{% if not view %}on{% endif %}">All</a>
+  <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=due" class="{% if view == 'due' %}on{% endif %}">Has dues</a>
+  <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=expiring" class="{% if view == 'expiring' %}on{% endif %}">Expiring soon</a>
+  <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=expired" class="{% if view == 'expired' %}on{% endif %}">Expired</a>
+  <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=hathway_live" class="{% if view == 'hathway_live' %}on{% endif %}">Hathway live</a>
+  <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=hathway" class="{% if view == 'hathway' %}on{% endif %}">Hathway all</a>
+  <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=iptv_live" class="{% if view == 'iptv_live' %}on{% endif %}">IPTV live</a>
+  <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=iptv" class="{% if view == 'iptv' %}on{% endif %}">IPTV all</a>
+  <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=ott_live" class="{% if view == 'ott_live' %}on{% endif %}">OTT live</a>
+  <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=ott" class="{% if view == 'ott' %}on{% endif %}">OTT all</a>
+  <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=followup" class="{% if view == 'followup' %}on{% endif %}">Payment follow-up</a>
+</div>
+
+<form class="filters" method="get" action="/customers">
+  <input type="hidden" name="view" value="{{ view }}">
+  {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+  {% if late_days %}<input type="hidden" name="late_days" value="{{ late_days }}">{% endif %}
+  <div class="field" style="min-width:240px">
+    <label>Search</label>
+    <input type="search" name="q" value="{{ q }}" placeholder="Name, phone, STB, Railtel id, IPTV, OTT">
+  </div>
+  <div class="field">
+    <label>Provider</label>
+    <select name="provider">
+      <option value="">Any</option>
+      {% for p in providers %}
+        <option value="{{ p }}" {% if provider == p %}selected{% endif %}>{{ provider_labels.get(p, p) }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label>Area</label>
+    <select name="area">
+      <option value="">Any</option>
+      <option value="{{ none_area }}" {% if area == none_area %}selected{% endif %}>No area set</option>
+      {% for a in areas %}
+        <option value="{{ a }}" {% if area|lower == a|lower %}selected{% endif %}>{{ a }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label>Status</label>
+    <select name="status">
+      <option value="">Any</option>
+      {% for s in ['active', 'inactive', 'suspended'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn" type="submit">Apply</button>
+  {% if q or provider or status or area or view %}<a class="btn" href="/customers">Clear</a>{% endif %}
+</form>
+
+<div class="card">
+{% if result.rows %}
+{{ table_tools(export_href, result.total) }}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Customer</th><th>Phone</th><th>Area</th><th>Connections</th>
+      <th><a class="sort-link" href="/customers?{{ list_qs }}&sort=late" title="Sort by days late">Next expiry</a></th><th class="num">Outstanding</th>
+      {% if view == 'expired' or view == 'followup' %}<th></th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+  {% for c in result.rows %}
+    {% set left = c.next_expiry|days_until %}
+    <tr>
+      <td>
+        <a href="/customers/{{ c.id }}"><strong>{{ c.name }}</strong></a>
+        {% if c.code %}<span class="badge">{{ c.code }}</span>{% endif %}
+        {% if c.status != 'active' %}<span class="badge badge-warn">{{ c.status }}</span>{% endif %}
+        {% if c.lat and c.lng %}
+          <a class="badge" href="https://www.google.com/maps/dir/?api=1&destination={{ c.lat }},{{ c.lng }}"
+             target="_blank" rel="noopener" title="Open house in Google Maps">Maps</a>
+        {% endif %}
+      </td>
+      <td class="mono">{{ c.phone or "—" }}</td>
+      <td>{{ c.sub_area or c.area or "—" }}</td>
+      <td>
+        {{ c.active_count }}/{{ c.connection_count }}
+        {% if c.providers %}
+          <div class="subtle">
+            {% for p in c.providers.split(',') %}{{ provider_labels.get(p.strip(), p) }}{% if not loop.last %} + {% endif %}{% endfor %}
+          </div>
+        {% endif %}
+      </td>
+      <td>
+        {{ c.next_expiry|nice_date }}
+        {{ late_badge(left, "/customers", list_qs) }}
+      </td>
+      <td class="num">
+        {% if c.outstanding_paise > 0 %}
+          <strong style="color:var(--bad)">₹{{ c.outstanding_paise|rupees }}</strong>
+        {% else %}<span class="subtle">—</span>{% endif %}
+      </td>
+      {% if view == 'expired' %}
+      <td style="white-space:nowrap">
+        {% set wa = whatsapp_expired_url(c.name, c.phone, provider or c.providers) %}
+        {% if wa %}
+        <a class="btn btn-small btn-wa" href="{{ wa }}" target="_blank" rel="noopener"
+           title="Send expiry reminder on WhatsApp">WhatsApp</a>
+        {% else %}<span class="subtle">—</span>{% endif %}
+      </td>
+      {% elif view == 'followup' %}
+      <td style="white-space:nowrap">
+        {% set wa = whatsapp_renew_followup_url(c.name, c.phone, provider, c.providers) %}
+        {% if wa %}
+        <a class="btn btn-small btn-wa" href="{{ wa }}" target="_blank" rel="noopener"
+           title="Send renewed — please pay reminder">WhatsApp</a>
+        {% else %}<span class="subtle">—</span>{% endif %}
+      </td>
+      {% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if result.pages > 1 %}
+<div class="form-row" style="margin-top:14px">
+  {% set base = '/customers?' ~ filter_q ~ ('&' if filter_q else '') ~ 'view=' ~ view ~ (('&sort=' ~ sort) if sort else '') ~ (('&late_days=' ~ late_days) if late_days else '') %}
+  {% if result.page > 1 %}<a class="btn btn-small" href="{{ base }}&page={{ result.page - 1 }}">← Previous</a>{% endif %}
+  <span class="subtle">Page {{ result.page }} of {{ result.pages }}</span>
+  {% if result.page < result.pages %}<a class="btn btn-small" href="{{ base }}&page={{ result.page + 1 }}">Next →</a>{% endif %}
+</div>
+{% endif %}
+
+{% else %}
+  <div class="empty">No customers match.{% if can('customers_edit') %} <a href="/customers/new">Add one</a>.{% endif %}</div>
+{% endif %}
+</div>
+{% endblock %}

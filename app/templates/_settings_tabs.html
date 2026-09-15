@@ -1,0 +1,9 @@
+<div class="tabs">
+  {% if can('agents') %}
+  <a href="/settings/agents" class="{% if settings_tab == 'agents' %}on{% endif %}">Agents</a>
+  {% endif %}
+  {% if can('bix_sync') %}
+  <a href="/settings/bix" class="{% if settings_tab == 'bix' %}on{% endif %}">Bix update</a>
+  <a href="/settings/bix-history" class="{% if settings_tab == 'bix_history' %}on{% endif %}">Bix history</a>
+  {% endif %}
+</div>

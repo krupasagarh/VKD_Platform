@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en"{% if nav and (nav.jobs_otp or nav.jobs_iptv_pending or nav.jobs_running) %} data-poll-jobs="1"{% endif %}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}VK Platform{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="icon" href="/static/favicon.svg">
+</head>
+<body>
+<header class="topbar">
+  <button class="menu-toggle" onclick="document.body.classList.toggle('nav-open')" aria-label="Menu">☰</button>
+  <a class="brand" href="/" aria-label="VK Digital">
+    <img src="/static/logo.svg" alt="VK Digital" width="36" height="36">
+  </a>
+  <form class="topbar-search" action="/customers" method="get">
+    <input type="search" name="q" placeholder="Search name, phone, STB, Railtel id, IPTV…" value="{{ q|default('') }}">
+  </form>
+  <div class="topbar-right">
+    {% if current_agent %}
+      <span class="subtle">{{ current_agent.name }}</span>
+    {% endif %}
+    {% if settings.upstream_mode != 'live' %}
+      <span class="pill pill-warn" title="Provider portals are not contacted in simulate mode">SIMULATE</span>
+    {% else %}
+      <span class="pill pill-live" title="Actions run on the real provider portals">LIVE</span>
+    {% endif %}
+    <a class="btn btn-small" href="/logout">Sign out</a>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="sidebar">
+    <a href="/" class="{% if active == 'dashboard' %}on{% endif %}">Dashboard</a>
+    {% if can('customers_view') or can('payments') %}
+    <a href="/customers" class="{% if active == 'customers' %}on{% endif %}">Customers</a>
+    <a href="/stbs" class="{% if active == 'stbs' %}on{% endif %}">Hathway STBs</a>
+    <a href="/iptv" class="{% if active == 'iptv' %}on{% endif %}">ANT IPTV</a>
+    <a href="/ott" class="{% if active == 'ott' %}on{% endif %}">SmartPlay OTT</a>
+    {% endif %}
+    {% if can('portal_actions') %}
+    <a href="/jobs" class="{% if active == 'jobs' %}on{% endif %}">
+      Provider jobs
+      {% if nav.jobs_running %}<span class="badge badge-warn">{{ nav.jobs_running }} live</span>{% endif %}
+      {% if nav.jobs_otp %}<span class="badge badge-warn">OTP {{ nav.jobs_otp }}</span>{% endif %}
+      {% if nav.jobs_awaiting %}<span class="badge badge-warn">{{ nav.jobs_awaiting }}</span>{% endif %}
+      {% if nav.jobs_failed %}<span class="badge badge-bad">{{ nav.jobs_failed }}</span>{% endif %}
+    </a>
+    {% endif %}
+    {% if can('providers') %}
+    <a href="/providers" class="{% if active == 'providers' %}on{% endif %}">Providers</a>
+    {% endif %}
+    {% if can('bills') %}
+    <a href="/bills" class="{% if active == 'bills' %}on{% endif %}">Bills</a>
+    {% endif %}
+    {% if can('payments') %}
+    <a href="/payments" class="{% if active == 'payments' %}on{% endif %}">
+      Payments
+      {% if nav.followups %}<span class="badge badge-warn">{{ nav.followups }}</span>{% endif %}
+    </a>
+    {% endif %}
+    {% if can('payments') or can('complaints') or can('agents') %}
+    <a href="/field" class="{% if active == 'field' %}on{% endif %}">Field agents</a>
+    {% endif %}
+    {% if can('complaints') %}
+    <a href="/complaints" class="{% if active == 'complaints' %}on{% endif %}">
+      Complaints
+      {% if nav.complaints_open %}<span class="badge badge-warn">{{ nav.complaints_open }}</span>{% endif %}
+    </a>
+    {% endif %}
+    {% if can('packages') %}
+    <a href="/packages" class="{% if active == 'packages' %}on{% endif %}">Plans</a>
+    {% endif %}
+    {% if can('activity') %}
+    <a href="/activity" class="{% if active == 'activity' %}on{% endif %}">Activity</a>
+    {% endif %}
+    {% if can('agents') or can('bix_sync') %}
+    <a href="/settings" class="{% if active == 'settings' %}on{% endif %}">Settings</a>
+    {% endif %}
+    <div class="sidebar-foot">
+      {% if can('customers_edit') %}
+      <a class="btn btn-primary btn-block" href="/customers/new">+ New customer</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <main class="content">
+    {% if flash %}
+      <div class="flash flash-{{ flash_level }}">{{ flash }}</div>
+    {% endif %}
+    {% if iptv_progress and can('portal_actions') %}
+    <div class="flash flash-warn">
+      {% for j in iptv_progress %}
+      <div>
+        ANT {{ action_labels.get(j.action, j.action) }} job #{{ j.id }}
+        is {{ j.status }}{% if j.customer_name %} · {{ j.customer_name }}{% endif %}.
+        {% if j.error %}<div class="subtle">{{ j.error }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if otp_jobs and can('portal_actions') %}
+    <div class="flash flash-warn otp-banner">
+      {% for j in otp_jobs %}
+      {% set want_phone = '10-digit' in (j.error or '') %}
+      <form method="post" action="/jobs/{{ j.id }}/otp">
+        <input type="hidden" name="next" value="{{ request.url.path }}">
+        <div>
+          <strong>{% if want_phone %}ANT login phone{% else %}ANT WhatsApp OTP{% endif %}</strong>
+          for {{ action_labels.get(j.action, j.action) }}
+          {% if j.customer_name %}· {{ j.customer_name }}{% endif %}
+          {% if j.upstream_id %}<span class="mono">{{ j.upstream_id }}</span>{% endif %}
+          <span class="subtle">job #{{ j.id }}</span>
+          {% if j.error %}<div class="subtle">{{ j.error }}</div>{% endif %}
+        </div>
+        <input type="text" name="otp" inputmode="numeric" autocomplete="one-time-code"
+               maxlength="{{ 10 if want_phone else 6 }}"
+               pattern="{{ '[0-9]{10}' if want_phone else '[0-9]{6}' }}"
+               placeholder="{{ '10-digit phone' if want_phone else '000000' }}" required>
+        <button class="btn btn-ok" type="submit">{% if want_phone %}Save &amp; send OTP{% else %}Submit OTP{% endif %}</button>
+        <button class="btn btn-danger" type="submit" form="otp-cancel-{{ j.id }}">Cancel</button>
+      </form>
+      <form id="otp-cancel-{{ j.id }}" method="post" action="/jobs/{{ j.id }}/cancel"></form>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if running_jobs and can('portal_actions') %}
+    <div class="flash flash-warn">
+      <strong>Portal busy</strong> —
+      {% for j in running_jobs %}
+        job #{{ j.id }}: {{ action_labels.get(j.action, j.action) }}
+        {% if j.upstream_id %}<span class="mono">{{ j.upstream_id }}</span>{% elif j.customer_name %}{{ j.customer_name }}{% endif %}
+        {% if not loop.last %} · {% endif %}
+      {% endfor %}
+      {% if nav.jobs_queued %}
+        · {{ nav.jobs_queued }} more queued (run one at a time).
+      {% else %}
+        · only one portal login runs at a time.
+      {% endif %}
+      Browsing customers is fine; new jobs wait in the queue.
+      <a href="/jobs">View jobs</a>
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+<script src="/static/field.js"></script>
+<script>
+(function () {
+  var poll = document.documentElement.getAttribute("data-poll-jobs") === "1";
+  var box = document.querySelector(".otp-banner input[name=otp]");
+  if (!poll && !box) return;
+  setTimeout(function () {
+    if (box && (document.activeElement === box || (box.value || "").length)) return;
+    location.reload();
+  }, box ? 8000 : 4000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{% macro table_tools(export_href, total=none) %}
+<div class="table-tools">
+  {% if total is not none %}<span class="subtle">{{ total }} row(s)</span>{% endif %}
+  {% if export_href %}<a class="btn btn-small" href="{{ export_href }}">Download CSV</a>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro late_badge(left, base_path, list_qs) %}
+  {% if left is not none and left < 0 %}
+    <a href="{{ base_path }}{% if list_qs %}?{{ list_qs }}&{% else %}?{% endif %}sort=late&late_days={{ -left }}"
+       class="badge badge-bad badge-link" title="Show all {{ -left }}d late on top">{{ -left }}d late</a>
+  {% elif left is not none and left <= 7 %}
+    <span class="badge badge-warn">in {{ left }}d</span>
+  {% endif %}
+{% endmacro %}
