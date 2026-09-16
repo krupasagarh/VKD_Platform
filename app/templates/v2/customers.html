@@ -1,0 +1,63 @@
+{% extends "v2/base.html" %}
+{% from "v2/_icons.html" import icon_clock %}
+{% from "v2/_feed_card.html" import feed_card %}
+{% set active = "customers" %}
+{% block title %}Customers · VK Digital{% endblock %}
+
+{% block header %}
+<header class="v2-header">
+  <div class="v2-header-top">
+    <a class="v2-back" href="/v2/" aria-label="Back">←</a>
+    <div class="v2-header-main">
+      <div class="v2-route">Customers</div>
+      <div class="v2-subline">{{ result.total }} matching · page {{ result.page }} of {{ result.pages }}</div>
+    </div>
+  </div>
+  {% if can('customers_edit') %}
+  <div class="v2-header-actions">
+    <a class="v2-pill-btn" href="/customers/new">+ New customer</a>
+  </div>
+  {% endif %}
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="v2-chips">
+  <a href="/v2/customers{% if q %}?q={{ q|urlencode }}{% endif %}" class="v2-chip {% if not view %}on{% endif %}">All</a>
+  <a href="/v2/customers?view=due{% if q %}&q={{ q|urlencode }}{% endif %}" class="v2-chip {% if view == 'due' %}on{% endif %}">Has dues</a>
+  <a href="/v2/customers?view=expiring{% if q %}&q={{ q|urlencode }}{% endif %}" class="v2-chip {% if view == 'expiring' %}on{% endif %}">Expiring</a>
+  <a href="/v2/customers?view=expired{% if q %}&q={{ q|urlencode }}{% endif %}" class="v2-chip {% if view == 'expired' %}on{% endif %}">Expired</a>
+  <a href="/v2/customers?view=followup{% if q %}&q={{ q|urlencode }}{% endif %}" class="v2-chip {% if view == 'followup' %}on{% endif %}">Follow-up</a>
+</div>
+
+<form class="v2-search-bar" method="get" action="/v2/customers">
+  {% if view %}<input type="hidden" name="view" value="{{ view }}">{% endif %}
+  <input type="search" name="q" value="{{ q }}" placeholder="Search name, phone, STB, Railtel id…" autocomplete="off">
+</form>
+
+{% if result.rows %}
+<div class="v2-feed">
+  {% for c in result.rows %}
+    {{ feed_card(c, provider_labels, can) }}
+  {% endfor %}
+</div>
+
+{% if result.pages > 1 %}
+<div style="display:flex;justify-content:center;gap:12px;padding:8px 14px 20px">
+  {% set base = '/v2/customers?' ~ ('view=' ~ view ~ '&' if view else '') ~ ('q=' ~ q|urlencode ~ '&' if q else '') %}
+  {% if result.page > 1 %}<a class="v2-pill-btn" href="{{ base }}page={{ result.page - 1 }}">← Prev</a>{% endif %}
+  <span style="align-self:center;color:var(--text-muted);font-size:13px">{{ result.page }} / {{ result.pages }}</span>
+  {% if result.page < result.pages %}<a class="v2-pill-btn" href="{{ base }}page={{ result.page + 1 }}">Next →</a>{% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="v2-empty">
+  <h2>No customers found</h2>
+  <p>Try a different search or filter.</p>
+  {% if can('customers_edit') %}
+  <a class="v2-cta" href="/customers/new" style="display:inline-flex;margin-top:16px">Add customer</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

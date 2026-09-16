@@ -232,7 +232,7 @@ def _render(request: Request, template: str, **context) -> HTMLResponse:
     context["current_agent"] = agent
     context["can"] = lambda perm: auth.can(agent, perm)
     context["request"] = request
-    return _templates().TemplateResponse(template, context)
+    return _templates().TemplateResponse(request, template, context)
 
 
 # --------------------------------------------------------------------------- #
@@ -244,8 +244,9 @@ async def login_form(request: Request):
     if auth.is_authenticated(request):
         return RedirectResponse("/", status_code=303)
     return _templates().TemplateResponse(
+        request,
         "login.html",
-        {"request": request, "error": "", "next": request.query_params.get("next", "/")},
+        {"error": "", "next": request.query_params.get("next", "/")},
     )
 
 
@@ -260,8 +261,9 @@ async def login_submit(
         agent = auth.authenticate(conn, username, password)
     if agent is None:
         return _templates().TemplateResponse(
+            request,
             "login.html",
-            {"request": request, "error": "Wrong username or password.", "next": next},
+            {"error": "Wrong username or password.", "next": next},
             status_code=401,
         )
     target = next if next.startswith("/") else "/"
@@ -1784,9 +1786,9 @@ async def bill_print(request: Request, bill_id: int):
         connections = repo.customer_connections(conn, int(bill["customer_id"]))
         ledger = billing.customer_ledger(conn, int(bill["customer_id"]))
     return _templates().TemplateResponse(
+        request,
         "bill_print.html",
         {
-            "request": request,
             "bill": bill,
             "connections": connections,
             "ledger": ledger,
@@ -1804,9 +1806,9 @@ async def payment_receipt(request: Request, payment_id: int):
         allocations = repo.payment_allocations(conn, payment_id)
         ledger = billing.customer_ledger(conn, int(payment["customer_id"]))
     return _templates().TemplateResponse(
+        request,
         "receipt.html",
         {
-            "request": request,
             "payment": payment,
             "allocations": allocations,
             "ledger": ledger,

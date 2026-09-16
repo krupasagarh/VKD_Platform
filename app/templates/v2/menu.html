@@ -1,0 +1,81 @@
+{% extends "v2/base.html" %}
+{% set active = "menu" %}
+{% block title %}More · VK Digital{% endblock %}
+
+{% block header %}
+<header class="v2-header">
+  <div class="v2-header-top">
+    <a class="v2-back" href="/v2/" aria-label="Back">←</a>
+    <div class="v2-header-main">
+      <div class="v2-route">More</div>
+      <div class="v2-subline">
+        {% if current_agent %}{{ current_agent.name }}{% endif %}
+        · VK Digital mobile
+      </div>
+    </div>
+    <a class="v2-pill-btn" href="/logout" style="font-size:12px;padding:6px 10px">Sign out</a>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="v2-menu-list">
+  {% if can('payments') %}
+  <a class="v2-menu-item" href="/payments/follow-up">
+    <span>Payment follow-up{% if nav.followups %} ({{ nav.followups }}){% endif %}</span>
+    <span class="sub">Classic view</span>
+  </a>
+  <a class="v2-menu-item" href="/payments">
+    <span>Payments</span>
+    <span class="sub">Today's collections</span>
+  </a>
+  {% endif %}
+  {% if can('bills') %}
+  <a class="v2-menu-item" href="/bills">
+    <span>Bills</span>
+    <span class="sub">Ledger &amp; checker</span>
+  </a>
+  {% endif %}
+  {% if can('portal_actions') %}
+  <a class="v2-menu-item" href="/jobs">
+    <span>Provider jobs</span>
+    <span class="sub">{% if nav.jobs_otp %}OTP needed{% elif nav.jobs_running %}Portal busy{% else %}Queue{% endif %}</span>
+  </a>
+  {% endif %}
+  {% if can('providers') %}
+  <a class="v2-menu-item" href="/providers">
+    <span>Providers</span>
+    <span class="sub">Wallet &amp; sync</span>
+  </a>
+  {% endif %}
+  {% if can('complaints') %}
+  <a class="v2-menu-item" href="/complaints">
+    <span>Complaints</span>
+    <span class="sub">{% if nav.complaints_open %}{{ nav.complaints_open }} open{% else %}All clear{% endif %}</span>
+  </a>
+  {% endif %}
+  {% if can('packages') %}
+  <a class="v2-menu-item" href="/packages">
+    <span>Plans</span>
+    <span class="sub">Packages catalog</span>
+  </a>
+  {% endif %}
+  {% if can('activity') %}
+  <a class="v2-menu-item" href="/activity">
+    <span>Activity log</span>
+  </a>
+  {% endif %}
+  {% if can('agents') or can('bix_sync') %}
+  <a class="v2-menu-item" href="/settings">
+    <span>Settings</span>
+    <span class="sub">Agents &amp; Bix</span>
+  </a>
+  {% endif %}
+  <a class="v2-menu-item" href="/">
+    <span>Full desktop dashboard</span>
+    <span class="sub">All features, tables</span>
+  </a>
+</div>
+
+<a class="v2-classic-link" href="/v2/classic">Use classic UI as default</a>
+{% endblock %}

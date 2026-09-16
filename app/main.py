@@ -153,9 +153,10 @@ def create_app() -> FastAPI:
                 return auth.redirect_forbidden()
         return await call_next(request)
 
-    from .routes import api, pages  # imported here so templates are configured first
+    from .routes import api, pages, pages_v2  # imported here so templates are configured first
 
     app.include_router(pages.router)
+    app.include_router(pages_v2.router)
     app.include_router(api.router)
 
     @app.exception_handler(Exception)

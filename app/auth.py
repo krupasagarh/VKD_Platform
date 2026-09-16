@@ -217,6 +217,9 @@ def is_public_path(path: str) -> bool:
 
 
 def path_permission(path: str) -> str | None:
+    # v2 routes mirror classic paths for permission checks.
+    if path.startswith("/v2/"):
+        path = path[3:] or "/"
     for prefix, perm in PATH_PERMISSIONS:
         if path == prefix or path.startswith(prefix + "/"):
             return perm

@@ -1,0 +1,80 @@
+{% extends "v2/base.html" %}
+{% from "v2/_icons.html" import icon_clock %}
+{% from "v2/_feed_card.html" import feed_card %}
+{% set active = "home" %}
+{% block title %}Today · VK Digital{% endblock %}
+
+{% block header %}
+<header class="v2-header">
+  <div class="v2-header-top">
+    <a class="v2-back" href="/v2/menu" aria-label="Menu">☰</a>
+    <div class="v2-header-main">
+      <div class="v2-route">
+        VK Office <span class="arrow">→</span> Collections
+      </div>
+      <div class="v2-subline">Today, {{ stats.today|nice_date }}</div>
+    </div>
+    {% if current_agent %}
+    <span style="font-size:12px;color:var(--text-muted);max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ current_agent.name }}</span>
+    {% endif %}
+  </div>
+  <div class="v2-header-actions">
+    <a class="v2-pill-btn" href="/payments?from={{ stats.today }}&to={{ stats.today }}">
+      {{ icon_clock() }}
+      Change day
+    </a>
+    {% if settings.upstream_mode != 'live' %}
+    <span class="v2-pill-btn" style="border-color:var(--amber);color:var(--amber)">Simulate</span>
+    {% endif %}
+  </div>
+</header>
+
+<div class="v2-banner">
+  {{ icon_clock() }}
+  While you're out, collect from more customers.
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="v2-stats">
+  <div class="v2-stat good">
+    <div class="label">Collected today</div>
+    <div class="value">₹{{ stats.collected_today_paise|rupees }}</div>
+  </div>
+  <div class="v2-stat {% if stats.followups.due_paise %}warn{% endif %}">
+    <div class="label">Still to collect</div>
+    <div class="value">₹{{ stats.followups.due_paise|rupees }}</div>
+  </div>
+  <div class="v2-stat {% if stats.expired %}bad{% endif %}">
+    <div class="label">Expired</div>
+    <div class="value">{{ stats.expired }}</div>
+  </div>
+  <div class="v2-stat {% if stats.expiring %}warn{% endif %}">
+    <div class="label">Expiring soon</div>
+    <div class="value">{{ stats.expiring }}</div>
+  </div>
+</div>
+
+<div class="v2-chips">
+  <a href="/v2/" class="v2-chip {% if feed == 'followup' %}on{% endif %}">Follow-up{% if stats.followups.count %} ({{ stats.followups.count }}){% endif %}</a>
+  <a href="/v2/?feed=expiring" class="v2-chip {% if feed == 'expiring' %}on{% endif %}">Expiring</a>
+  <a href="/v2/?feed=expired" class="v2-chip {% if feed == 'expired' %}on{% endif %}">Expired</a>
+  <a href="/v2/customers?view=due" class="v2-chip">Has dues</a>
+</div>
+
+{% if items %}
+<div class="v2-feed">
+  {% for item in items %}
+    {{ feed_card(item, provider_labels, can) }}
+  {% endfor %}
+</div>
+{% else %}
+<div class="v2-empty">
+  <h2>All clear for now</h2>
+  <p>No {{ feed }} customers on your list. Try another filter or search customers.</p>
+  <a class="v2-cta" href="/v2/customers" style="display:inline-flex;margin-top:16px">Browse customers</a>
+</div>
+{% endif %}
+
+<a class="v2-classic-link" href="/v2/classic">Switch to classic desktop UI</a>
+{% endblock %}

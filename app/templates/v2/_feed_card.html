@@ -1,0 +1,97 @@
+{% from "v2/_icons.html" import icon_walk, icon_car %}
+{% macro feed_card(item, provider_labels, can) %}
+{% set due = (item.total_paise or 0) - (item.paid_paise or 0) if item.total_paise is defined and item.paid_paise is defined else (item.outstanding_paise or item.package_price_paise or item.amount_paise or 0) %}
+{% if due < 0 %}{% set due = item.outstanding_paise or item.package_price_paise or item.amount_paise or 0 %}{% endif %}
+{% set name = item.customer_name or item.name %}
+{% set initials = (name or "?")[:1]|upper %}
+{% set area = item.sub_area or item.area or "No area" %}
+{% set provider = item.provider or (item.providers or "").split(",")[0]|trim %}
+{% set expiry = item.next_expiry or item.expiry_date %}
+{% set left = expiry|days_until if expiry else none %}
+{% set cid = item.customer_id or item.id %}
+<article class="v2-card">
+  <div class="v2-card-top">
+    <div class="v2-avatar" aria-hidden="true">{{ initials }}</div>
+    <div class="v2-card-info">
+      <h3 class="v2-card-name">{{ name }}</h3>
+      <div class="v2-card-meta">
+        <span class="v2-verified">
+          {{ area }}
+          {% if item.active_count or item.followup_kind or provider %}
+          <span class="check" title="Active">✓</span>
+          {% endif %}
+        </span>
+        {% if provider %}
+        <span>· {{ provider_labels.get(provider, provider) }}</span>
+        {% elif item.providers %}
+        <span>· {{ provider_labels.get(item.providers.split(',')[0]|trim, item.providers.split(',')[0]|trim) }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="v2-card-timing">
+      {% if item.followup_kind == 'manual' %}
+      <div>Added for <strong>follow-up</strong></div>
+      {% elif left is not none and left < 0 %}
+      <div><strong>{{ -left }}d late</strong></div>
+      <div>Expired {{ expiry|nice_date }}</div>
+      {% elif left is not none %}
+      <div>Due in <strong>{{ left }}d</strong></div>
+      <div>{{ expiry|nice_date }}</div>
+      {% else %}
+      <div>Collect <strong>today</strong></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="v2-journey">
+    <div class="v2-leg">
+      <div class="v2-leg-dist">Office</div>
+      <div class="v2-leg-icon">{{ icon_walk() }}</div>
+      <div class="v2-leg-label">Start</div>
+    </div>
+    <div class="v2-dash"></div>
+    <div class="v2-leg">
+      <div class="v2-leg-dist">Drive</div>
+      <div class="v2-leg-icon">{{ icon_car() }}</div>
+      <div class="v2-leg-label">{{ area|truncate(12, True) }}</div>
+    </div>
+    <div class="v2-dash"></div>
+    <div class="v2-leg">
+      <div class="v2-leg-dist">House</div>
+      <div class="v2-leg-icon">{{ icon_walk() }}</div>
+      <div class="v2-leg-label">
+        {% if item.lat and item.lng %}On map{% else %}No pin{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="v2-card-foot">
+    <div class="v2-price">
+      {% if item.package_price_paise and due > 0 and item.package_price_paise < due %}
+      <span class="v2-price-old">₹{{ item.package_price_paise|rupees }}</span>
+      <span class="v2-price-trend">↗</span>
+      {% endif %}
+      <span class="v2-price-new">₹{{ due|rupees }}</span>
+      <a class="v2-info-btn" href="/customers/{{ cid }}" title="Customer details">i</a>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      {% if item.followup_kind and item.followup_kind != 'manual' %}
+        {% set wa = whatsapp_renew_followup_url(name, item.phone, provider, item.providers) %}
+        {% if wa %}
+        <a class="v2-cta wa" href="{{ wa }}" target="_blank" rel="noopener">WhatsApp</a>
+        {% endif %}
+      {% elif left is not none and left < 0 %}
+        {% set wa = whatsapp_expired_url(name, item.phone, provider or item.providers) %}
+        {% if wa %}
+        <a class="v2-cta wa" href="{{ wa }}" target="_blank" rel="noopener">WhatsApp</a>
+        {% endif %}
+      {% endif %}
+      {% if can('payments') %}
+      <a class="v2-cta" href="/customers/{{ cid }}#collect">Collect</a>
+      {% else %}
+      <a class="v2-cta" href="/customers/{{ cid }}">Open</a>
+      {% endif %}
+    </div>
+  </div>
+</article>
+{% endmacro %}
