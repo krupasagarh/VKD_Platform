@@ -267,6 +267,8 @@ async def login_submit(
             status_code=401,
         )
     target = next if next.startswith("/") else "/"
+    if target == "/" and request.cookies.get("vk_ui") == "v2":
+        target = "/v2/"
     response = RedirectResponse(target, status_code=303)
     auth.set_login_cookie(response, agent["id"])
     return response
@@ -285,6 +287,8 @@ async def logout():
 
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
+    if request.cookies.get("vk_ui") == "v2":
+        return RedirectResponse("/v2/", status_code=303)
     with connection() as conn:
         stats = repo.dashboard_stats(conn)
         expiring = repo.expiring_connections(conn, limit=15)
