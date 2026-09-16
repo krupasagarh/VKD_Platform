@@ -168,7 +168,13 @@ def create_app() -> FastAPI:
 
     @app.get("/healthz")
     async def healthz():
-        return {"status": "ok", "upstream_mode": settings.upstream_mode, "build": "2026-09-15b"}
+        return {
+            "status": "ok",
+            "upstream_mode": settings.upstream_mode,
+            "build": "2026-09-16-v2",
+            "mobile_ui": True,
+            "mobile_path": "/v2/",
+        }
 
     @app.get("/favicon.ico")
     async def favicon():

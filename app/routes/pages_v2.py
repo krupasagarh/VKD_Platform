@@ -9,7 +9,7 @@ from ..db import connection
 from ..upstream.providers import PROVIDERS, PROVIDER_LABELS
 from .pages import _render
 
-router = APIRouter(prefix="/v2")
+router = APIRouter(prefix="/v2", redirect_slashes=True)
 
 UI_COOKIE = "vk_ui"
 UI_COOKIE_MAX_AGE = 60 * 60 * 24 * 365

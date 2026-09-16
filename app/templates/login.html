@@ -22,6 +22,11 @@
     </div>
     <input type="hidden" name="next" value="{{ next }}">
     <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+    {% if next and next.startswith('/v2') %}
+    <div class="flash flash-ok" style="margin-top:12px">
+      Sign in to open the <strong>mobile UI</strong>. You will land on the new card layout.
+    </div>
+    {% endif %}
     <div class="subtle" style="margin-top:10px">Owner login is <span class="mono">admin</span> with the platform password.</div>
   </form>
 </div>

@@ -21,6 +21,9 @@ def main() -> None:
     args = parser.parse_args()
 
     print(f"VK Platform on http://{args.host}:{args.port}  (upstream mode: {settings.upstream_mode})")
+    print(f"Mobile UI:  http://{args.host}:{args.port}/v2/  (sign in first)")
+    if args.host in {"127.0.0.1", "localhost"}:
+        print("Tip: use --host 0.0.0.0 so phones on wifi can open http://YOUR-LAN-IP:8800/v2/")
     uvicorn.run("app.main:app", host=args.host, port=args.port, reload=args.reload)
 
 
