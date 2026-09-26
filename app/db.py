@@ -279,6 +279,25 @@ CREATE TABLE IF NOT EXISTS railtel_subscriber_rows (
 CREATE INDEX IF NOT EXISTS idx_railtel_sub_snap ON railtel_subscriber_rows(snapshot_id);
 CREATE INDEX IF NOT EXISTS idx_railtel_sub_user ON railtel_subscriber_rows(username);
 
+-- Downloaded Railtel portal invoices (PDF) and their WhatsApp delivery state.
+CREATE TABLE IF NOT EXISTS railtel_invoices (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id       INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    connection_id     INTEGER REFERENCES connections(id) ON DELETE SET NULL,
+    job_id            INTEGER REFERENCES upstream_jobs(id) ON DELETE SET NULL,
+    upstream_id       TEXT NOT NULL,
+    invoice_no        TEXT NOT NULL DEFAULT '',
+    receipt_date      TEXT NOT NULL DEFAULT '',
+    gross_amount      TEXT NOT NULL DEFAULT '',
+    file_path         TEXT NOT NULL,
+    file_name         TEXT NOT NULL,
+    whatsapp_sent_at  TEXT NOT NULL DEFAULT '',
+    whatsapp_error    TEXT NOT NULL DEFAULT '',
+    created_at        TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_railtel_inv_customer ON railtel_invoices(customer_id);
+CREATE INDEX IF NOT EXISTS idx_railtel_inv_conn ON railtel_invoices(connection_id);
+
 CREATE TABLE IF NOT EXISTS agents (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     name          TEXT NOT NULL,
@@ -782,7 +801,15 @@ def init_db() -> None:
             conn.execute("BEGIN IMMEDIATE")
             try:
                 for statement in MIGRATIONS[version]:
-                    conn.execute(statement)
+                    try:
+                        conn.execute(statement)
+                    except sqlite3.OperationalError as exc:
+                        # The base SCHEMA already represents the latest shape, so a table
+                        # it created up-front can make an "ADD COLUMN" migration find the
+                        # column already present. Skipping that is safe and idempotent.
+                        if "duplicate column name" in str(exc).lower():
+                            continue
+                        raise
                 set_setting(conn, "schema_version", str(version))
                 conn.execute("COMMIT")
             except Exception:
