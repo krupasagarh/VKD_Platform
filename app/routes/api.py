@@ -40,18 +40,27 @@ def _money(row: dict, *keys: str) -> dict:
 # --------------------------------------------------------------------------- #
 
 @router.get("/stats")
-async def api_stats():
+async def api_stats(request: Request):
+    collector_id = auth.collector_id_for(getattr(request.state, "agent", None))
     with connection() as conn:
-        stats = repo.dashboard_stats(conn)
+        stats = repo.dashboard_stats(conn, collector_id=collector_id)
     stats["by_provider"] = _rows(stats["by_provider"])
     return _money(stats, "outstanding_paise", "collected_today_paise", "collected_month_paise")
 
 
 @router.get("/customers")
-async def api_customers(q: str = "", provider: str = "", view: str = "", area: str = "", page: int = 1):
+async def api_customers(request: Request, q: str = "", provider: str = "", view: str = "", area: str = "", page: int = 1):
+    agent = getattr(request.state, "agent", None)
     with connection() as conn:
         result = repo.search_customers(
-            conn, query=q, provider=provider, area=area, view=view, page=page
+            conn,
+            query=q,
+            provider=provider,
+            area=area,
+            view=view,
+            page=page,
+            agent_scope=auth.agent_provider_scope(agent) or "",
+            hide_owner=bool(auth.collector_id_for(agent)),
         )
     return {
         "total": result["total"],
@@ -62,11 +71,14 @@ async def api_customers(q: str = "", provider: str = "", view: str = "", area: s
 
 
 @router.get("/customers/{customer_id}")
-async def api_customer(customer_id: int):
+async def api_customer(request: Request, customer_id: int):
+    agent = getattr(request.state, "agent", None)
     with connection() as conn:
         customer = repo.get_customer(conn, customer_id)
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer not found")
+        if not auth.customer_accessible(conn, agent, customer):
+            raise HTTPException(status_code=403, detail="Customer outside access")
         payload = {
             "customer": _money(dict(customer), "outstanding_paise", "collected_paise"),
             "ledger": _money(billing.customer_ledger(conn, customer_id),
@@ -87,15 +99,17 @@ async def api_lookup(q: str):
     if not text:
         raise HTTPException(status_code=400, detail="q is required")
     like = f"%{text}%"
+    phone_conds, phone_params = repo.phone_search_or_columns(["c.phone", "c.alt_phone"], text)
+    phone_part = "(" + " OR ".join(phone_conds) + ")" if phone_conds else "0"
     with connection() as conn:
         rows = conn.execute(
             "SELECT cn.*, c.name AS customer_name, c.code AS customer_code, c.phone, "
             "       p.name AS package_name, p.price_paise AS package_price_paise "
             "FROM connections cn JOIN customers c ON c.id = cn.customer_id "
             "LEFT JOIN packages p ON p.id = cn.package_id "
-            "WHERE cn.upstream_id LIKE ? OR cn.card_number LIKE ? OR c.phone LIKE ? "
+            f"WHERE cn.upstream_id LIKE ? OR cn.card_number LIKE ? OR {phone_part} "
             "   OR c.name LIKE ? OR c.code LIKE ? LIMIT 25",
-            (like, like, like, like, like),
+            [like, like, *phone_params, like, like],
         ).fetchall()
     return {"matches": _rows(rows)}
 
@@ -127,6 +141,7 @@ class PaymentIn(BaseModel):
     paid_at: str | None = None
     renew: bool = False
     auto_confirm: bool = False
+    whatsapp: bool = False
 
 
 @router.post("/customers/{customer_id}/payments")
@@ -172,11 +187,38 @@ async def api_record_payment(request: Request, customer_id: int, body: PaymentIn
                 raise HTTPException(status_code=400, detail=str(exc)) from exc
         ledger = billing.customer_ledger(conn, customer_id)
 
+    wa_url = None
+    if body.whatsapp:
+        if not auth.can(agent, "customer_whatsapp"):
+            raise HTTPException(status_code=403, detail="WhatsApp not allowed")
+        from ..messaging import payment_received_whatsapp_url
+
+        with connection() as conn:
+            cust = repo.get_customer(conn, customer_id)
+            provider = None
+            if body.connection_id:
+                cn = conn.execute(
+                    "SELECT provider FROM connections WHERE id = ? AND customer_id = ?",
+                    (body.connection_id, customer_id),
+                ).fetchone()
+                provider = cn["provider"] if cn else None
+        if cust is not None:
+            wa_url = payment_received_whatsapp_url(
+                cust["name"],
+                cust["phone"],
+                provider,
+                providers_csv=None if provider else (cust["providers"] or None),
+                amount_paise=to_paise(body.amount),
+                remaining_paise=int(ledger["net_due_paise"] or 0),
+                renew_queued=bool(job_id),
+            )
+
     return {
         "payment_id": payment_id,
         "receipt_no": receipt,
         "job_id": job_id,
         "ledger": _money(ledger, "outstanding_paise", "credit_paise", "net_due_paise"),
+        "whatsapp_url": wa_url,
     }
 
 

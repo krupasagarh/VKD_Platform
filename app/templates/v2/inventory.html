@@ -1,0 +1,168 @@
+{% extends "v2/base.html" %}
+{% set active = "menu" %}
+{% block title %}Inventory · VK Digital{% endblock %}
+
+{% block header %}
+<header class="v2-header">
+  <div class="v2-header-top">
+    <a class="v2-back" href="/v2/menu" aria-label="Back">←</a>
+    <div class="v2-header-main">
+      <div class="v2-route">Inventory</div>
+      <div class="v2-subline">On hand · log used items</div>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<p class="v2-page-note">
+  Rough field stock. Reduce the count when you use something.
+  {% if can_receive %}Admin records an order when it arrives.{% endif %}
+</p>
+
+{% if can_receive %}
+<details class="v2-inv-receive">
+  <summary>Stock received (order)</summary>
+  <form method="post" action="/inventory/receive" class="v2-inv-form">
+    <div class="v2-inv-field">
+      <label>Item</label>
+      <select name="item_id" required>
+        <option value="">Choose…</option>
+        {% for item in items %}
+        <option value="{{ item.id }}">{{ item.name }} ({{ item.on_hand_label }} on hand)</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="v2-inv-grid">
+      <div class="v2-inv-field">
+        <label>Quantity</label>
+        <input type="text" name="qty" inputmode="decimal" placeholder="10" required>
+      </div>
+      <div class="v2-inv-field">
+        <label>Amount paid (₹)</label>
+        <input type="text" name="amount" inputmode="numeric" placeholder="0">
+      </div>
+    </div>
+    <div class="v2-inv-field">
+      <label>Received on</label>
+      <input type="date" name="received_on" value="{{ today }}">
+    </div>
+    <div class="v2-inv-field">
+      <label>Note / vendor</label>
+      <input type="text" name="note" placeholder="Optional">
+    </div>
+    <button class="v2-cta" type="submit">Add to stock</button>
+  </form>
+  <form method="post" action="/inventory/receive-file" enctype="multipart/form-data" class="v2-inv-form" style="margin-top:12px">
+    <div class="v2-inv-field">
+      <label>Or upload order CSV</label>
+      <input type="file" name="file" accept=".csv,.txt,.xls" required>
+    </div>
+    <p class="v2-subline">Columns: Item, Qty, Amount.</p>
+    <button class="v2-cta secondary" type="submit">Upload order</button>
+  </form>
+</details>
+{% endif %}
+
+{% for category, group in groups %}
+<section class="v2-inv-group">
+  <div class="v2-sec-title">{{ category }}</div>
+  {% for item in group %}
+  <article class="v2-card v2-inv-item{% if item.on_hand <= 0 %} is-empty{% endif %}" id="item-{{ item.id }}">
+    <div class="v2-inv-item-top">
+      <div class="v2-inv-item-info">
+        <a class="v2-inv-name" href="/inventory/items/{{ item.id }}">{{ item.name }}</a>
+        <div class="v2-subline">{{ item.unit }}{% if can_receive %} · in {{ item.received_label }} · used {{ item.used_label }}{% endif %}</div>
+      </div>
+      <div class="v2-inv-qty{% if item.on_hand <= 0 %} is-bad{% endif %}">{{ item.on_hand_label }}</div>
+    </div>
+    {% if can_receive and item.paid_paise %}
+    <div class="v2-subline">Paid in ₹{{ item.paid_paise|rupees }}</div>
+    {% endif %}
+    <details class="v2-inv-use">
+      <summary>Use this</summary>
+      <form method="post" action="/inventory/use" class="v2-inv-form js-inv-use">
+        <input type="hidden" name="item_id" value="{{ item.id }}">
+        <div class="v2-inv-grid">
+          <div class="v2-inv-field">
+            <label>Qty</label>
+            <input type="text" name="qty" inputmode="decimal" value="{{ '1' if item.unit not in ['km','m'] else '0.1' }}" required>
+          </div>
+          <div class="v2-inv-field">
+            <label>Used for</label>
+            <select name="kind" class="js-inv-kind" required>
+              {% for key, label in kinds %}
+              <option value="{{ key }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="v2-inv-field js-inv-cust" hidden>
+          <label>Customer (faulty replacement)</label>
+          <input type="hidden" name="customer_id" value="">
+          <div class="settle-cust-type">
+            <input type="text" class="js-cust-q" placeholder="Type name or phone" autocomplete="off" spellcheck="false">
+            <div class="settle-suggest js-cust-suggest" hidden></div>
+          </div>
+          <div class="settle-cust-meta js-cust-meta is-empty"><span>Required for faulty replacement</span></div>
+        </div>
+        <div class="v2-inv-field">
+          <label>Note</label>
+          <input type="text" name="note" placeholder="Optional">
+        </div>
+        <button class="v2-cta" type="submit">Reduce stock</button>
+      </form>
+    </details>
+  </article>
+  {% endfor %}
+</section>
+{% endfor %}
+
+{% if not items %}
+<div class="v2-empty">No items on this list.</div>
+{% endif %}
+
+{% if usage %}
+<section class="v2-inv-group">
+  <div class="v2-sec-title">Recently used</div>
+  <div class="v2-card v2-inv-log">
+    {% for u in usage %}
+    <div class="v2-inv-log-row">
+      <div>
+        <strong>{{ u.item_name }}</strong>
+        <div class="v2-subline">
+          {{ u.qty_label }} · {{ u.kind_label }}
+          {% if u.customer_id %} · <a href="/customers/{{ u.customer_id }}">{{ u.customer_name }}</a>{% endif %}
+        </div>
+      </div>
+      <div class="v2-subline">{{ u.used_on|nice_date }} · {{ u.created_by or "—" }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if can_receive and receipts %}
+<section class="v2-inv-group">
+  <div class="v2-sec-title">Recent orders in</div>
+  <div class="v2-card v2-inv-log">
+    {% for r in receipts %}
+    <div class="v2-inv-log-row">
+      <div>
+        <strong>{{ r.item_name }}</strong>
+        <div class="v2-subline">
+          {{ r.qty_label }}{% if r.amount_paise %} · ₹{{ r.amount_paise|rupees }}{% endif %}
+          {% if r.note %} · {{ r.note }}{% endif %}
+        </div>
+      </div>
+      <div class="v2-subline">{{ r.received_on|nice_date }} · {{ r.created_by or "—" }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/inventory.js?v=1"></script>
+{% endblock %}

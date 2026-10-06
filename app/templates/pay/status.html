@@ -1,0 +1,22 @@
+{% extends "pay/base.html" %}
+{% block title %}Thank you{% endblock %}
+
+{% block content %}
+<section class="pay-card pay-card-hero">
+  {% if state == 'marked' %}
+  <div class="pay-hero-icon" aria-hidden="true">✓</div>
+  <h1>Thank you</h1>
+  <p class="pay-lead">We noted your payment{% if reference %} (<strong>{{ reference }}</strong>){% endif %}.</p>
+  <section class="pay-card pay-muted-box" style="text-align:left;margin-top:16px">
+    <p style="margin:0 0 8px"><strong>What happens next</strong></p>
+    <p class="pay-small" style="margin:0">Our office verifies the UPI on their phone and activates your connection — usually within a few minutes.</p>
+  </section>
+  {% elif state == 'missing' %}
+  <h1>Link expired</h1>
+  <p class="pay-lead">This payment link is no longer valid.</p>
+  <a class="pay-btn pay-btn-primary pay-btn-wide" href="/pay" style="margin-top:16px">Start again</a>
+  {% else %}
+  <h1>Done</h1>
+  {% endif %}
+</section>
+{% endblock %}

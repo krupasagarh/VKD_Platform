@@ -1,10 +1,10 @@
-"""Read a Bix Customer_details export and bring this platform's dues in line.
+"""Read a Bix Customer_details export and bring matched households' dues in line.
 
-Agents still collect in Bix until this app is the daily tool. A fresh export is
-the source of truth for what each household owes: we match the customer, then
-post a bill or a credit so net due equals Bix Due Amount. Name, phone and
-locality are refreshed from the same file. Nothing is fetched from the Bix
-website — only the file you upload.
+Bix is an old archive. It is not the live cable inventory. A file may still
+update name, phone, area and due on a household that is already here. It must
+not create customers and must not add, move, or remove Hathway boxes. Which
+boxes exist comes from the Hathway dashboard; the latest cable due comes from
+Mobize. Nothing is fetched from the Bix website — only the file you upload.
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from pathlib import Path
 
 from . import billing
 from .db import log_activity
-from .money import now_iso, to_paise
+from .money import fmt_rupees, now_iso, round_up_rupee, to_paise
 
 # More specific aliases first. Bare "id" / "balance" / "active" are last so they
 # do not steal "Balance Amount" or "Active/Inactive" from a Bix Customer Export.
@@ -38,7 +38,8 @@ COLUMN_ALIASES = {
     "locality": ("sub area", "sub_area", "locality", "area"),
     "city": ("billing address", "address", "city", "location"),
     "monthly_rent": ("plan amount", "monthly rent", "monthly_rent", "rent"),
-    "remarks": ("remarks", "notes", "extra stbs", "products"),
+    "remarks": ("remarks", "notes", "extra stbs", "products", "remark", "follow_up_comments"),
+    "product_name": ("products", "product", "bouquet", "package"),
     "customer_code": ("customer code", "membership number"),
 }
 
@@ -223,18 +224,26 @@ def parse_bix_customers(path: Path) -> list[dict]:
         raw_id = get("bix_customer_id")
         numeric_id = raw_id if raw_id.isdigit() else ""
         display_code = codes[0] if codes else (numeric_id or "")
-        if numeric_id:
-            group_key = numeric_id
-        elif display_code:
-            group_key = display_code
+        if codes:
+            group_key = codes[0].upper()
+            display_code = codes[0]
         elif phone:
             group_key = f"p:{phone}"
+        elif numeric_id:
+            group_key = numeric_id
         else:
             unnamed += 1
             group_key = f"BIX-{unnamed}"
             display_code = group_key
 
         due = to_paise(get("balance") or "0")
+        rent = to_paise(get("monthly_rent") or "0")
+        plan_note = _clean(get("product_name") or get("remarks") or "").split("\n")[0].strip()
+        stb = _clean(get("stb_number") or "").upper().lstrip("'")
+        if not stb:
+            stb = next((s for s in stbs), "")
+        vc = _clean(get("card_number") or "").upper().lstrip("'")
+
         if group_key not in grouped:
             grouped[group_key] = {
                 "code": display_code or group_key,
@@ -244,7 +253,10 @@ def parse_bix_customers(path: Path) -> list[dict]:
                 "city": get("city"),
                 "status": (get("status") or "active").lower() or "active",
                 "due_paise": due,
-                "stbs": stbs,
+                "plan_amount_paise": 0,
+                "plan_name": "",
+                "row_plans": [],
+                "stbs": [],
                 "codes": codes,
             }
         else:
@@ -263,10 +275,154 @@ def parse_bix_customers(path: Path) -> list[dict]:
                 entry["phone"] = phone
             if name and (not entry["name"] or entry["name"] == entry["code"]):
                 entry["name"] = name
+
+        entry = grouped[group_key]
+        if rent > 0:
+            row_id = get("bix_customer_id") or f"{group_key}:{len(entry['row_plans'])}"
+            if row_id not in entry.setdefault("row_ids", set()):
+                entry["row_ids"].add(row_id)
+                entry["row_plans"].append(rent)
+            for item in stbs:
+                if item not in entry["stbs"]:
+                    entry["stbs"].append(item)
+            if stb and _STB_RE.fullmatch(stb) and stb not in entry["stbs"]:
+                entry["stbs"].append(stb)
+        if plan_note and not entry["plan_name"]:
+            entry["plan_name"] = plan_note[:120]
+
+    for entry in grouped.values():
+        entry.pop("row_ids", None)
+        plans = entry.pop("row_plans", [])
+        if plans:
+            entry["plan_amount_paise"] = sum(int(v) for v in plans)
+        entry.setdefault("plan_amount_paise", 0)
+        entry.setdefault("plan_name", "")
     return list(grouped.values())
 
 
-def _hathway_ok(conn, customer_id: int) -> bool:
+def items_from_accounts_csv(path: Path) -> list[dict]:
+    """Build preview/apply rows from cableway_automation ``bix_accounts.csv``."""
+    path = Path(path)
+    if not path.is_file():
+        raise FileNotFoundError(f"Bix accounts file not found: {path}")
+
+    stb_owners = _hathway_stb_owners(path.parent)
+    grouped: dict[str, dict] = {}
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        for raw in reader:
+            code = _norm_code(raw.get("bix_customer_id") or "")
+            if not code or code.isdigit():
+                continue
+            name = _clean(raw.get("customer_name") or "")
+            phone = _norm_phone(raw.get("phone") or raw.get("phone_normalized") or "")
+            stb = _clean(raw.get("stb_number") or "").upper().lstrip("'")
+            due = to_paise(raw.get("balance") or "0")
+            rent = to_paise(raw.get("monthly_rent") or "0")
+            plan_note = _clean(raw.get("product_note") or "")
+            status = (_clean(raw.get("status") or "active") or "active").lower()
+            locality = _clean(raw.get("locality") or "")
+            city = _clean(raw.get("city") or "")
+
+            if code not in grouped:
+                grouped[code] = {
+                    "code": code,
+                    "name": name or code,
+                    "phone": phone,
+                    "locality": locality,
+                    "city": city,
+                    "status": status,
+                    "due_paise": due,
+                    "plan_amount_paise": 0,
+                    "plan_name": "",
+                    "stb_rents": {},
+                    "stbs": [],
+                    "codes": [code],
+                }
+            entry = grouped[code]
+            if due > entry["due_paise"]:
+                entry["due_paise"] = due
+            if rent > 0:
+                rent_key = ""
+                if stb and _STB_RE.fullmatch(stb):
+                    rent_key = stb
+                else:
+                    vc = _clean(raw.get("vc_number_bix") or raw.get("vc_number") or "").upper()
+                    if vc:
+                        rent_key = vc
+                if rent_key and rent_key not in entry["stb_rents"]:
+                    entry["stb_rents"][rent_key] = rent
+                elif not rent_key and rent > entry["plan_amount_paise"]:
+                    entry["plan_amount_paise"] = rent
+            if plan_note and not entry["plan_name"]:
+                entry["plan_name"] = plan_note
+            if name and (not entry["name"] or entry["name"] == entry["code"]):
+                entry["name"] = name
+            if phone and not entry["phone"]:
+                entry["phone"] = phone
+            if locality and not entry["locality"]:
+                entry["locality"] = locality
+            if city and not entry["city"]:
+                entry["city"] = city
+            if stb and _STB_RE.fullmatch(stb):
+                owner = stb_owners.get(stb, code)
+                if owner != code:
+                    continue
+                if stb not in entry["stbs"]:
+                    entry["stbs"].append(stb)
+    for entry in grouped.values():
+        rents = entry.pop("stb_rents", {})
+        if rents:
+            entry["plan_amount_paise"] = sum(int(v) for v in rents.values())
+        entry.setdefault("plan_amount_paise", 0)
+        entry.setdefault("plan_name", "")
+    return list(grouped.values())
+
+
+def _hathway_stb_owners(data_dir: Path) -> dict[str, str]:
+    """Map Hathway STB -> household code from the CableWay Hathway export."""
+    path = Path(data_dir) / "cableway_hathway_generated_v2.csv"
+    owners: dict[str, str] = {}
+    if not path.is_file():
+        return owners
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        for raw in csv.DictReader(handle):
+            code = _norm_code(raw.get("customer_id") or "")
+            stb = _clean(raw.get("settop_box_number") or "").upper().lstrip("'")
+            if code and _STB_RE.fullmatch(stb):
+                owners[stb] = code
+    return owners
+
+
+def master_accounts_path() -> Path:
+    from .config import CABLEWAY_DATA_DIR
+
+    return CABLEWAY_DATA_DIR / "bix_accounts.csv"
+
+
+def load_master_items() -> list[dict]:
+    path = master_accounts_path()
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"Bix master file not found: {path}. "
+            "Export Customer details from Bix into cableway_automation/data first."
+        )
+    return items_from_accounts_csv(path)
+
+
+def load_bix_items(path: Path | None = None) -> list[dict]:
+    """Load Bix households from a Customer export or the master accounts CSV."""
+    if path is not None:
+        path = Path(path)
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        if path.name.lower() == "bix_accounts.csv":
+            return items_from_accounts_csv(path)
+        return parse_bix_customers(path)
+    return load_master_items()
+
+
+def _hathway_ok(conn, customer_id: int, *, bix_code: str = "") -> bool:
     """Prepaid-only customers are left alone. No connections, or any Hathway box, is fine."""
     row = conn.execute(
         "SELECT "
@@ -280,39 +436,285 @@ def _hathway_ok(conn, customer_id: int) -> bool:
     hathway = int(row["h"] or 0)
     iptv = int(row["i"] or 0)
     if (railtel or iptv) and not hathway:
+        code = (bix_code or "").strip()
+        if code and conn.execute(
+            "SELECT 1 FROM customers WHERE id = ? AND upper(code) = upper(?)",
+            (customer_id, code),
+        ).fetchone():
+            return True
         return False
     return True
 
 
-def _match_customer(conn, item: dict):
-    """STB first, then AJ/MST code, then a unique phone. Never match a numeric Bix id.
+def customer_has_hathway(conn, customer_id: int) -> bool:
+    row = conn.execute(
+        "SELECT 1 FROM connections WHERE customer_id = ? AND provider = 'hathway' LIMIT 1",
+        (customer_id,),
+    ).fetchone()
+    return row is not None
 
-    A Railtel-only household is not a Bix match even if the phone is the same.
+
+def _match_hathway_customer_by_stb(conn, stb: str):
+    stb = _clean(stb).upper().lstrip("'")
+    if not stb:
+        return None
+    return conn.execute(
+        "SELECT c.* FROM customers c JOIN connections cn ON cn.customer_id = c.id "
+        "WHERE cn.provider = 'hathway' AND upper(cn.upstream_id) = upper(?) LIMIT 1",
+        (stb,),
+    ).fetchone()
+
+
+def _bix_source_row_key(raw: dict, mapping: dict, stbs: list[str]) -> str:
+    """One key per Bix billing row — plan amount is charged once per key, not per STB."""
+
+    def get(key: str) -> str:
+        return _clean(raw.get(mapping[key], "")) if key in mapping else ""
+
+    bix_id = get("bix_customer_id")
+    if bix_id.isdigit():
+        return f"bix:{bix_id}"
+
+    codes = _extract_codes(bix_id, get("customer_code"), get("customer_name"), get("remarks"))
+    code = codes[0] if codes else get("customer_code") or ""
+    primary = stbs[0] if stbs else _clean(get("stb_number")).upper().lstrip("'")
+    if not primary:
+        vc = _clean(get("card_number")).upper().lstrip("'")
+        primary = vc or get("customer_name")[:48] or bix_id
+    return f"line:{code}:{primary}"
+
+
+def _match_hathway_household(conn, *, stbs, codes, phone, name):
+    """Map one Bix customer row to a platform household with Hathway."""
+    for stb in stbs or []:
+        row = _match_hathway_customer_by_stb(conn, stb)
+        if row is not None:
+            return row
+
+    for code in codes or []:
+        row = conn.execute(
+            "SELECT * FROM customers WHERE upper(code) = upper(?) LIMIT 1", (code,)
+        ).fetchone()
+        if row is not None and customer_has_hathway(conn, int(row["id"])):
+            return row
+
+    phone = _norm_phone(phone or "")
+    if len(phone) == 10:
+        matches = [
+            r
+            for r in conn.execute("SELECT * FROM customers WHERE phone = ?", (phone,)).fetchall()
+            if customer_has_hathway(conn, int(r["id"]))
+        ]
+        if len(matches) == 1:
+            return matches[0]
+    return None
+
+
+def plan_amounts_from_bix_file(conn, path: Path) -> dict[int, dict]:
+    """Bix file → platform customer id → household plan amount (Hathway only).
+
+    Plan Amount in Bix is per **customer row**, not per STB. When one row lists
+    several boxes, the amount is still counted once. Separate Bix rows that map
+    to the same platform household are summed (e.g. one row per box with its
+    own line charge in ``bix_accounts.csv``).
     """
+    headers, raw_rows = read_bix_file(path)
+    mapping = _map_headers(headers)
+    bix_rows: dict[str, dict] = {}
+
+    for raw in raw_rows:
+        get = lambda key, row=raw: _clean(row.get(mapping[key], "")) if key in mapping else ""
+        stbs = _extract_stbs(
+            get("stb_number"), get("card_number"), get("remarks"), get("customer_code"),
+        )
+        rent = to_paise(get("monthly_rent") or "0")
+        if rent <= 0:
+            continue
+
+        row_key = _bix_source_row_key(raw, mapping, stbs)
+        codes = _extract_codes(
+            get("bix_customer_id"), get("customer_code"), get("customer_name"), get("remarks"),
+        )
+        phone = _norm_phone(get("phone"))
+        plan_note = _clean(get("product_name") or get("remarks") or "").split("\n")[0].strip()
+
+        bucket = bix_rows.setdefault(
+            row_key,
+            {
+                "amount_paise": 0,
+                "stbs": set(),
+                "codes": set(),
+                "phone": phone,
+                "name": get("customer_name"),
+                "plan_name": "",
+            },
+        )
+        bucket["amount_paise"] = rent
+        bucket["stbs"].update(stbs)
+        bucket["codes"].update(codes)
+        if phone:
+            bucket["phone"] = phone
+        if plan_note and not bucket["plan_name"]:
+            bucket["plan_name"] = plan_note[:120]
+
+    out: dict[int, dict] = {}
+    for bix_row in bix_rows.values():
+        amount = int(bix_row["amount_paise"] or 0)
+        if amount <= 0:
+            continue
+
+        customer = _match_hathway_household(
+            conn,
+            stbs=list(bix_row["stbs"]),
+            codes=list(bix_row["codes"]),
+            phone=bix_row.get("phone") or "",
+            name=bix_row.get("name") or "",
+        )
+        if customer is None:
+            continue
+        cid = int(customer["id"])
+        if not customer_has_hathway(conn, cid):
+            continue
+
+        slot = out.setdefault(
+            cid,
+            {
+                "amount_paise": 0,
+                "stbs": set(),
+                "plan_name": "",
+                "code": customer["code"],
+                "name": customer["name"],
+            },
+        )
+        slot["amount_paise"] += amount
+        slot["stbs"].update(bix_row["stbs"])
+        if bix_row["plan_name"] and not slot["plan_name"]:
+            slot["plan_name"] = bix_row["plan_name"]
+
+    return out
+
+
+# Backwards-compatible alias
+plan_amounts_from_bix_export = plan_amounts_from_bix_file
+
+
+def apply_bix_hathway_plan_amounts(
+    conn,
+    *,
+    source_path: Path,
+    actor: str = "bix-plan-sync",
+    dry_run: bool = False,
+) -> dict:
+    """Set household custom plan amount from Bix — Hathway customers only."""
+    updated = 0
+    no_match = 0
+    no_rent = 0
+    unchanged = 0
+    samples: list[dict] = []
+
+    by_customer = plan_amounts_from_bix_file(conn, Path(source_path))
+
+    for customer_id, data in by_customer.items():
+        amount = int(data["amount_paise"])
+        if amount <= 0:
+            continue
+
+        plan_name = (data.get("plan_name") or "").strip()
+        if not plan_name:
+            plan_name = "Hathway plan"
+
+        prev = billing.customer_custom_plan(conn, customer_id)
+        prev_amount = int((prev or {}).get("list_paise") or 0)
+        if prev_amount == amount and (prev or {}).get("name") == plan_name:
+            unchanged += 1
+            continue
+
+        if not dry_run:
+            billing.set_customer_custom_plan(
+                conn,
+                customer_id,
+                name=plan_name,
+                amount_paise=amount,
+                validity_days=30,
+                details="Synced from Bix plan amount (household)",
+                bundle="",
+            )
+
+        updated += 1
+        if len(samples) < 12:
+            samples.append({
+                "code": data.get("code", ""),
+                "name": data.get("name", ""),
+                "amount_rupees": amount / 100,
+                "plan_name": plan_name,
+                "stbs": len(data.get("stbs") or []),
+            })
+
+    summary = {
+        "updated": updated,
+        "unchanged": unchanged,
+        "no_bix_rent": no_rent,
+        "no_platform_match": no_match,
+        "not_hathway": 0,
+        "samples": samples,
+        "matched_customers": len(by_customer),
+    }
+    if not dry_run and updated:
+        log_activity(
+            conn,
+            "bix_plan_sync",
+            f"Bix Hathway plan amounts — {updated} customer(s) updated",
+            actor=actor,
+            meta_json=json.dumps({k: v for k, v in summary.items() if k != "samples"}),
+        )
+    return summary
+
+
+def _platform_code(value: str) -> str:
+    text = (value or "").strip()
+    if not text or text.isdigit() or text.startswith("BIX-"):
+        return ""
+    return text
+
+
+def _match_customer(conn, item: dict):
+    """Code first, then STB, then a unique phone. Never match a numeric Bix id.
+
+    When Bix carries a household code that is not on the platform yet, create a new
+    customer instead of attaching via a shared STB on another code.
+    """
+    codes = [c for c in (item.get("codes") or []) if c]
+    display = _platform_code(item.get("code") or "")
+    if display and display not in codes:
+        codes.insert(0, display)
+
+    for code in codes:
+        row = conn.execute(
+            "SELECT * FROM customers WHERE upper(code) = upper(?)", (code,)
+        ).fetchone()
+        if row and _hathway_ok(conn, int(row["id"]), bix_code=code):
+            return row, "code"
+
+    if display and not conn.execute(
+        "SELECT id FROM customers WHERE upper(code) = upper(?)", (display,)
+    ).fetchone():
+        return None, ""
+
     for stb in item.get("stbs") or []:
         row = conn.execute(
             "SELECT c.* FROM customers c JOIN connections cn ON cn.customer_id = c.id "
             "WHERE upper(cn.upstream_id) = upper(?) LIMIT 1",
             (stb,),
         ).fetchone()
-        if row and _hathway_ok(conn, int(row["id"])):
+        if row and _hathway_ok(conn, int(row["id"]), bix_code=display):
             return row, "stb"
-    codes = [c for c in (item.get("codes") or []) if c]
-    display = (item.get("code") or "").strip()
-    if display and not display.isdigit() and not display.startswith("BIX-") and display not in codes:
-        codes.append(display)
-    for code in codes:
-        row = conn.execute(
-            "SELECT * FROM customers WHERE upper(code) = upper(?)", (code,)
-        ).fetchone()
-        if row and _hathway_ok(conn, int(row["id"])):
-            return row, "code"
+
     if item.get("phone") and len(item["phone"]) == 10:
         matches = [
             r for r in conn.execute(
                 "SELECT * FROM customers WHERE phone = ?", (item["phone"],)
             ).fetchall()
-            if _hathway_ok(conn, int(r["id"]))
+            if _hathway_ok(conn, int(r["id"]), bix_code=display)
         ]
         if len(matches) == 1:
             return matches[0], "phone"
@@ -345,30 +747,17 @@ def preview(conn, items: list[dict]) -> list[dict]:
 
 
 def ensure_stbs(conn, customer_id: int, stbs: list[str], *, stamp: str | None = None) -> int:
-    """Attach Hathway STBs that are not already on any customer. Does not move existing ones."""
-    added = 0
-    stamp = stamp or now_iso()
-    for raw in stbs or []:
-        stb = _clean(raw).upper().lstrip("'")
-        if not _STB_RE.fullmatch(stb):
-            continue
-        taken = conn.execute(
-            "SELECT id FROM connections WHERE upper(upstream_id) = ?", (stb,)
-        ).fetchone()
-        if taken:
-            continue
-        conn.execute(
-            "INSERT INTO connections(customer_id, provider, upstream_id, status, "
-            "billing_type, amount_paise, created_at, updated_at) "
-            "VALUES(?, 'hathway', ?, 'active', 'postpaid', 0, ?, ?)",
-            (customer_id, stb, stamp, stamp),
-        )
-        added += 1
-    return added
+    """Do not add Hathway boxes from Bix.
+
+    Live boxes come from the Hathway dashboard. Bix still lists terminated
+    hardware, so inserting those rows made the platform track the archive.
+    """
+    del conn, customer_id, stbs, stamp
+    return 0
 
 
 def attach_stbs_from_items(conn, items: list[dict]) -> dict:
-    """Add missing STBs from a parsed Bix file onto already-matched customers."""
+    """Bix no longer attaches STBs. Counts stay at zero so older callers keep working."""
     attached = 0
     customers = 0
     unmatched = 0
@@ -384,7 +773,94 @@ def attach_stbs_from_items(conn, items: list[dict]) -> dict:
     return {"attached": attached, "customers": customers, "unmatched": unmatched}
 
 
+def scrub_bix_sync_ledger(conn, customer_id: int) -> bool:
+    """Drop bix_sync-only bills and matching adjustments (wrong-household cleanup)."""
+    real = conn.execute(
+        "SELECT 1 FROM bills WHERE customer_id = ? AND status != 'cancelled' "
+        "AND COALESCE(source, '') != 'bix_sync' LIMIT 1",
+        (customer_id,),
+    ).fetchone()
+    if real:
+        purge_bix_sync_ghosts(conn, customer_id)
+        return False
+    rows = conn.execute(
+        "SELECT id FROM bills WHERE customer_id = ? AND status != 'cancelled' "
+        "AND source = 'bix_sync'",
+        (customer_id,),
+    ).fetchall()
+    changed = False
+    for row in rows:
+        billing.cancel_bill(conn, int(row["id"]))
+        changed = True
+    for row in conn.execute(
+        "SELECT id FROM payments WHERE customer_id = ? AND mode = 'adjustment' "
+        "AND notes LIKE 'Bix due%'",
+        (customer_id,),
+    ):
+        billing.delete_payment(conn, int(row["id"]))
+        changed = True
+    if changed:
+        billing.reconcile_customer(conn, customer_id)
+    ghosts = purge_bix_sync_ghosts(conn, customer_id)
+    return changed or bool(ghosts.get("bills_deleted"))
+
+
+def purge_bix_sync_ghosts(conn, customer_id: int) -> dict:
+    """Remove cancelled bix_sync bills that should never appear on a customer."""
+    real = conn.execute(
+        "SELECT 1 FROM bills WHERE customer_id = ? AND status != 'cancelled' "
+        "AND COALESCE(source, '') != 'bix_sync' LIMIT 1",
+        (customer_id,),
+    ).fetchone()
+    if real:
+        return {"bills_deleted": 0, "payments_deleted": 0}
+
+    bills_deleted = 0
+    for row in conn.execute(
+        "SELECT id FROM bills WHERE customer_id = ? AND source = 'bix_sync' "
+        "AND status = 'cancelled'",
+        (customer_id,),
+    ):
+        conn.execute("DELETE FROM bill_payments WHERE bill_id = ?", (int(row["id"]),))
+        conn.execute("DELETE FROM bills WHERE id = ?", (int(row["id"]),))
+        bills_deleted += 1
+
+    payments_deleted = 0
+    any_bill = conn.execute(
+        "SELECT 1 FROM bills WHERE customer_id = ? AND status != 'cancelled' LIMIT 1",
+        (customer_id,),
+    ).fetchone()
+    if not any_bill:
+        ledger = billing.customer_ledger(conn, customer_id)
+        if int(ledger["net_due_paise"]) == 0:
+            for row in conn.execute(
+                "SELECT id FROM payments WHERE customer_id = ? AND mode = 'adjustment' "
+                "AND notes LIKE 'Bix due%'",
+                (customer_id,),
+            ):
+                billing.delete_payment(conn, int(row["id"]))
+                payments_deleted += 1
+        if bills_deleted or payments_deleted:
+            billing.reconcile_customer(conn, customer_id)
+    return {"bills_deleted": bills_deleted, "payments_deleted": payments_deleted}
+
+
+def purge_all_bix_sync_ghosts(conn) -> dict:
+    """Walk every customer; remove leftover cancelled bix_sync rows."""
+    totals = {"customers": 0, "bills_deleted": 0, "payments_deleted": 0}
+    for row in conn.execute("SELECT id FROM customers ORDER BY id"):
+        result = purge_bix_sync_ghosts(conn, int(row["id"]))
+        if result["bills_deleted"] or result["payments_deleted"]:
+            totals["customers"] += 1
+            totals["bills_deleted"] += result["bills_deleted"]
+            totals["payments_deleted"] += result["payments_deleted"]
+    return totals
+
+
 def _set_due(conn, customer_id: int, target: int, actor: str | None) -> str:
+    target = round_up_rupee(target)
+    if int(target) == 0:
+        scrub_bix_sync_ledger(conn, customer_id)
     current = int(billing.customer_ledger(conn, customer_id)["net_due_paise"])
     delta = int(target) - current
     if delta == 0:
@@ -401,7 +877,7 @@ def _set_due(conn, customer_id: int, target: int, actor: str | None) -> str:
             period_end=None,
             source="bix_sync",
             gst_percentage=0,
-            notes=f"Bix due {target / 100:.2f} vs platform {current / 100:.2f}",
+            notes=f"Bix due {fmt_rupees(target)} vs platform {fmt_rupees(current)}",
         )
     else:
         billing.record_payment(
@@ -410,7 +886,7 @@ def _set_due(conn, customer_id: int, target: int, actor: str | None) -> str:
             amount_paise=-delta,
             mode="adjustment",
             collected_by=actor,
-            notes=f"Bix due {target / 100:.2f} vs platform {current / 100:.2f}",
+            notes=f"Bix due {fmt_rupees(target)} vs platform {fmt_rupees(current)}",
         )
     billing.reconcile_customer(conn, customer_id)
     return "adjusted"
@@ -443,7 +919,13 @@ def apply_preview(
     create_missing: bool,
     actor: str | None,
 ) -> dict:
-    """Make Hathway / Bix households match the export. Railtel-only customers are skipped."""
+    """Update name, phone, area and due for households already on the platform.
+
+    Does not create customers and does not add, move, or delete Hathway
+    connections. ``create_missing`` is ignored: Bix is not the live box list.
+    Railtel-only customers are still skipped by ``_hathway_ok``.
+    """
+    del create_missing
     created = 0
     adjusted = 0
     unchanged = 0
@@ -452,106 +934,45 @@ def apply_preview(
     added = 0
     removed = 0
     stamp = now_iso()
-    wanted: dict[int, list[str]] = {}
 
     for row in rows:
         customer_id = row.get("customer_id")
-        stbs = _norm_stb_list(row.get("stbs") or [])
         status = (row.get("status") or "active").lower() or "active"
         if status not in {"active", "inactive", "suspended"}:
             status = "active"
 
         if customer_id is None:
-            if not create_missing:
-                skipped += 1
-                continue
-            code = _usable_code(conn, 0, row.get("code") or "")
-            cursor = conn.execute(
-                "INSERT INTO customers(code, name, phone, alt_phone, address, area, "
-                "sub_area, pincode, status, notes, created_at, updated_at) "
-                "VALUES(?, ?, ?, ?, ?, 'Tiptur', ?, '572201', ?, ?, ?, ?)",
-                (
-                    code or None,
-                    row.get("name") or row.get("code") or "Bix customer",
-                    row.get("phone") or "",
-                    row.get("phone") or "",
-                    row.get("city") or "Tiptur",
-                    row.get("locality") or "",
-                    status,
-                    "Created from Bix sync",
-                    stamp,
-                    stamp,
-                ),
-            )
-            customer_id = int(cursor.lastrowid)
-            created += 1
-        else:
-            customer_id = int(customer_id)
-            if not _hathway_ok(conn, customer_id):
-                skipped += 1
-                continue
-            conn.execute(
-                "UPDATE customers SET name = COALESCE(NULLIF(?, ''), name), "
-                "phone = COALESCE(NULLIF(?, ''), phone), "
-                "sub_area = COALESCE(NULLIF(?, ''), sub_area), "
-                "code = COALESCE(NULLIF(?, ''), code), "
-                "status = ?, updated_at = ? WHERE id = ?",
-                (
-                    row.get("name") or "",
-                    row.get("phone") or "",
-                    row.get("locality") or "",
-                    _usable_code(conn, customer_id, row.get("code") or ""),
-                    status,
-                    stamp,
-                    customer_id,
-                ),
-            )
+            skipped += 1
+            continue
+        customer_id = int(customer_id)
+        if not _hathway_ok(conn, customer_id, bix_code=row.get("code") or ""):
+            skipped += 1
+            continue
+        bix_phone = row.get("phone") or ""
+        conn.execute(
+            "UPDATE customers SET name = COALESCE(NULLIF(?, ''), name), "
+            "phone = COALESCE(NULLIF(?, ''), phone), "
+            "alt_phone = CASE WHEN ? != '' THEN ? ELSE alt_phone END, "
+            "sub_area = COALESCE(NULLIF(?, ''), sub_area), "
+            "code = COALESCE(NULLIF(?, ''), code), "
+            "status = ?, updated_at = ? WHERE id = ?",
+            (
+                row.get("name") or "",
+                bix_phone,
+                bix_phone,
+                bix_phone,
+                row.get("locality") or "",
+                _usable_code(conn, customer_id, row.get("code") or ""),
+                status,
+                stamp,
+                customer_id,
+            ),
+        )
 
-        wanted[customer_id] = stbs
         if _set_due(conn, customer_id, int(row.get("due_paise") or 0), actor) == "adjusted":
             adjusted += 1
         else:
             unchanged += 1
-
-    for customer_id, stbs in wanted.items():
-        for stb in stbs:
-            existing = conn.execute(
-                "SELECT id, customer_id FROM connections WHERE upper(upstream_id) = ?",
-                (stb,),
-            ).fetchone()
-            if existing is None:
-                conn.execute(
-                    "INSERT INTO connections(customer_id, provider, upstream_id, status, "
-                    "billing_type, amount_paise, created_at, updated_at) "
-                    "VALUES(?, 'hathway', ?, 'active', 'postpaid', 0, ?, ?)",
-                    (customer_id, stb, stamp, stamp),
-                )
-                added += 1
-            elif int(existing["customer_id"]) != customer_id:
-                other = int(existing["customer_id"])
-                if _hathway_ok(conn, other):
-                    conn.execute(
-                        "UPDATE connections SET customer_id = ?, updated_at = ? WHERE id = ?",
-                        (customer_id, stamp, existing["id"]),
-                    )
-                    moved += 1
-
-        have = {
-            (r["upstream_id"] or "").upper()
-            for r in conn.execute(
-                "SELECT id, upstream_id FROM connections "
-                "WHERE customer_id = ? AND provider = 'hathway'",
-                (customer_id,),
-            )
-        }
-        extra = have - set(stbs)
-        for stb in extra:
-            conn.execute(
-                "DELETE FROM connections WHERE customer_id = ? AND provider = 'hathway' "
-                "AND upper(upstream_id) = ?",
-                (customer_id, stb),
-            )
-            removed += 1
 
     try:
         from . import bix_history
@@ -573,8 +994,8 @@ def apply_preview(
     log_activity(
         conn,
         "bix_sync",
-        f"Bix align — {adjusted} due(s), {created} created, {added} STB(s) added, "
-        f"{moved} moved, {removed} extra removed. Railtel left as-is.",
+        f"Bix dues — {adjusted} updated, {skipped} left unmatched. "
+        f"No Hathway boxes added, moved, or removed.",
         actor=actor,
         meta_json=json.dumps(summary),
     )

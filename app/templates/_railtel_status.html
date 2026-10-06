@@ -1,0 +1,121 @@
+{% macro railtel_status_banner(connections) %}
+
+{% set railtel = connections | selectattr('provider', 'equalto', 'railtel') | list %}
+
+{% if railtel %}
+
+<div class="card railtel-status-bar">
+
+  <div class="card-head">
+
+    <h2>Railtel status</h2>
+
+  </div>
+
+  <div class="railtel-status-list">
+
+    {% for cn in railtel %}
+
+    {% set show_exp = cn.effective_expiry or cn.expiry_date %}
+    {% set days_left = show_exp|days_until %}
+
+    {% set expired = days_left is not none and days_left < 0 %}
+
+    {% set verified = cn.last_status_at %}
+
+    <div class="railtel-status-row">
+
+      <div class="railtel-status-main">
+
+        <span class="mono">{{ cn.upstream_id }}</span>
+
+        {% if cn.label %}<span class="subtle"> · {{ cn.label }}</span>{% endif %}
+
+        {% if verified and cn.link_state == 'online' %}
+
+          <span class="badge badge-ok">Online</span>
+
+        {% elif verified and cn.link_state == 'offline' %}
+
+          <span class="badge badge-bad">Offline</span>
+
+        {% elif expired %}
+
+          <span class="badge badge-bad">Expired</span>
+
+        {% elif cn.status == 'active' %}
+
+          <span class="badge badge-ok">Active</span>
+
+        {% elif cn.link_state == 'online' %}
+
+          <span class="badge badge-warn">Online (unverified)</span>
+
+        {% elif cn.link_state == 'offline' %}
+
+          <span class="badge badge-warn">Offline (unverified)</span>
+
+        {% else %}
+
+          <span class="badge">Not checked</span>
+
+        {% endif %}
+
+      </div>
+
+      <div class="railtel-status-detail subtle">
+
+        {% if verified and cn.link_state == 'online' %}
+
+          {% if cn.link_since %}Active since {{ cn.link_since|nice_datetime }}{% else %}Active now{% endif %}
+
+          · checked {{ cn.last_status_at|nice_datetime }}
+
+        {% elif verified and cn.link_state == 'offline' %}
+
+          {% if cn.link_since %}Down since {{ cn.link_since|nice_datetime }}{% else %}Line is down{% endif %}
+
+          · checked {{ cn.last_status_at|nice_datetime }}
+
+        {% elif expired %}
+
+          Plan expired {{ show_exp|nice_date }}.
+
+          Click <strong>Check all with provider</strong> to see if the line is still up on Railtel.
+
+        {% elif cn.status == 'active' %}
+
+          Paid through {{ show_exp|nice_date if show_exp else 'this term' }}. Line not re-checked since the last renew.
+
+        {% elif cn.link_state == 'online' %}
+
+          {% if cn.link_since %}Last seen online {{ cn.link_since|nice_datetime }}{% else %}Was online{% endif %}
+
+          (old snapshot — not verified). Click <strong>Check all with provider</strong>.
+
+        {% elif cn.link_state == 'offline' %}
+
+          {% if cn.link_since %}Last down {{ cn.link_since|nice_datetime }}{% else %}Was offline{% endif %}
+
+          (not verified). Click <strong>Check all with provider</strong>.
+
+        {% else %}
+
+          Line status not checked yet — click <strong>Check all with provider</strong>.
+
+        {% endif %}
+
+      </div>
+
+    </div>
+
+    {% endfor %}
+
+  </div>
+
+</div>
+
+{% endif %}
+
+{% endmacro %}
+

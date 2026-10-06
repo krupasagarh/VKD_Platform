@@ -1,0 +1,86 @@
+{% from "_check_status_btn.html" import check_status_btn %}
+{% from "_railtel_dealer_tags.html" import railtel_dealer_tags %}
+{% macro _provider_tag_ids(provider_key, ids_raw, conns_raw, provider_labels, compact, next_url, allow_check=false) %}
+{% set label = provider_labels.get(provider_key, provider_key) %}
+{% if conns_raw %}
+  {% for pair in conns_raw.split('|') %}
+    {% if pair %}
+      {% set parts = pair.split(':') %}
+      {% set conn_id = parts[0] %}
+      {% set val = parts[1] if parts|length > 1 else '' %}
+      {% set conn_status = (parts[2] if parts|length > 2 else '')|lower %}
+      {% if val %}
+      <span class="provider-tag-id-row{% if conn_status == 'terminated' %} provider-tag-id-row--terminated{% endif %}">
+        <button type="button" class="copy-id{% if conn_status == 'terminated' %} copy-id--terminated{% endif %}" data-copy="{{ val }}" title="{% if conn_status == 'terminated' %}Terminated on portal — click to copy{% else %}Click to copy{% endif %}">{{ val }}</button>
+        {{ check_status_btn(conn_id, next_url, compact=compact, label='Check', allow=allow_check) }}
+      </span>
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+{% elif ids_raw %}
+  {% for part in ids_raw.split(',') %}
+    {% set val = part.strip() %}
+    {% if val %}
+    <button type="button" class="copy-id" data-copy="{{ val }}" title="Click to copy">{{ val }}</button>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+{% endmacro %}
+{% macro provider_connection_tags(item, provider_labels, compact=false, next_url="", allow_check=false, only_provider=none) %}
+{% set p = (item.provider or "")|lower %}
+{% set railtel_raw = item.railtel_ids or (item.upstream_id if p == "railtel" else "") or "" %}
+{% set hathway_raw = item.hathway_ids or (item.upstream_id if p == "hathway" else "") or "" %}
+{% set iptv_raw = item.iptv_ids or (item.upstream_id if p == "iptv" else "") or "" %}
+{% set ott_raw = item.ott_ids or (item.upstream_id if p == "ott" else "") or "" %}
+{% set row_conn_id = item.id if item.customer_id is defined and item.provider else none %}
+{% set row_conn_suffix = (':' ~ item.status) if row_conn_id and item.status else '' %}
+{% set railtel_conns = item.railtel_conns or (row_conn_id ~ ':' ~ item.upstream_id ~ row_conn_suffix if p == "railtel" and row_conn_id and item.upstream_id else "") %}
+{% set hathway_conns = item.hathway_conns or (row_conn_id ~ ':' ~ item.upstream_id ~ row_conn_suffix if p == "hathway" and row_conn_id and item.upstream_id else "") %}
+{% set iptv_conns = item.iptv_conns or (row_conn_id ~ ':' ~ item.upstream_id ~ row_conn_suffix if p == "iptv" and row_conn_id and item.upstream_id else "") %}
+{% set ott_conns = item.ott_conns or (row_conn_id ~ ':' ~ item.upstream_id ~ row_conn_suffix if p == "ott" and row_conn_id and item.upstream_id else "") %}
+{% if only_provider == 'railtel' %}
+  {% set hathway_raw = '' %}{% set hathway_conns = '' %}{% set iptv_raw = '' %}{% set iptv_conns = '' %}{% set ott_raw = '' %}{% set ott_conns = '' %}
+{% elif only_provider == 'hathway' %}
+  {% set railtel_raw = '' %}{% set railtel_conns = '' %}{% set iptv_raw = '' %}{% set iptv_conns = '' %}{% set ott_raw = '' %}{% set ott_conns = '' %}
+{% endif %}
+{% set tag_count = (1 if railtel_raw or railtel_conns else 0) + (1 if hathway_raw or hathway_conns else 0) + (1 if iptv_raw or iptv_conns else 0) + (1 if ott_raw or ott_conns else 0) %}
+{% if tag_count %}
+<div class="provider-tags{% if compact %} provider-tags-compact{% endif %}{% if tag_count == 1 %} provider-tags-single{% endif %}">
+  {% if railtel_raw or railtel_conns %}
+  <div class="provider-tag provider-tag-railtel">
+    <span class="provider-tag-label">{{ provider_labels.get('railtel', 'Railtel') }}</span>
+    {{ railtel_dealer_tags(item.railtel_dealers, compact=true) }}
+    <span class="provider-tag-ids">
+      {{ _provider_tag_ids('railtel', railtel_raw, railtel_conns, provider_labels, compact, next_url, allow_check) }}
+    </span>
+  </div>
+  {% endif %}
+  {% if hathway_raw or hathway_conns %}
+  <div class="provider-tag provider-tag-hathway">
+    <span class="provider-tag-label">{{ provider_labels.get('hathway', 'Hathway') }}</span>
+    <span class="provider-tag-ids">
+      {{ _provider_tag_ids('hathway', hathway_raw, hathway_conns, provider_labels, compact, next_url, allow_check) }}
+    </span>
+  </div>
+  {% endif %}
+  {% if iptv_raw or iptv_conns %}
+  <div class="provider-tag provider-tag-iptv">
+    <span class="provider-tag-label">{{ provider_labels.get('iptv', 'ANT IPTV') }}</span>
+    <span class="provider-tag-ids">
+      {{ _provider_tag_ids('iptv', iptv_raw, iptv_conns, provider_labels, compact, next_url, allow_check) }}
+    </span>
+  </div>
+  {% endif %}
+  {% if ott_raw or ott_conns %}
+  <div class="provider-tag provider-tag-ott">
+    <span class="provider-tag-label">{{ provider_labels.get('ott', 'SmartPlay OTT') }}</span>
+    <span class="provider-tag-ids">
+      {{ _provider_tag_ids('ott', ott_raw, ott_conns, provider_labels, compact, next_url, allow_check) }}
+    </span>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<span class="subtle">—</span>
+{% endif %}
+{% endmacro %}

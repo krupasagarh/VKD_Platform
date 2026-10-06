@@ -1,4 +1,5 @@
 {% extends "v2/base.html" %}
+{% from "_brand.html" import vk_wordmark %}
 {% set active = "menu" %}
 {% block title %}More · VK Digital{% endblock %}
 
@@ -7,75 +8,154 @@
   <div class="v2-header-top">
     <a class="v2-back" href="/v2/" aria-label="Back">←</a>
     <div class="v2-header-main">
-      <div class="v2-route">More</div>
-      <div class="v2-subline">
-        {% if current_agent %}{{ current_agent.name }}{% endif %}
-        · VK Digital mobile
-      </div>
+      {{ vk_wordmark('/v2/', '', 'v2-brand-wordmark v2-brand-wordmark-menu') }}
+      <div class="v2-subline">Menu &amp; settings</div>
     </div>
-    <a class="v2-pill-btn" href="/logout" style="font-size:12px;padding:6px 10px">Sign out</a>
+    <a class="v2-pill-btn" href="/logout">Sign out</a>
   </div>
 </header>
 {% endblock %}
 
 {% block content %}
 <div class="v2-menu-list">
-  {% if can('payments') %}
-  <a class="v2-menu-item" href="/payments/follow-up">
-    <span>Payment follow-up{% if nav.followups %} ({{ nav.followups }}){% endif %}</span>
-    <span class="sub">Classic view</span>
-  </a>
-  <a class="v2-menu-item" href="/payments">
-    <span>Payments</span>
-    <span class="sub">Today's collections</span>
-  </a>
+  {% if can('customers_view') or can('payments') or can('portal_actions') %}
+  <div class="v2-menu-group">
+    <div class="v2-menu-group-title">Customers</div>
+    {% if not fixed_provider or fixed_provider == 'railtel' %}
+    <a class="v2-menu-item" href="/v2/expiring-today?when=term_month&provider=railtel">
+      <span>Railtel term renewals</span>
+      <span class="sub">x3 · x6 · x10 · this month</span>
+    </a>
+    {% endif %}
+    <a class="v2-menu-item" href="/v2/expiring-today">
+      <span>Expiring today</span>
+      <span class="sub">{% if fixed_provider %}{{ provider_labels.get(fixed_provider, fixed_provider)|capitalize }} · tonight{% else %}All providers · tonight{% endif %}</span>
+    </a>
+    {% if not fixed_provider or fixed_provider == 'hathway' %}
+    <a class="v2-menu-item" href="/stbs/expiry-report">
+      <span>Hathway expiry report</span>
+      <span class="sub">PlanExpiry sheet · count by day</span>
+    </a>
+    {% endif %}
+    <a class="v2-menu-item" href="/v2/expiring-today?when=1d">
+      <span>Expired follow-up</span>
+      <span class="sub">1d · 2d · 7d+ late</span>
+    </a>
+    {% if can('packages') %}
+    <a class="v2-menu-item" href="/packages">
+      <span>Plans</span>
+      <span class="sub">Packages catalog</span>
+    </a>
+    {% endif %}
+  </div>
+  {% elif can('packages') %}
+  <div class="v2-menu-group">
+    <div class="v2-menu-group-title">Customers</div>
+    <a class="v2-menu-item" href="/packages">
+      <span>Plans</span>
+      <span class="sub">Packages catalog</span>
+    </a>
+  </div>
   {% endif %}
-  {% if can('bills') %}
-  <a class="v2-menu-item" href="/bills">
-    <span>Bills</span>
-    <span class="sub">Ledger &amp; checker</span>
-  </a>
-  {% endif %}
-  {% if can('portal_actions') %}
-  <a class="v2-menu-item" href="/jobs">
-    <span>Provider jobs</span>
-    <span class="sub">{% if nav.jobs_otp %}OTP needed{% elif nav.jobs_running %}Portal busy{% else %}Queue{% endif %}</span>
-  </a>
-  {% endif %}
-  {% if can('providers') %}
-  <a class="v2-menu-item" href="/providers">
-    <span>Providers</span>
-    <span class="sub">Wallet &amp; sync</span>
-  </a>
-  {% endif %}
-  {% if can('complaints') %}
-  <a class="v2-menu-item" href="/complaints">
-    <span>Complaints</span>
-    <span class="sub">{% if nav.complaints_open %}{{ nav.complaints_open }} open{% else %}All clear{% endif %}</span>
-  </a>
-  {% endif %}
-  {% if can('packages') %}
-  <a class="v2-menu-item" href="/packages">
-    <span>Plans</span>
-    <span class="sub">Packages catalog</span>
-  </a>
-  {% endif %}
-  {% if can('activity') %}
-  <a class="v2-menu-item" href="/activity">
-    <span>Activity log</span>
-  </a>
-  {% endif %}
-  {% if can('agents') or can('bix_sync') %}
-  <a class="v2-menu-item" href="/settings">
-    <span>Settings</span>
-    <span class="sub">Agents &amp; Bix</span>
-  </a>
-  {% endif %}
-  <a class="v2-menu-item" href="/">
-    <span>Full desktop dashboard</span>
-    <span class="sub">All features, tables</span>
-  </a>
-</div>
 
-<a class="v2-classic-link" href="/v2/classic">Use classic UI as default</a>
+  {% if can('payments') or can('bills') or can('complaints') or can('agents') or can('customers_view') %}
+  <div class="v2-menu-group">
+    <div class="v2-menu-group-title">Money</div>
+    {% if can('payments') %}
+    <a class="v2-menu-item" href="/v2/unpaid-renewals">
+      <span>Unpaid renewals{% if nav.unpaid_renewals %} ({{ nav.unpaid_renewals }}){% endif %}</span>
+      <span class="sub">Renewed this month, not paid</span>
+    </a>
+    <a class="v2-menu-item" href="/v2/pay-qr">
+      <span>Customer pay QR{% if nav.pay_portal_open %} ({{ nav.pay_portal_open }}){% endif %}</span>
+      <span class="sub">Shop sticker · pending UPI</span>
+    </a>
+    <a class="v2-menu-item" href="/payments/follow-up">
+      <span>Payment follow-up{% if nav.followups %} ({{ nav.followups }}){% endif %}</span>
+      <span class="sub">Classic view</span>
+    </a>
+    <a class="v2-menu-item" href="/payments">
+      <span>Payments</span>
+      <span class="sub">Today's collections</span>
+    </a>
+    {% endif %}
+    {% if can('payments') or can('complaints') or can('agents') or can('customers_view') %}
+    <a class="v2-menu-item" href="/settlements">
+      <span>Settlements</span>
+      <span class="sub">Cash / UPI handover &amp; expenses</span>
+    </a>
+    {% endif %}
+    {% if can('bills') %}
+    <a class="v2-menu-item" href="/bills">
+      <span>Bills</span>
+      <span class="sub">Ledger &amp; checker</span>
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if can('portal_actions') or can('providers') or can('complaints') %}
+  <div class="v2-menu-group">
+    <div class="v2-menu-group-title">Operations</div>
+    {% if can('portal_actions') %}
+    <a class="v2-menu-item" href="/jobs">
+      <span>Provider jobs</span>
+      <span class="sub">{% if nav.jobs_otp %}OTP needed{% elif nav.jobs_running %}Portal busy{% else %}Queue{% endif %}</span>
+    </a>
+    {% endif %}
+    {% if can('providers') and fixed_provider != 'hathway' %}
+    <a class="v2-menu-item" href="/v2/railtel-online">
+      <span>Railtel online (live)</span>
+      <span class="sub">dash.php · name + duration</span>
+    </a>
+    <a class="v2-menu-item" href="/providers">
+      <span>Providers</span>
+      <span class="sub">Wallet &amp; sync</span>
+    </a>
+    {% endif %}
+    {% if can('complaints') %}
+    <a class="v2-menu-item" href="/complaints">
+      <span>Complaints</span>
+      <span class="sub">{% if nav.complaints_open %}{{ nav.complaints_open }} open{% else %}All clear{% endif %}</span>
+    </a>
+    {% endif %}
+    {% if can('payments') or can('agents') %}
+    <a class="v2-menu-item" href="/field">
+      <span>Field</span>
+      <span class="sub">Today's map &amp; collections</span>
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if can('inventory') %}
+  <div class="v2-menu-group">
+    <div class="v2-menu-group-title">Stock</div>
+    <a class="v2-menu-item" href="/inventory">
+      <span>Inventory</span>
+      <span class="sub">On hand · log used items</span>
+    </a>
+  </div>
+  {% endif %}
+
+  <div class="v2-menu-group">
+    <div class="v2-menu-group-title">Settings</div>
+    {% if can('activity') %}
+    <a class="v2-menu-item" href="/activity">
+      <span>Activity log</span>
+      <span class="sub">What changed</span>
+    </a>
+    {% endif %}
+    {% if can('agents') or can('bix_sync') %}
+    <a class="v2-menu-item" href="/settings">
+      <span>Settings</span>
+      <span class="sub">Agents, UPI, Bix &amp; Hathway expiry</span>
+    </a>
+    {% endif %}
+    <a class="v2-menu-item" href="/v2/classic">
+      <span>Switch to classic desktop UI</span>
+      <span class="sub">Full tables and dashboard</span>
+    </a>
+  </div>
+</div>
 {% endblock %}

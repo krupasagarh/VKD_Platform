@@ -1,6 +1,7 @@
 .env
 .env.local
 data/
+ui_backup_20260929/
 __pycache__/
 *.pyc
 *.pyo

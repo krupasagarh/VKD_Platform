@@ -1,0 +1,148 @@
+{% extends "v2/base.html" %}
+{% from "v2/_expiring_today_card.html" import expiring_today_card %}
+{% set active = "expiring" %}
+{% set is_tonight = when == 'tonight' %}
+{% set is_term_month = when == 'term_month' %}
+{% block title %}{{ when_label }} · VK Digital{% endblock %}
+
+{% block header %}
+<header class="v2-header">
+  <div class="v2-header-top">
+    <a class="v2-back" href="/v2/" aria-label="Back">←</a>
+    <div class="v2-header-main">
+      <div class="v2-route">{{ when_label }}</div>
+      <div class="v2-subline">
+        {{ stats.customers }} customer{{ "s" if stats.customers != 1 else "" }}
+        · {{ stats.connections }} connection{{ "s" if stats.connections != 1 else "" }}
+        {% if is_tonight %}tonight{% elif is_term_month %}this month{% else %}lapsed{% endif %}
+      </div>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<p class="v2-page-note">
+  {% if is_tonight %}
+  Paid-through date tonight. Term plans use the portal term end (Subscription Expiry,
+  then the stored Railtel date). Tap WhatsApp to send an expiring-tonight reminder.
+  {% elif is_term_month %}
+  Railtel term plans (<span class="mono">x3</span>, <span class="mono">x6</span>, <span class="mono">x10</span>, …) whose
+  <strong>portal renewal date</strong> falls this calendar month — active, inactive, or suspended; already renewed or not.
+  {% else %}
+  Paid-through from the portal: term plans (x3/x6/x10) use Subscription Expiry, then the
+  stored Railtel date. Monthly packs use the portal expiry. Use Check if you need a live date.
+  {% endif %}
+</p>
+
+<div class="v2-chips">
+  {% for key, _spec in when_choices.items() %}
+  {% if key != 'term_month' or not fixed_provider or fixed_provider == 'railtel' %}
+  <a href="/v2/expiring-today?when={{ key }}{% if provider %}&provider={{ provider }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+     class="v2-chip {% if when == key %}on{% endif %}">
+    {% if key == 'tonight' %}Tonight{% elif key == 'term_month' %}This month{% elif key == '1d' %}1 day late{% elif key == '2d' %}2 days late{% else %}7+ days late{% endif %}
+  </a>
+  {% endif %}
+  {% endfor %}
+</div>
+
+<form class="v2-filters" method="get" action="/v2/expiring-today">
+  <input type="hidden" name="when" value="{{ when }}">
+  <label class="v2-filter-field" style="min-width:12rem;flex:1">
+    <span>Search</span>
+    <input type="search" name="q" value="{{ q or '' }}" placeholder="Name, ka.mohan.ks, phone">
+  </label>
+  <button class="v2-chip" type="submit" style="align-self:flex-end">Find</button>
+  {% if is_term_month %}
+  <input type="hidden" name="provider" value="railtel">
+  <span class="v2-filter-note">Railtel term plans only</span>
+  {% else %}
+  <label class="v2-filter-field">
+    <span>Provider</span>
+    {% if fixed_provider %}
+    <input type="hidden" name="provider" value="{{ fixed_provider }}">
+    <span class="v2-filter-note">{{ provider_labels.get(fixed_provider, fixed_provider)|capitalize }} only</span>
+    {% else %}
+    <select name="provider" onchange="this.form.submit()">
+      <option value="">Any provider</option>
+      {% for p in providers %}
+      <option value="{{ p }}" {% if provider == p %}selected{% endif %}>{{ provider_labels.get(p, p) }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+  </label>
+  {% endif %}
+</form>
+
+{% if rows %}
+<div class="v2-feed">
+  {% for item in rows %}
+    {{ expiring_today_card(item, provider_labels, can, areas, list_next, when=when) }}
+  {% endfor %}
+</div>
+{% else %}
+<div class="v2-empty">
+  <h2>{% if is_tonight %}Nothing expiring tonight{% elif is_term_month %}No term renewals this month{% else %}Nobody {{ when_label|lower }}{% endif %}</h2>
+  <p>
+    {% if q %}
+    No expiry-window match for “{{ q }}”.
+    {% elif provider %}
+    No {{ provider_labels.get(provider, provider) }} connections match this window.
+    {% elif is_tonight %}
+    No active connections expire today.
+    {% elif is_term_month %}
+    No Railtel term-plan connections have a portal renewal date this month.
+    {% else %}
+    No connections match this expiry window.
+    {% endif %}
+  </p>
+  {% if found_customers %}
+  <p>Found in customers — open them here:</p>
+  <div class="v2-feed" style="margin-top:12px">
+    {% for c in found_customers %}
+    <a class="v2-cta" href="/customers/{{ c.id }}" style="display:flex;margin-top:8px">{{ c.name }}{% if c.code %} · {{ c.code }}{% endif %}</a>
+    {% endfor %}
+  </div>
+  {% elif q %}
+  <a class="v2-cta" href="/v2/customers?q={{ q|urlencode }}" style="display:inline-flex;margin-top:16px">Search all customers</a>
+  {% elif provider and not fixed_provider %}
+  <a class="v2-cta" href="/v2/expiring-today?when={{ when }}" style="display:inline-flex;margin-top:16px">Show all providers</a>
+  {% endif %}
+</div>
+{% endif %}
+{% if not is_tonight and rows %}
+<script>
+(function () {
+  var nodes = document.querySelectorAll(".v2-verify-status[data-connection-id]");
+  if (!nodes.length) return;
+
+  function ids() {
+    return Array.prototype.map.call(nodes, function (el) {
+      return el.getAttribute("data-connection-id");
+    }).filter(Boolean).join(",");
+  }
+
+  function tick() {
+    fetch("/v2/api/expiry-verification?ids=" + encodeURIComponent(ids()), {
+      credentials: "same-origin",
+    }).then(function (res) { return res.json(); }).then(function (data) {
+      if (!data || !data.items) return;
+      nodes.forEach(function (el) {
+        var id = el.getAttribute("data-connection-id");
+        var item = data.items[id];
+        if (!item || !item.label) return;
+        if (el.textContent.trim() !== item.label) {
+          el.textContent = item.label;
+        }
+      });
+      if (data.pending) {
+        setTimeout(tick, 15000);
+      }
+    }).catch(function () {});
+  }
+
+  setTimeout(tick, 15000);
+})();
+</script>
+{% endif %}
+{% endblock %}

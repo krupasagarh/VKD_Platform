@@ -1,0 +1,10 @@
+{% macro hathway_pack_line(cn, compact=false) %}
+{% set pack = cn.hathway_pack_name|default('') %}
+{% if (cn.provider|default('')) == 'hathway' and pack %}
+  {% if compact %}
+  <div class="v2-muted" style="font-size:12px">{{ pack }}</div>
+  {% else %}
+  <div class="subtle">Hathway pack · {{ pack }}</div>
+  {% endif %}
+{% endif %}
+{% endmacro %}

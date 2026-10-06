@@ -1,0 +1,78 @@
+{% extends "v2/base.html" %}
+{% set active = "menu" %}
+{% block title %}{{ item.name }} · Inventory{% endblock %}
+
+{% block header %}
+<header class="v2-header">
+  <div class="v2-header-top">
+    <a class="v2-back" href="/inventory" aria-label="Back">←</a>
+    <div class="v2-header-main">
+      <div class="v2-route">{{ item.name }}</div>
+      <div class="v2-subline">{{ item.category }} · {{ item.unit }}</div>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="v2-inv-group">
+  <div class="v2-tiles v2-tiles-3">
+    <div class="v2-tile">
+      <div class="v2-tile-num{% if item.on_hand <= 0 %} is-warn{% endif %}">{{ item.on_hand_label }}</div>
+      <div class="v2-tile-label">On hand</div>
+    </div>
+    <div class="v2-tile">
+      <div class="v2-tile-num">{{ item.received_label }}</div>
+      <div class="v2-tile-label">Received</div>
+    </div>
+    <div class="v2-tile">
+      <div class="v2-tile-num">{{ item.used_label }}</div>
+      <div class="v2-tile-label">Used</div>
+    </div>
+  </div>
+  {% if can_receive %}
+  <div class="v2-subline" style="margin:10px 4px 0">Paid in ₹{{ item.paid_paise|rupees }}</div>
+  {% endif %}
+</div>
+
+{% if usage %}
+<section class="v2-inv-group">
+  <div class="v2-sec-title">Used</div>
+  <div class="v2-card v2-inv-log">
+    {% for u in usage %}
+    <div class="v2-inv-log-row">
+      <div>
+        <strong>{{ u.qty_label }} · {{ u.kind_label }}</strong>
+        <div class="v2-subline">
+          {% if u.customer_id %}<a href="/customers/{{ u.customer_id }}">{{ u.customer_name }}</a>
+          {% else %}No customer{% endif %}
+          {% if u.note %} · {{ u.note }}{% endif %}
+        </div>
+      </div>
+      <div class="v2-subline">{{ u.used_on|nice_date }} · {{ u.created_by or "—" }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if can_receive and receipts %}
+<section class="v2-inv-group">
+  <div class="v2-sec-title">Orders in</div>
+  <div class="v2-card v2-inv-log">
+    {% for r in receipts %}
+    <div class="v2-inv-log-row">
+      <div>
+        <strong>{{ r.qty_label }}</strong>
+        <div class="v2-subline">
+          {% if r.amount_paise %}₹{{ r.amount_paise|rupees }}{% else %}No amount{% endif %}
+          {% if r.note %} · {{ r.note }}{% endif %}
+        </div>
+      </div>
+      <div class="v2-subline">{{ r.received_on|nice_date }} · {{ r.created_by or "—" }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

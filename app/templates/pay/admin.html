@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% set active = "pay_portal" %}
+{% block title %}Customer pay portal · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Customer pay portal</h1>
+    <div class="subtle">QR → phone → UPI → you confirm → renew</div>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn" href="/pay" target="_blank" rel="noopener">Open customer page</a>
+</div>
+
+<div class="grid-2">
+  <section class="panel">
+    <h2>QR link</h2>
+    <p class="subtle">Print one sticker for your shop — customers enter their mobile on this page.</p>
+    <p><code>{{ public_url }}</code></p>
+    <p>
+      <img alt="Pay portal QR"
+           src="{{ public_qr_url }}"
+           width="180" height="180">
+    </p>
+    <p class="subtle" style="margin-top:12px">
+      UPI ID and portal on/off:
+      <a href="/settings/upi">Settings → Customer pay</a>
+      {% if vpa %} · <span class="mono">{{ vpa }}</span>{% endif %}
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>Quick links</h2>
+    <p class="subtle">Configure VPA, payee name, and whether <code>/pay</code> is open to customers.</p>
+    <p><a class="btn btn-primary" href="/settings/upi">Open UPI settings</a></p>
+    <p class="subtle" style="margin-top:12px">
+      Env fallback: <code>VK_PLATFORM_UPI_VPA</code>, <code>VK_PLATFORM_UPI_PAYEE</code>
+    </p>
+  </section>
+</div>
+
+<section class="panel pay-admin-desktop" style="margin-top:16px">
+  <h2>Waiting for confirmation</h2>
+  {% if not intents %}
+  <p class="subtle">No open UPI requests.</p>
+  {% else %}
+  <div class="table-wrap table-wrap-sticky">
+    <table class="data">
+      <thead>
+        <tr>
+          <th class="date">When</th>
+          <th>Customer</th>
+          <th class="num">Amount</th>
+          <th>Ref</th>
+          <th>Service</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in intents %}
+        <tr>
+          <td class="date">{{ row.created_at|nice_datetime }}</td>
+          <td>
+            <a href="/customers/{{ row.customer_id }}">{{ row.customer_name }}</a><br>
+            <span class="subtle">{{ row.customer_phone }}</span>
+          </td>
+          <td class="num">₹{{ row.amount_paise|rupees }}</td>
+          <td><code>{{ row.reference }}</code></td>
+          <td class="subtle">
+            {% if row.connection_id %}
+              {{ row.connection_provider }} {{ row.connection_upstream_id }}
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if row.status == 'customer_marked' %}
+              <span class="badge badge-warn">Tapped I paid — check bank</span>
+            {% else %}
+              <span class="badge">Pending</span>
+            {% endif %}
+          </td>
+          <td class="actions">
+            <form method="post" action="/pay/admin/intents/{{ row.id }}/confirm" style="display:inline">
+              <input type="hidden" name="queue_renew" value="0">
+              <input type="hidden" name="next" value="/customers/{{ row.customer_id }}">
+              <button type="submit" class="btn btn-sm"
+                      onclick="return confirm('Record payment only if this UPI is in your bank. No renew.')">Record</button>
+            </form>
+            <form method="post" action="/pay/admin/intents/{{ row.id }}/confirm" style="display:inline">
+              <input type="hidden" name="queue_renew" value="1">
+              <input type="hidden" name="next" value="/customers/{{ row.customer_id }}">
+              <button type="submit" class="btn btn-primary btn-sm"
+                      onclick="return confirm('Only if money is in your UPI. This records and renews.')">Record &amp; renew</button>
+            </form>
+            <form method="post" action="/pay/admin/intents/{{ row.id }}/cancel" style="display:inline">
+              <button type="submit" class="btn btn-sm">Cancel</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

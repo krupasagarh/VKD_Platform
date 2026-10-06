@@ -1,0 +1,198 @@
+{% from "_customer_area.html" import customer_area_cell %}
+
+{% from "_expiry_followup_actions.html" import expiry_followup_actions %}
+
+{% from "_check_status_btn.html" import check_status_btn %}
+
+{% from "_hathway_pack.html" import hathway_pack_line %}
+
+{% macro expiring_today_card(item, provider_labels, can, areas=[], next_url="", when="tonight") %}
+
+{% set name = item.customer_name %}
+
+{% set initials = (name or "?")[:1]|upper %}
+
+{% set provider = item.provider %}
+
+{% set cid = item.customer_id %}
+
+{% set phone = item.phone or "" %}
+
+{% set digits = phone|replace(" ","")|replace("-","")|replace("(", "")|replace(")", "") %}
+
+{% set tel_href = "tel:+" ~ digits if digits.startswith("91") and digits|length == 12 else ("tel:+91" ~ digits if digits|length == 10 else ("tel:" ~ digits if digits else "")) %}
+
+{% set is_tonight = when == 'tonight' %}
+
+{% if is_tonight %}
+  {% set left = none %}
+{% elif when == 'term_month' %}
+  {% set left = item.expiry_date|days_until if item.expiry_date else none %}
+{% else %}
+  {% set left = item.effective_expiry|days_until if item.effective_expiry else none %}
+{% endif %}
+
+{% if is_tonight %}
+
+  {% set timing_short = 'Tonight' %}
+
+{% elif when == '7d' and left is not none and left < 0 %}
+
+  {% set timing_short = (-left)|string ~ (' day late' if -left == 1 else ' days late') %}
+
+{% elif when == '2d' %}
+
+  {% set timing_short = '2 days ago' %}
+
+{% elif when == 'term_month' and left is not none %}
+
+  {% if left == 0 %}
+
+    {% set timing_short = 'Today' %}
+
+  {% elif left > 0 %}
+
+    {% set timing_short = 'In ' ~ left ~ (' day' if left == 1 else ' days') %}
+
+  {% else %}
+
+    {% set timing_short = (-left)|string ~ 'd ago' %}
+
+  {% endif %}
+
+{% else %}
+
+  {% set timing_short = '1 day ago' %}
+
+{% endif %}
+
+<article class="v2-card v2-card-customer v2-card-expiring">
+
+  <div class="v2-card-top">
+
+    <div class="v2-avatar v2-avatar-warn" aria-hidden="true">{{ initials }}</div>
+
+    <div class="v2-card-info">
+
+      <h3 class="v2-card-name"><a href="/customers/{{ cid }}">{{ name }}</a></h3>
+
+      <div class="v2-muted" style="font-size:12px;margin-top:2px">
+
+        {{ provider_labels.get(provider, provider) }}
+
+        {% if item.upstream_id %}
+
+        · <span class="mono">{{ item.upstream_id }}</span>
+
+        {{ check_status_btn(item.id, next_url, compact=true, allow=can('portal_actions')) }}
+
+        {% endif %}
+
+      </div>
+
+    </div>
+
+    <div class="v2-card-timing v2-card-timing-warn">
+
+      <div><strong>{{ timing_short }}</strong></div>
+
+      <div>{{ (item.effective_expiry or item.expiry_date)|nice_date }}</div>
+
+      {% if item.effective_expiry and item.expiry_date and item.effective_expiry != item.expiry_date %}
+
+      <div class="v2-muted" style="font-size:11px">portal {{ item.expiry_date|nice_date }}</div>
+
+      {% endif %}
+
+      {% if not is_tonight %}
+
+      <div class="v2-muted v2-verify-status" style="font-size:11px;margin-top:4px" data-connection-id="{{ item.id }}">
+
+        {% if item.status_check_pending %}
+
+        Checking portal…
+
+        {% elif item.last_status_at or item.last_synced_at %}
+
+        Verified {{ (item.last_status_at or item.last_synced_at)|nice_datetime }}
+
+        {% else %}
+
+        Not verified yet
+
+        {% endif %}
+
+      </div>
+
+      {% endif %}
+
+    </div>
+
+  </div>
+
+
+
+  <div class="v2-facts">
+
+    <div class="v2-fact">
+
+      <div class="v2-fact-label">Phone</div>
+
+      <div class="v2-fact-value">
+
+        {% if phone and tel_href %}
+
+        <a class="v2-tel" href="{{ tel_href }}">{{ phone }}</a>
+
+        {% else %}<span class="v2-muted">—</span>{% endif %}
+
+      </div>
+
+    </div>
+
+    <div class="v2-fact">
+
+      <div class="v2-fact-label">Area</div>
+
+      <div class="v2-fact-value">
+
+        {{ customer_area_cell(item, areas, can, next_url) }}
+
+      </div>
+
+    </div>
+
+    <div class="v2-fact">
+
+      <div class="v2-fact-label">Plan</div>
+
+      <div class="v2-fact-value">
+
+        {{ item.package_name or "—" }}
+
+        {% if item.package_price_paise %}
+
+        <span class="v2-muted"> · ₹{{ item.package_price_paise|rupees }}</span>
+
+        {% endif %}
+
+        {{ hathway_pack_line(item, compact=true) }}
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="v2-card-foot v2-card-foot-actions-only v2-card-foot--actions">
+
+    {{ expiry_followup_actions(item, name, phone, provider, item.providers, can, next_url, when=when) }}
+
+  </div>
+
+</article>
+
+{% endmacro %}
+

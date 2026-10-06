@@ -1,0 +1,21 @@
+{% extends "pay/base.html" %}
+{% block title %}Choose account{% endblock %}
+
+{% block content %}
+<section class="pay-card">
+  <h1 style="margin-top:0">Which account?</h1>
+  <p class="pay-lead">This mobile number is linked to more than one name. Select yours.</p>
+  <ul class="pay-pick-list">
+    {% for c in choices %}
+    <li>
+      <a class="pay-pick-item" href="/pay/account/{{ c.id }}">
+        <span class="pay-pick-name">{{ c.label }}</span>
+        <span class="pay-pick-hint">{{ c.phone_hint }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  <a class="pay-link-back" href="/pay?mode=mobile">← Try another number</a>
+  <a class="pay-link-back" href="/pay?mode=stb" style="margin-left:12px">Use STB / Railtel ID</a>
+</section>
+{% endblock %}

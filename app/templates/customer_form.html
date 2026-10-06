@@ -15,7 +15,7 @@
       <div class="field"><label>Customer code</label><input type="text" name="code" placeholder="e.g. AJ-1"></div>
       <div class="field"><label>Phone</label><input type="text" name="phone" inputmode="numeric"></div>
       <div class="field"><label>Alternate phone</label><input type="text" name="alt_phone"></div>
-      <div class="field"><label>Locality / street</label><input type="text" name="sub_area"></div>
+      <div class="field"><label>Locality</label><input type="text" name="sub_area" placeholder="e.g. CN Road, BH Road" list="locality-options"></div>
       <div class="field"><label>Area / town</label><input type="text" name="area" value="Tiptur"></div>
       <div class="field"><label>Pincode</label><input type="text" name="pincode" value="572201"></div>
       <div class="field"><label>Email</label><input type="email" name="email"></div>
@@ -28,4 +28,7 @@
     </div>
   </div>
 </form>
+<datalist id="locality-options">
+  {% for a in areas %}<option value="{{ a }}">{% endfor %}
+</datalist>
 {% endblock %}

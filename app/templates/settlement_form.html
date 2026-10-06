@@ -1,0 +1,493 @@
+{% extends "base.html" %}
+{% set active = "settlements" %}
+{% set r = report if report else none %}
+{% set c = collection if collection else none %}
+{% block title %}{% if r %}Edit settlement{% else %}Settlement report{% endif %} · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{% if r %}Edit settlement{% else %}Expenses &amp; proofs{% endif %}</h1>
+    <div class="subtle">Collections already in the ledger load below. If a customer paid you cash — including Railtel customers you cannot open — search their name and enter the amount.</div>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn" href="/settlements">← All settlements</a>
+</div>
+
+<form class="filters" method="get" action="{% if r %}/settlements/{{ r.id }}/edit{% else %}/settlements/new{% endif %}">
+  {% if everyone %}
+  <div class="field">
+    <label>Agent</label>
+    <select name="agent_id">
+      {% for a in agents %}
+      <option value="{{ a.id }}" {% if selected_agent_id == a.id %}selected{% endif %}>{{ a.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <div class="field">
+    <label>From</label>
+    <input type="date" name="from" required value="{{ period_from }}">
+  </div>
+  <div class="field">
+    <label>To</label>
+    <input type="date" name="to" required value="{{ period_to }}">
+  </div>
+  <button class="btn btn-primary" type="submit">Load collections</button>
+</form>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">Cable</div>
+    <div class="value">₹{{ (c.cable.total_paise if c else 0)|rupees }}</div>
+    <div class="hint">Agent holds ₹{{ (c.cable.agent_paise if c else 0)|rupees }} · shop ₹{{ (c.cable.owner_paise if c else 0)|rupees }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">Internet</div>
+    <div class="value">₹{{ (c.internet.total_paise if c else 0)|rupees }}</div>
+    <div class="hint">Agent holds ₹{{ (c.internet.agent_paise if c else 0)|rupees }} · shop ₹{{ (c.internet.owner_paise if c else 0)|rupees }}</div>
+  </div>
+  <div class="stat good">
+    <div class="label">{% if everyone %}Already with you{% else %}Already with {{ owner_name }}{% endif %}</div>
+    <div class="value">₹{{ (c.owner_held_paise if c else 0)|rupees }}</div>
+    <div class="hint">{% if everyone %}Scanner / your UPI{% else %}Scanner / UPI to {{ owner_name }}{% endif %}</div>
+  </div>
+  <div class="stat {% if c and c.agent_held_paise > 0 %}warn{% endif %}">
+    <div class="label">{% if c and c.is_owner %}No handover{% elif everyone %}They should settle with you{% else %}You should settle with {{ owner_name }}{% endif %}</div>
+    <div class="value">₹{{ (c.agent_held_paise if c else 0)|rupees }}</div>
+    <div class="hint">Cash, agent UPI, bank, cheque</div>
+  </div>
+</div>
+
+{% if c and c.payments %}
+<div class="card">
+  <div class="card-head"><h2>Recorded collections</h2></div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Customer</th>
+        <th>Service</th>
+        <th>Mode</th>
+        <th class="num">Amount</th>
+        <th>Held by</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in c.payments %}
+      <tr>
+        <td>{{ p.paid_at }}</td>
+        <td><a href="/customers/{{ p.customer_id }}">{{ p.customer_name }}</a></td>
+        <td>{% if p.group == 'cable' %}Cable{% elif p.group == 'internet' %}Internet{% else %}Other{% endif %}</td>
+        <td>{{ payment_mode_labels.get(p.mode, p.mode) }}</td>
+        <td class="num">₹{{ p.amount_paise|rupees }}</td>
+        <td>{% if p.owner_held %}<span class="badge">{% if everyone %}You{% else %}{{ owner_name }}{% endif %}</span>{% else %}<span class="badge badge-warn">{% if everyone %}Agent{% else %}You{% endif %}</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% elif c and not c.payment_count %}
+<div class="card"><div class="empty">No recorded collections for these dates. Change From / To and load again, or add cash collected from a customer below.</div></div>
+{% endif %}
+
+<form class="settle-form" method="post" action="{% if r %}/settlements/{{ r.id }}/edit{% else %}/settlements/new{% endif %}" enctype="multipart/form-data">
+  <input type="hidden" name="agent_id" value="{{ selected_agent_id }}">
+  <input type="hidden" name="period_from" value="{{ period_from }}">
+  <input type="hidden" name="period_to" value="{{ period_to }}">
+
+  <div class="card">
+    <div class="card-head"><h2>Cash collected from a customer</h2></div>
+    <p class="subtle" style="margin-top:0">
+      Type a name or phone. Every customer is listed — Hathway and Railtel — with area.
+      Use this when someone pays you cash in the field.
+    </p>
+    <div id="cash-cust-rows">
+      {% set cash_custs = r.customer_cash_lines if r and r.customer_cash_lines else [none] %}
+      {% for line in cash_custs %}
+      <div class="settle-line settle-line-cust js-cash-cust">
+        <div class="field settle-cust-search">
+          <label>Customer</label>
+          <input type="hidden" name="cash_cust_id" value="{{ line.customer_id if line else '' }}">
+          <input type="hidden" name="cash_cust_name" value="{{ line.customer_name if line else '' }}">
+          <input type="hidden" name="cash_cust_area" value="{{ line.area if line else '' }}">
+          <div class="settle-cust-type">
+            <input type="text" class="js-cust-q" value="{{ line.customer_name if line else '' }}"
+                   placeholder="Type name or phone" autocomplete="off" spellcheck="false">
+            <div class="settle-suggest js-cust-suggest" hidden></div>
+          </div>
+          <div class="settle-cust-meta js-cust-meta{% if not line %} is-empty{% endif %}">
+            {% if line %}
+            <span>{{ line.area or 'No area' }}</span>
+            <span class="badge">{{ line.provider_label or line.provider }}</span>
+            {% else %}
+            <span>Pick a customer from the list</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="field">
+          <label>Provider</label>
+          <select name="cash_cust_provider" class="js-cust-provider">
+            <option value="railtel" {% if line and line.provider == 'railtel' %}selected{% endif %}>Railtel</option>
+            <option value="hathway" {% if line and line.provider == 'hathway' %}selected{% endif %}>Hathway</option>
+            <option value="iptv" {% if line and line.provider == 'iptv' %}selected{% endif %}>ANT IPTV</option>
+            <option value="ott" {% if line and line.provider == 'ott' %}selected{% endif %}>SmartPlay</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Cash amount</label>
+          <input type="text" name="cash_cust_amount" inputmode="numeric"
+                 value="{{ (line.amount_paise|rupees) if line else '' }}" placeholder="0">
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" name="cash_cust_date" value="{{ line.line_date if line else (r.settled_on if r else settled_on) }}">
+        </div>
+        <button type="button" class="btn btn-small btn-danger js-drop-line" aria-label="Remove">×</button>
+      </div>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn btn-small" data-clone="cash-cust-rows">+ Add another customer</button>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Handover</h2></div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Settlement date</label>
+        <input type="date" name="settled_on" required value="{{ r.settled_on if r else settled_on }}">
+      </div>
+    </div>
+    <h3 class="settle-sub">UPI handover to {{ owner_name }}</h3>
+    <p class="subtle" style="margin-top:0">When you send the settlement by PhonePe / GPay.</p>
+    <div class="form-grid">
+      <div class="field">
+        <label>Amount</label>
+        <input type="text" name="upi_handover_amount" inputmode="numeric"
+               value="{{ (r.handed_upi_paise|rupees) if r and r.handed_upi_paise else '' }}"
+               placeholder="0">
+      </div>
+      <div class="field">
+        <label>UPI ID used</label>
+        <input type="text" name="owner_upi_vpa" value="{{ r.owner_upi_vpa if r else '' }}" placeholder="name@ybl" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Screenshot</label>
+        <label class="settle-file">
+          <input type="file" name="upi_proof_file" accept="image/*" multiple>
+          <span class="settle-file-btn">Choose screenshot</span>
+          <span class="settle-file-name" data-empty="No screenshot selected">No screenshot selected</span>
+        </label>
+        <p class="subtle" style="margin:6px 0 0">PhonePe / GPay screenshot. You can pick more than one.</p>
+      </div>
+    </div>
+    {% set upi_shots = (r.proofs | selectattr('kind', 'equalto', 'upi_handover') | list) if r and r.proofs else [] %}
+    {% if upi_shots %}
+    <div class="settle-proofs">
+      {% for p in upi_shots %}
+      <label class="settle-proof">
+        <a href="/settlements/{{ r.id }}/proofs/{{ p.id }}" target="_blank" rel="noopener">
+          <img src="/settlements/{{ r.id }}/proofs/{{ p.id }}" alt="{{ p.caption or p.original_name }}">
+        </a>
+        <span>{{ p.caption or 'UPI handover' }}</span>
+        <span class="check"><input type="checkbox" name="remove_proof" value="{{ p.id }}"> Remove</span>
+      </label>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <h3 class="settle-sub">Cash handover</h3>
+    <p class="subtle" style="margin-top:0">When you give cash to {{ owner_name }}, Mom, or anyone else.</p>
+    <div id="cash-rows">
+      {% set cashes = r.cash_handover_lines if r and r.cash_handover_lines else [none] %}
+      {% for line in cashes %}
+      <div class="settle-line settle-line-cash">
+        <div class="field">
+          <label>Amount</label>
+          <input type="text" name="cash_amount" inputmode="numeric"
+                 value="{{ (line.amount_paise|rupees) if line else '' }}" placeholder="0">
+        </div>
+        <div class="field">
+          <label>Handed to</label>
+          <input type="text" name="cash_to" list="cash-to-list"
+                 value="{{ line.handed_to if line else '' }}"
+                 placeholder="{{ owner_name }} / Mom" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" name="cash_date" value="{{ line.line_date if line else (r.settled_on if r else settled_on) }}">
+        </div>
+        <button type="button" class="btn btn-small btn-danger js-drop-line" aria-label="Remove">×</button>
+      </div>
+      {% endfor %}
+    </div>
+    <datalist id="cash-to-list">
+      {% for name in cash_recipients or [] %}
+      <option value="{{ name }}"></option>
+      {% endfor %}
+    </datalist>
+    <button type="button" class="btn btn-small" data-clone="cash-rows">+ Add cash handover</button>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Expenditures</h2></div>
+    <p class="subtle" style="margin-top:0">Meals, parcels, or other — deducted from what the agent still owes.</p>
+    <div id="exp-rows">
+      {% set exps = r.expense_lines if r and r.expense_lines else [none] %}
+      {% for line in exps %}
+      <div class="settle-line settle-line-exp">
+        <div class="field">
+          <label>Type</label>
+          <select name="exp_kind">
+            {% for key, label in expense_kinds %}
+            <option value="{{ key }}" {% if line and line.kind == key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" name="exp_date" value="{{ line.line_date if line else '' }}">
+        </div>
+        <div class="field">
+          <label>Comments</label>
+          <input type="text" name="exp_comment" value="{{ line.comment if line else '' }}" placeholder="KEB work / wire parcel">
+        </div>
+        <div class="field">
+          <label>Amount</label>
+          <input type="text" name="exp_amount" inputmode="numeric" value="{{ (line.amount_paise|rupees) if line else '' }}" placeholder="500">
+        </div>
+        <button type="button" class="btn btn-small btn-danger js-drop-line" aria-label="Remove">×</button>
+      </div>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn btn-small" data-clone="exp-rows">+ Add expense</button>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Proof photos</h2></div>
+    <p class="subtle" style="margin-top:0">
+      PhonePe / GPay screenshots, scanner slips, cash photos, or expense bills.
+      JPG, PNG or WebP, up to 8 MB each.
+    </p>
+    {% set other_proofs = (r.proofs | rejectattr('kind', 'equalto', 'upi_handover') | list) if r and r.proofs else [] %}
+    {% if other_proofs %}
+    <div class="settle-proofs">
+      {% for p in other_proofs %}
+      <label class="settle-proof">
+        <a href="/settlements/{{ r.id }}/proofs/{{ p.id }}" target="_blank" rel="noopener">
+          <img src="/settlements/{{ r.id }}/proofs/{{ p.id }}" alt="{{ p.caption or p.original_name }}">
+        </a>
+        <span>{{ proof_labels.get(p.kind, p.kind) }}{% if p.caption %} · {{ p.caption }}{% endif %}</span>
+        <span class="check"><input type="checkbox" name="remove_proof" value="{{ p.id }}"> Remove</span>
+      </label>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div id="proof-rows">
+      <div class="settle-line settle-line-proof">
+        <div class="field">
+          <label>What this shows</label>
+          <select name="proof_kind">
+            {% for key, label in proof_kinds %}
+            <option value="{{ key }}" {% if key == 'cash' %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Caption</label>
+          <input type="text" name="proof_caption" placeholder="e.g. 20 Sep cash handover">
+        </div>
+        <div class="field">
+          <label>Photo</label>
+          <label class="settle-file">
+            <input type="file" name="proof_file" accept="image/*">
+            <span class="settle-file-btn">Choose photo</span>
+            <span class="settle-file-name" data-empty="No photo selected">No photo selected</span>
+          </label>
+        </div>
+        <button type="button" class="btn btn-small btn-danger js-drop-line" aria-label="Remove">×</button>
+      </div>
+    </div>
+    <button type="button" class="btn btn-small" data-clone="proof-rows">+ Add another photo</button>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Notes</h2></div>
+    <div class="field">
+      <textarea name="notes" placeholder="Anything else for this handover">{{ r.notes if r else '' }}</textarea>
+    </div>
+    <div class="form-row">
+      <button class="btn btn-primary" type="submit">{% if r %}Save report{% else %}Submit report{% endif %}</button>
+      <a class="btn" href="/settlements">Cancel</a>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  function esc(s) {
+    return String(s || "").replace(/[&<>"']/g, function (c) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]);
+    });
+  }
+  function fileLabel(input) {
+    var box = input.closest(".settle-file");
+    return box ? box.querySelector(".settle-file-name") : null;
+  }
+  function resetFileName(input) {
+    var name = fileLabel(input);
+    if (!name) return;
+    name.textContent = name.getAttribute("data-empty") || "No photo selected";
+  }
+  function bindFiles(root) {
+    root.querySelectorAll('input[type="file"]').forEach(function (input) {
+      input.onchange = function () {
+        var name = fileLabel(input);
+        if (!name) return;
+        var files = input.files;
+        if (!files || !files.length) resetFileName(input);
+        else if (files.length === 1) name.textContent = files[0].name;
+        else name.textContent = files.length + " photos";
+      };
+    });
+  }
+  function bindDrop(root) {
+    root.querySelectorAll(".js-drop-line").forEach(function (btn) {
+      btn.onclick = function () {
+        var row = btn.closest(".settle-line");
+        var wrap = row && row.parentElement;
+        if (!wrap) return;
+        if (wrap.querySelectorAll(".settle-line").length < 2) {
+          row.querySelectorAll("input[type=text], input[type=date], input[type=file], textarea").forEach(function (el) {
+            el.value = "";
+            if (el.type === "file") resetFileName(el);
+          });
+          return;
+        }
+        row.remove();
+      };
+    });
+  }
+  document.querySelectorAll("[data-clone]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var wrap = document.getElementById(btn.getAttribute("data-clone"));
+      if (!wrap) return;
+      var src = wrap.querySelector(".settle-line");
+      if (!src) return;
+      var copy = src.cloneNode(true);
+      copy.querySelectorAll("input, select, textarea").forEach(function (el) {
+        if (el.tagName === "SELECT") el.selectedIndex = 0;
+        else el.value = "";
+        if (el.type === "file") resetFileName(el);
+      });
+      wrap.appendChild(copy);
+      bindDrop(copy);
+      bindFiles(copy);
+    });
+  });
+  bindDrop(document);
+  bindFiles(document);
+
+  function setMeta(row, html, empty) {
+    var meta = row.querySelector(".js-cust-meta");
+    if (!meta) return;
+    meta.innerHTML = html;
+    meta.classList.toggle("is-empty", !!empty);
+  }
+  function pickCustomer(row, item) {
+    row.querySelector('input[name="cash_cust_id"]').value = item.id;
+    row.querySelector('input[name="cash_cust_name"]').value = item.name;
+    row.querySelector('input[name="cash_cust_area"]').value = item.area || "";
+    var q = row.querySelector(".js-cust-q");
+    if (q) q.value = item.name;
+    var sel = row.querySelector(".js-cust-provider");
+    if (sel) {
+      var allowed = item.providers || [];
+      var prefer = item.preferred_provider || "";
+      if (prefer) sel.value = prefer;
+      Array.prototype.forEach.call(sel.options, function (opt) {
+        opt.disabled = allowed.length ? allowed.indexOf(opt.value) === -1 : false;
+      });
+    }
+    var labels = (item.provider_labels || []).join(" · ") || "No connection";
+    setMeta(row, "<span>" + esc(item.area || "No area") + "</span> <span class=\"badge\">" + esc(labels) + "</span>", false);
+    var box = row.querySelector(".js-cust-suggest");
+    if (box) { box.hidden = true; box.innerHTML = ""; }
+  }
+  function bindCustSearch(row) {
+    if (row.dataset.custBound) return;
+    row.dataset.custBound = "1";
+    var q = row.querySelector(".js-cust-q");
+    var box = row.querySelector(".js-cust-suggest");
+    if (!q || !box) return;
+    var timer = 0;
+    q.addEventListener("input", function () {
+      row.querySelector('input[name="cash_cust_id"]').value = "";
+      row.querySelector('input[name="cash_cust_name"]').value = "";
+      setMeta(row, "<span>Pick a customer from the list</span>", true);
+      clearTimeout(timer);
+      var text = q.value.trim();
+      if (text.length < 2) { box.hidden = true; box.innerHTML = ""; return; }
+      timer = setTimeout(function () {
+        fetch("/settlements/search-customers?q=" + encodeURIComponent(text), { credentials: "same-origin" })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            var list = (data && data.customers) || [];
+            if (!list.length) {
+              box.innerHTML = "<div class=\"settle-suggest-empty\">No matching customer</div>";
+              box.hidden = false;
+              return;
+            }
+            box.innerHTML = list.map(function (item, i) {
+              var labels = (item.provider_labels || []).join(" · ") || "—";
+              return "<button type=\"button\" class=\"settle-suggest-item\" data-i=\"" + i + "\">"
+                + "<strong>" + esc(item.name) + "</strong>"
+                + "<span>" + esc(item.area || "No area") + " · " + esc(labels) + "</span>"
+                + "</button>";
+            }).join("");
+            box.hidden = false;
+            box.querySelectorAll(".settle-suggest-item").forEach(function (btn) {
+              btn.onclick = function () {
+                pickCustomer(row, list[parseInt(btn.getAttribute("data-i"), 10)]);
+              };
+            });
+          })
+          .catch(function () {
+            box.innerHTML = "<div class=\"settle-suggest-empty\">Could not search</div>";
+            box.hidden = false;
+          });
+      }, 180);
+    });
+    q.addEventListener("focus", function () {
+      if (box.innerHTML) box.hidden = false;
+    });
+    document.addEventListener("click", function (ev) {
+      if (!row.contains(ev.target)) box.hidden = true;
+    });
+  }
+  document.querySelectorAll(".js-cash-cust").forEach(bindCustSearch);
+  var origClone = document.querySelectorAll("[data-clone]");
+  origClone.forEach(function (btn) {
+    if (btn.getAttribute("data-clone") !== "cash-cust-rows") return;
+    btn.addEventListener("click", function () {
+      setTimeout(function () {
+        var wrap = document.getElementById("cash-cust-rows");
+        if (!wrap) return;
+        var rows = wrap.querySelectorAll(".js-cash-cust");
+        var last = rows[rows.length - 1];
+        if (last) {
+          last.dataset.custBound = "";
+          var suggest = last.querySelector(".js-cust-suggest");
+          if (suggest) { suggest.hidden = true; suggest.innerHTML = ""; }
+          setMeta(last, "<span>Pick a customer from the list</span>", true);
+          bindCustSearch(last);
+        }
+      }, 0);
+    });
+  });
+})();
+</script>
+{% endblock %}

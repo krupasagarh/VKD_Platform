@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set active = "settings" %}
+{% block title %}Customer pay · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Customer pay (UPI / QR)</h1>
+    <div class="subtle">
+      Shop sticker at <a href="{{ public_url }}" target="_blank" rel="noopener"><code>/pay</code></a> —
+      customers look up by mobile or STB, pay with UPI, staff confirm under
+      <a href="/pay/admin">Customer QR pay</a>.
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn" href="/pay/admin">Open confirm queue</a>
+</div>
+
+{% include "_settings_tabs.html" %}
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><h2>UPI settings</h2></div>
+    <form method="post" action="/settings/upi">
+      <div class="form-grid">
+        <div class="field">
+          <label>UPI ID (VPA)</label>
+          <input type="text" name="upi_vpa" value="{{ vpa }}" placeholder="yourname@ybl" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Payee name (shown in UPI apps)</label>
+          <input type="text" name="upi_payee" value="{{ payee }}" placeholder="VK DIGITAL">
+        </div>
+      </div>
+      <label class="check" style="margin:12px 0">
+        <input type="checkbox" name="enabled" value="1" {% if enabled %}checked{% endif %}>
+        Portal enabled for customers
+      </label>
+      <button class="btn btn-primary" type="submit">Save</button>
+    </form>
+    <p class="subtle" style="margin-top:12px;margin-bottom:0">
+      Env fallback: <code>VK_PLATFORM_UPI_VPA</code>, <code>VK_PLATFORM_UPI_PAYEE</code>,
+      <code>VK_PLATFORM_PUBLIC_PAY</code> (must be on for the portal; uncheck above to disable without redeploy).
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Shop QR link</h2></div>
+    <p class="subtle">Print one sticker — same link on mobile Pay QR screen.</p>
+    <p><code>{{ public_url }}</code></p>
+    <p>
+      <img alt="Pay portal QR"
+           src="{{ public_qr_url }}"
+           width="180" height="180">
+    </p>
+    <a class="btn" href="/pay" target="_blank" rel="noopener">Preview customer page</a>
+  </div>
+</div>
+{% endblock %}

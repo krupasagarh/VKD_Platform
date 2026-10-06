@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% from "_list_tools.html" import table_tools, late_badge %}
+{% from "_provider_tags.html" import provider_connection_tags %}
+{% from "_railtel_dealer_tags.html" import railtel_dealer_tags %}
+{% from "_customer_area.html" import customer_area_cell %}
+{% from "_whatsapp_menu.html" import whatsapp_menu %}
+{% from "_phone_cell.html" import phone_cell %}
 {% set active = "customers" %}
 {% block title %}Customers · VK Platform{% endblock %}
 
@@ -16,6 +21,11 @@
       {% if view == 'ott_live' %} · active SmartPlay OTT{% endif %}
       {% if view == 'ott' %} · any SmartPlay OTT connection{% endif %}
       {% if view == 'followup' %} · on the payment follow-up list{% endif %}
+      {% if view == 'unassigned' %} · no collection agent covers them (no override, locality not in any agent's areas){% endif %}
+      {% if view == 'owner' %} · owner collects (friends, combo with internet) — hidden from agents{% endif %}
+      {% if view == 'free' %} · free STBs — renewed without charge (social cause, node point){% endif %}
+      {% if view == 'terminated_stb' %} · Hathway STB marked terminated after status check{% endif %}
+      {% if railtel_account %} · {{ railtel_dealer_labels.get(railtel_account, railtel_account) }} Railtel{% endif %}
       {% if sort == 'late' %}
         · sorted by lateness{% if late_days %} · {{ late_days }}d late first{% endif %}
         <a class="subtle" href="/customers?{{ filter_q }}&view={{ view }}">clear sort</a>
@@ -33,31 +43,55 @@
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=due" class="{% if view == 'due' %}on{% endif %}">Has dues</a>
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=expiring" class="{% if view == 'expiring' %}on{% endif %}">Expiring soon</a>
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=expired" class="{% if view == 'expired' %}on{% endif %}">Expired</a>
+  {% if not fixed_provider or fixed_provider == 'hathway' %}
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=hathway_live" class="{% if view == 'hathway_live' %}on{% endif %}">Hathway live</a>
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=hathway" class="{% if view == 'hathway' %}on{% endif %}">Hathway all</a>
+  {% endif %}
+  {% if not fixed_provider %}
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=iptv_live" class="{% if view == 'iptv_live' %}on{% endif %}">IPTV live</a>
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=iptv" class="{% if view == 'iptv' %}on{% endif %}">IPTV all</a>
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=ott_live" class="{% if view == 'ott_live' %}on{% endif %}">OTT live</a>
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=ott" class="{% if view == 'ott' %}on{% endif %}">OTT all</a>
+  {% endif %}
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=followup" class="{% if view == 'followup' %}on{% endif %}">Payment follow-up</a>
+  <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=terminated_stb" class="{% if view == 'terminated_stb' %}on{% endif %}">Terminated STB</a>
+  <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=free" class="{% if view == 'free' %}on{% endif %}">Free STBs</a>
+  {% if can('agents') %}
+  <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=owner" class="{% if view == 'owner' %}on{% endif %}">Owner collected</a>
+  {% endif %}
 </div>
 
-<form class="filters" method="get" action="/customers">
-  <input type="hidden" name="view" value="{{ view }}">
+{% if not fixed_provider or fixed_provider == 'railtel' %}
+<div class="tabs tabs-dealers">
+  <span class="tabs-label">Railtel dealer</span>
+  <a href="/customers?{% if dealer_filter_q %}{{ dealer_filter_q }}&{% endif %}provider=railtel" class="{% if provider == 'railtel' and not railtel_account %}on{% endif %}">All Railtel</a>
+  {% for dealer_id, dealer_name in railtel_dealers %}
+  <a href="/customers?{% if dealer_filter_q %}{{ dealer_filter_q }}&{% endif %}provider=railtel&railtel_account={{ dealer_id }}" class="{% if railtel_account == dealer_id %}on{% endif %}">{{ dealer_name }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<form class="filters filters-bar" method="get" action="/customers">
+  {% if railtel_account %}<input type="hidden" name="railtel_account" value="{{ railtel_account }}">{% endif %}
   {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
   {% if late_days %}<input type="hidden" name="late_days" value="{{ late_days }}">{% endif %}
   <div class="field" style="min-width:240px">
     <label>Search</label>
-    <input type="search" name="q" value="{{ q }}" placeholder="Name, phone, STB, Railtel id, IPTV, OTT">
+    <input type="search" name="q" value="{{ q }}" placeholder="{% if fixed_provider == 'hathway' %}Name, phone, STB{% elif fixed_provider == 'railtel' %}Name, phone, Railtel id{% else %}Name, phone, STB, Railtel id, IPTV, OTT{% endif %}">
   </div>
   <div class="field">
     <label>Provider</label>
+    {% if fixed_provider %}
+    <input type="hidden" name="provider" value="{{ fixed_provider }}">
+    <div class="subtle">{{ provider_labels.get(fixed_provider, fixed_provider)|capitalize }} customers only</div>
+    {% else %}
     <select name="provider">
       <option value="">Any</option>
       {% for p in providers %}
         <option value="{{ p }}" {% if provider == p %}selected{% endif %}>{{ provider_labels.get(p, p) }}</option>
       {% endfor %}
     </select>
+    {% endif %}
   </div>
   <div class="field">
     <label>Area</label>
@@ -79,19 +113,25 @@
     </select>
   </div>
   <button class="btn" type="submit">Apply</button>
-  {% if q or provider or status or area or view %}<a class="btn" href="/customers">Clear</a>{% endif %}
+  {% set filter_n = (1 if q else 0) + (1 if provider else 0) + (1 if status else 0) + (1 if area else 0) + (1 if view else 0) + (1 if railtel_account else 0) %}
+  {% if filter_n %}<span class="filter-count">{{ filter_n }} filter{{ 's' if filter_n != 1 else '' }}</span>{% endif %}
+  {% if q or provider or status or area or view or railtel_account %}<a class="btn" href="/customers">Clear filters</a>{% endif %}
 </form>
 
 <div class="card">
 {% if result.rows %}
 {{ table_tools(export_href, result.total) }}
-<div class="table-wrap">
+<div class="table-wrap table-wrap-sticky">
 <table>
   <thead>
     <tr>
-      <th>Customer</th><th>Phone</th><th>Area</th><th>Connections</th>
-      <th><a class="sort-link" href="/customers?{{ list_qs }}&sort=late" title="Sort by days late">Next expiry</a></th><th class="num">Outstanding</th>
-      {% if view == 'expired' or view == 'followup' %}<th></th>{% endif %}
+      <th>Customer</th>
+      <th>Phone</th>
+      <th>Area</th>
+      <th>Connections</th>
+      <th><a class="sort-link" href="/customers?{{ list_qs }}&sort=late" title="Sort by days late">Next expiry</a></th>
+      <th class="num">Outstanding</th>
+      {% if can('customer_whatsapp') %}<th>WhatsApp</th>{% endif %}
     </tr>
   </thead>
   <tbody>
@@ -101,23 +141,26 @@
       <td>
         <a href="/customers/{{ c.id }}"><strong>{{ c.name }}</strong></a>
         {% if c.code %}<span class="badge">{{ c.code }}</span>{% endif %}
+        {% if not fixed_provider or fixed_provider == 'railtel' %}
+        {{ railtel_dealer_tags(c.railtel_dealers, compact=true) }}
+        {% endif %}
         {% if c.status != 'active' %}<span class="badge badge-warn">{{ c.status }}</span>{% endif %}
-        {% if c.lat and c.lng %}
-          <a class="badge" href="https://www.google.com/maps/dir/?api=1&destination={{ c.lat }},{{ c.lng }}"
-             target="_blank" rel="noopener" title="Open house in Google Maps">Maps</a>
-        {% endif %}
       </td>
-      <td class="mono">{{ c.phone or "—" }}</td>
-      <td>{{ c.sub_area or c.area or "—" }}</td>
-      <td>
-        {{ c.active_count }}/{{ c.connection_count }}
-        {% if c.providers %}
-          <div class="subtle">
-            {% for p in c.providers.split(',') %}{{ provider_labels.get(p.strip(), p) }}{% if not loop.last %} + {% endif %}{% endfor %}
-          </div>
-        {% endif %}
+      <td class="mono">
+        {{ phone_cell(c.phone, c.whatsapp_status) }}
       </td>
       <td>
+        {% set list_next = request.url.path ~ ('?' ~ list_qs if list_qs else '') %}
+        {{ customer_area_cell(c, areas, can, list_next) }}
+      </td>
+      <td>
+        {% set list_next = request.url.path ~ ('?' ~ list_qs if list_qs else '') %}
+        {{ provider_connection_tags(c, provider_labels, next_url=list_next, allow_check=can('portal_actions'), only_provider=fixed_provider) }}
+        {% if c.active_count or c.connection_count %}
+        <div class="subtle" style="margin-top:6px">{{ c.active_count }}/{{ c.connection_count }} active</div>
+        {% endif %}
+      </td>
+      <td class="date">
         {{ c.next_expiry|nice_date }}
         {{ late_badge(left, "/customers", list_qs) }}
       </td>
@@ -126,21 +169,9 @@
           <strong style="color:var(--bad)">₹{{ c.outstanding_paise|rupees }}</strong>
         {% else %}<span class="subtle">—</span>{% endif %}
       </td>
-      {% if view == 'expired' %}
+      {% if can('customer_whatsapp') %}
       <td style="white-space:nowrap">
-        {% set wa = whatsapp_expired_url(c.name, c.phone, provider or c.providers) %}
-        {% if wa %}
-        <a class="btn btn-small btn-wa" href="{{ wa }}" target="_blank" rel="noopener"
-           title="Send expiry reminder on WhatsApp">WhatsApp</a>
-        {% else %}<span class="subtle">—</span>{% endif %}
-      </td>
-      {% elif view == 'followup' %}
-      <td style="white-space:nowrap">
-        {% set wa = whatsapp_renew_followup_url(c.name, c.phone, provider, c.providers) %}
-        {% if wa %}
-        <a class="btn btn-small btn-wa" href="{{ wa }}" target="_blank" rel="noopener"
-           title="Send renewed — please pay reminder">WhatsApp</a>
-        {% else %}<span class="subtle">—</span>{% endif %}
+        {{ whatsapp_menu(c.name, c.phone, provider, c.providers, customer_id=c.id) }}
       </td>
       {% endif %}
     </tr>

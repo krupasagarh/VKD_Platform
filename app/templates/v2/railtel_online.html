@@ -1,0 +1,111 @@
+{% extends "v2/base.html" %}
+{% set active = "providers" %}
+{% block title %}Railtel online · VK Digital{% endblock %}
+
+{% block header %}
+<header class="v2-header">
+  <div class="v2-header-top">
+    <a class="v2-back" href="/v2/" aria-label="Back">←</a>
+    <div class="v2-header-main">
+      <div class="v2-route">Railtel online</div>
+      <div class="v2-subline">
+        {% if snapshot %}{{ snapshot.row_count }} session{{ "s" if snapshot.row_count != 1 else "" }}{% else %}No snapshot yet{% endif %}
+        · live from dash.php
+      </div>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<p class="v2-page-note">
+  One tap logs into the Railtel portal, opens
+  <span class="mono">Online subscribers</span> →
+  <span class="mono">services.railwire.co.in/dash.php</span>,
+  and saves who is online now (name + session duration).
+  {% if not live_mode %}<strong>Simulate mode — list is demo data, not live.</strong>{% endif %}
+</p>
+
+{% if open_job %}
+<div class="flash flash-info" id="v2-online-pending">
+  Fetching live list… job #{{ open_job.id }} ({{ open_job.status }}).
+</div>
+{% endif %}
+
+<form method="post" action="/v2/railtel-online/refresh" style="margin-bottom:16px">
+  <button class="v2-cta" type="submit" {% if open_job %}disabled{% endif %}>
+    {% if open_job %}Fetching from portal…{% else %}Fetch live from Railtel{% endif %}
+  </button>
+</form>
+
+{% if snapshot %}
+<div class="v2-muted" style="font-size:12px;margin-bottom:12px">
+  Last read {{ snapshot.fetched_at|nice_datetime }}
+  {% if snapshot.job_id %} · <a href="/jobs/{{ snapshot.job_id }}">job #{{ snapshot.job_id }}</a>{% endif %}
+</div>
+{% endif %}
+
+<form class="v2-filters" method="get" action="/v2/railtel-online">
+  <label class="v2-filter-field">
+    <span>Search</span>
+    <input type="search" name="q" value="{{ q }}" placeholder="Customer or username">
+  </label>
+</form>
+
+<div class="v2-feed" id="v2-online-feed">
+  {% for r in rows %}
+  <article class="v2-card v2-card-customer">
+    <div class="v2-card-top">
+      <div class="v2-avatar v2-avatar-good" aria-hidden="true">{{ (r.customer_name or r.username or "?")[:1]|upper }}</div>
+      <div class="v2-card-info">
+        <h3 class="v2-card-name">
+          {% if r.customer_id %}
+          <a href="/customers/{{ r.customer_id }}">{{ r.customer_name }}</a>
+          {% else %}
+          {{ r.customer_name or r.username }}
+          {% endif %}
+        </h3>
+        <div class="v2-muted" style="font-size:12px">
+          <span class="mono">{{ r.username }}</span>
+        </div>
+      </div>
+      <div class="v2-card-timing v2-card-timing-good">
+        <div><strong>{{ r.total_time or "—" }}</strong></div>
+        <div class="v2-muted" style="font-size:11px">online</div>
+      </div>
+    </div>
+  </article>
+  {% else %}
+  <div class="v2-empty">
+    <h2>{% if snapshot %}Nobody matched{% else %}No list yet{% endif %}</h2>
+    <p>
+      {% if snapshot and q %}Try clearing search.
+      {% elif snapshot %}No imported customers on this snapshot.
+      {% else %}Tap <strong>Fetch live from Railtel</strong> above.{% endif %}
+    </p>
+  </div>
+  {% endfor %}
+</div>
+
+{% if watch_job_id %}
+<script>
+(function () {
+  var jobId = {{ watch_job_id }};
+  function tick() {
+    fetch("/v2/api/railtel-online?job=" + encodeURIComponent(jobId), { credentials: "same-origin" })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (!data || !data.ok) return;
+        if (data.pending) {
+          setTimeout(tick, 3000);
+          return;
+        }
+        window.location.href = "/v2/railtel-online";
+      })
+      .catch(function () { setTimeout(tick, 5000); });
+  }
+  setTimeout(tick, 2000);
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -3,14 +3,54 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="{% if field_duty_on %}#14532d{% else %}#0a0a0a{% endif %}">
   <title>{% block title %}VK Digital{% endblock %}</title>
-  <link rel="stylesheet" href="/static/v2/app.css">
-  <link rel="icon" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/v2/app.css?v=act14">
+  <link rel="icon" href="/static/favicon.png?v=1">
+  <style>
+    .v2-action-bar { display: flex; align-items: stretch; gap: 6px; width: 100%; }
+    .v2-action-bar .v2-inline-form { display: flex; margin: 0; }
+    .v2-action-bar .v2-inline-form .v2-action { width: 100%; }
+    .v2-action-bar .wa-menu { display: flex; flex: 0 0 auto; align-items: stretch; }
+    .v2-action {
+      -webkit-appearance: none; appearance: none;
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 40px; min-height: 40px; padding: 0 12px; margin: 0;
+      border: 1px solid #e5e7eb; border-radius: 10px;
+      background: #fff; color: #0f2744;
+      font-family: inherit; font-size: 13px; font-weight: 700;
+      letter-spacing: .01em; line-height: 1;
+      text-decoration: none; white-space: nowrap; cursor: pointer;
+      box-sizing: border-box;
+    }
+    a.v2-action, a.v2-action:hover { color: #0f2744; text-decoration: none; }
+    .v2-action-amt {
+      font-variant-numeric: tabular-nums; font-weight: 800;
+      background: #f8fafc; min-width: 4.6rem; cursor: default; pointer-events: none;
+    }
+    .v2-action-amt.is-due { background: #111; color: #f5c518; border-color: #111; }
+    .v2-action-icon { width: 40px; min-width: 40px; padding: 0; font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 16px; }
+    .v2-action-collect, a.v2-action-collect, a.v2-action-collect:hover { background: #f5c518; border-color: #e0b40a; color: #111; flex: 1 1 auto; }
+    .v2-action-later, button.v2-action-later { background: #fff; color: #0f2744; min-width: 4.4rem; }
+    .v2-action-open, a.v2-action-open, a.v2-action-open:hover { background: #0f2744; border-color: #0f2744; color: #fff; flex: 1 1 auto; }
+    .v2-action-bar .wa-menu-icon .wa-menu-toggle {
+      height: 40px; min-height: 40px; width: 40px; min-width: 40px;
+      padding: 0; border-radius: 10px; gap: 0;
+    }
+    .v2-action-bar .wa-menu-icon .wa-menu-toggle::after { display: none; }
+    .v2-card-foot--actions { background: #fafafa; border-top-color: #e5e7eb; }
+  </style>
 </head>
-<body>
+<body{% if field_duty_on %} class="field-on-duty"{% endif %}
+      {% if needs_field_duty %} data-field-duty="{{ 'on' if field_duty_on else 'off' }}"{% endif %}>
 <div class="v2-app">
   {% block header %}{% endblock %}
+  {% if current_agent %}
+  <div class="v2-who-bar">
+    <span>{{ current_agent.name }}</span>
+    {% include "_field_duty_toggle.html" %}
+  </div>
+  {% endif %}
 
   {% if flash %}
   <div class="v2-flash v2-flash-{{ flash_level }}">{{ flash }}</div>
@@ -19,38 +59,23 @@
   {% block content %}{% endblock %}
 </div>
 
-<nav class="v2-nav" aria-label="Main">
-  <a href="/v2/" class="{% if active == 'home' %}on{% endif %}">
-    <span class="v2-nav-item">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
-      Home
-    </span>
-  </a>
-  {% if can('customers_view') or can('payments') %}
-  <a href="/v2/customers" class="{% if active == 'customers' %}on{% endif %}">
-    <span class="v2-nav-item">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-      Customers
-    </span>
-  </a>
-  {% endif %}
-  {% if can('payments') or can('agents') %}
-  <a href="/field" class="{% if active == 'field' %}on{% endif %}">
-    <span class="v2-nav-item">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
-      Field
-    </span>
-  </a>
-  {% endif %}
-  <a href="/v2/menu" class="{% if active == 'menu' %}on{% endif %}">
-    <span class="v2-nav-item">
-      {% if nav.followups %}<span class="badge">{{ nav.followups }}</span>{% endif %}
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-      More
-    </span>
-  </a>
-</nav>
+{% include "v2/_nav.html" %}
 
-<script src="/static/field.js"></script>
+<script src="/static/field.js?v=wa7"></script>
+{% block extra_js %}{% endblock %}
+<script>
+(function () {
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
+    var tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target && e.target.isContentEditable)) return;
+    var field = document.querySelector(".v2-filters input[type=search], .v2-search-field input");
+    if (!field) return;
+    e.preventDefault();
+    field.focus();
+    field.select();
+  });
+})();
+</script>
 </body>
 </html>

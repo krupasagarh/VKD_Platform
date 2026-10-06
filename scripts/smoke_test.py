@@ -165,7 +165,7 @@ def main() -> int:
         ott_stats = repo.ott_stats(conn)
     check("ott catalog seeded", ott_n >= 5, True)
     check("ott dashboard starts empty", ott_stats["total"], 0)
-    check("ott connection inferred as OTT bundle", billing.infer_plan_bundle([{"provider": "ott"}], None), "internet_iptv_ott")
+    check("ott connection inferred as OTT bundle", billing.infer_plan_bundle([{"provider": "ott"}], None), "ott")
 
     # --- Set up one customer with a Hathway STB -----------------------------
     print("\nSetting up a test customer")
@@ -278,6 +278,12 @@ def main() -> int:
         cn2_row = conn.execute("SELECT * FROM connections WHERE id = ?", (cn2,)).fetchone()
     check("new period starts the day after old expiry", early_bill["period_start"], day(11))
     check("expiry extended, not reset", cn2_row["expiry_date"], day(40))
+    check("unpaid portal renew is on follow-up", int(early_bill["collect_later"] or 0), 1)
+    with transaction() as conn:
+        owed = int(early_bill["total_paise"] or 0) - int(early_bill["paid_paise"] or 0)
+        if owed > 0:
+            billing.record_payment(conn, customer_id=cust, amount_paise=owed, mode="cash")
+            billing.reconcile_customer(conn, cust)
 
     print("\nHathway STB mapping")
     with db_connection() as conn:
@@ -510,11 +516,11 @@ def main() -> int:
         )
         cover_ott = billing.customer_cover(conn, rcust)
     check("paid bundle expiry from payment", cover["expiry"], day(209))
-    check("IPTV in plan name", cover["label"], "Internet + IPTV")
-    check("list next expiry follows payment", listed["next_expiry"], day(209))
-    check("saved OTT bundle label", cover_ott["label"], "Internet + IPTV + OTT")
+    check("IPTV in plan name", cover["label"], "Railtel + ANT IPTV")
+    check("list next expiry follows connection paid-through", listed["next_expiry"], day(-1))
+    check("saved OTT bundle label", cover_ott["label"], "Railtel + IPTV + OTT")
     check("internet only inferred", billing.infer_plan_bundle([], {"name": "Broadband"}), "internet")
-    check("iptv connection inferred", billing.infer_plan_bundle([{"provider": "iptv"}], None), "internet_iptv")
+    check("iptv connection inferred", billing.infer_plan_bundle([{"provider": "iptv"}], None), "iptv")
     check("ott in details inferred", billing.infer_plan_bundle(
         [{"provider": "railtel"}], {"details": "Internet + IPTV + OTT"}
     ), "internet_iptv_ott")
@@ -664,10 +670,14 @@ def main() -> int:
         summary = bix_sync.apply_preview(conn, preview, create_missing=True, actor="admin")
         ledger = billing.customer_ledger(conn, bix_cust)
         created = conn.execute("SELECT * FROM customers WHERE code = 'NEW-9'").fetchone()
-        created_ledger = billing.customer_ledger(conn, int(created["id"]))
-    check("one customer created", summary["created"], 1)
+        stb = conn.execute(
+            "SELECT id FROM connections WHERE provider = 'hathway' AND upstream_id = 'N70100000999'"
+        ).fetchone()
+    check("Bix does not create a missing household", summary["created"], 0)
+    check("unknown Bix household left out", created, None)
+    check("Bix does not add a Hathway box", summary["stbs_added"], 0)
+    check("matched household got no STB from Bix", stb, None)
     check("existing due now matches Bix", ledger["net_due_paise"], 10000)
-    check("new customer due matches Bix", created_ledger["net_due_paise"], 25000)
 
     print("\nBix Customer Export CSV")
     export_path = _tmp / "customer_export.csv"

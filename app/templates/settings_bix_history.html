@@ -40,6 +40,87 @@
 </div>
 
 <div class="card">
+  <div class="card-head"><h2>Automatic schedule</h2></div>
+  <p class="subtle" style="margin-bottom:12px">
+    Runs inside the platform worker (same thread as provider sync). When
+    <strong>Auto extract</strong> is on, Bix is pulled automatically with Playwright
+    (no DevTools / cookies paste). One-time setup:
+    <span class="mono">python bix42_export/auto_extract.py --login</span>
+    — or set <span class="mono">BIX_MOBILE</span> and <span class="mono">BIX_PASSWORD</span> in
+    <span class="mono">.env</span>. Then new rows are imported if the archive file grew.
+  </p>
+  {% if schedule.bix_history_schedule_enabled == '1' %}
+    <p class="subtle" style="margin-bottom:10px">
+      <span class="badge badge-ok">Scheduled</span>
+      daily around {{ schedule.bix_history_schedule_hour }}:00
+      {% if schedule.bix_history_auto_extract == '1' %} · extract + import{% else %} · import only{% endif %}
+      {% if schedule.bix_history_last_run_date %} · last run {{ schedule.bix_history_last_run_date }}{% endif %}
+    </p>
+  {% endif %}
+  <form method="post" action="/settings/bix-history/schedule">
+    <label class="check" style="margin-bottom:10px">
+      <input type="checkbox" name="enabled" value="1"
+             {% if schedule.bix_history_schedule_enabled == '1' %}checked{% endif %}>
+      Enable daily Bix history sync
+    </label>
+    <div class="grid-2" style="margin-bottom:10px">
+      <div class="field">
+        <label>Hour (0–23, server clock)</label>
+        <select name="hour">
+          {% for h in range(24) %}
+          <option value="{{ h }}" {% if schedule.bix_history_schedule_hour|int == h %}selected{% endif %}>
+            {{ '%02d'|format(h) }}:00
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field" style="display:flex; align-items:flex-end">
+        <label class="check">
+          <input type="checkbox" name="auto_extract" value="1"
+                 {% if schedule.bix_history_auto_extract == '1' %}checked{% endif %}>
+          Auto extract from Bix (needs cookies below)
+        </label>
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Save schedule</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>Run now</h2></div>
+  <p class="subtle" style="margin-bottom:12px">
+    {% if cookies_exists %}
+      Saved session cookies found — server extract can also run.
+    {% else %}
+      For automated extract, run once:
+      <span class="mono">python bix42_export/auto_extract.py --login</span>
+      (or add BIX_MOBILE + BIX_PASSWORD to <span class="mono">.env</span>).
+      Manual F12 fallback is below if needed.
+    {% endif %}
+  </p>
+  <div class="inline-form" style="gap:10px; flex-wrap:wrap">
+    <form method="post" action="/settings/bix-history/run-now">
+      <button class="btn" type="submit">Import only</button>
+    </form>
+    <form method="post" action="/settings/bix-history/run-now">
+      <input type="hidden" name="extract" value="1">
+      <button class="btn btn-primary" type="submit">Extract from Bix + import</button>
+    </form>
+  </div>
+  <details class="subtle" style="margin-top:14px">
+    <summary>Manual browser extract (F12 fallback)</summary>
+    <ol style="margin:10px 0 0 18px">
+      <li>Run <span class="mono">python bix42_export/receiver_server.py</span></li>
+      <li>Open bixapp.in → Customers while logged in</li>
+      <li>Paste <span class="mono">browser_extractor.js</span> in the console, or open
+        <a href="http://localhost:9099/browser_extractor.js" target="_blank" rel="noopener">localhost:9099/browser_extractor.js</a>
+        and paste that</li>
+      <li>When done, click <strong>Import only</strong> above</li>
+    </ol>
+  </details>
+</div>
+
+<div class="card">
   <div class="card-head"><h2>Import from the extract file</h2></div>
   {% if archive.exists %}
     <p class="subtle" style="margin-bottom:12px">

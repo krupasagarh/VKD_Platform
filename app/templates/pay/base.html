@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>{% block title %}Pay bill{% endblock %} · VK Digital</title>
+  <link rel="stylesheet" href="/static/pay.css?v=7">
+  <link rel="icon" href="/static/favicon.png">
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="pay-body">
+  <header class="pay-header">
+    <div class="pay-header-inner">
+      <div class="pay-logo-wrap">
+        <img src="/static/logo-wordmark.png?v=2" alt="VK Digital" class="pay-logo">
+      </div>
+    </div>
+  </header>
+  <main class="pay-main">
+    {% if flash %}
+    <section class="pay-card {% if flash_level == 'err' %}pay-alert{% else %}pay-muted-box{% endif %}" role="status">{{ flash }}</section>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="pay-footer">
+    <span class="pay-footer-name">{{ operator }} · Tiptur</span>
+    {% block footer %}
+    <a href="/pay">← Enter another mobile number</a>
+    {% endblock %}
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

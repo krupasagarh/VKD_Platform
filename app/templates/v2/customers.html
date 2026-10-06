@@ -1,7 +1,21 @@
 {% extends "v2/base.html" %}
-{% from "v2/_icons.html" import icon_clock %}
 {% from "v2/_feed_card.html" import feed_card %}
+{% from "_search_field.html" import search_field %}
 {% set active = "customers" %}
+{% set view_title = {
+  'due': 'Dues',
+  'expiring': 'Expiring',
+  'expired': 'Expired',
+  'followup': 'Follow-up',
+  'terminated_stb': 'Terminated',
+  'inactive': 'Inactive',
+  'inactive_stb': 'Inactive',
+  'faulty': 'Faulty',
+  'unassigned': 'Un-assigned',
+  'free': 'Free STB',
+  'owner': 'Owner collected'
+}.get(view, 'All') %}
+{% set qs_core = (('view=' ~ view ~ '&') if view else '') ~ (('q=' ~ q|urlencode ~ '&') if q else '') ~ (('area=' ~ area|urlencode ~ '&') if area else '') %}
 {% block title %}Customers · VK Digital{% endblock %}
 
 {% block header %}
@@ -9,44 +23,88 @@
   <div class="v2-header-top">
     <a class="v2-back" href="/v2/" aria-label="Back">←</a>
     <div class="v2-header-main">
-      <div class="v2-route">Customers</div>
-      <div class="v2-subline">{{ result.total }} matching · page {{ result.page }} of {{ result.pages }}</div>
+      <div class="v2-route">{{ view_title }} customers</div>
+      <div class="v2-subline">{{ result.total }} found{% if railtel_account %} · {{ railtel_dealer_labels.get(railtel_account, railtel_account) }}{% endif %}{% if provider and not railtel_account %} · {{ provider_labels.get(provider, provider) }}{% endif %}</div>
     </div>
+    {% if can('customers_edit') %}
+    <a class="v2-pill-btn v2-pill-gold" href="/customers/new">+ New</a>
+    {% endif %}
   </div>
-  {% if can('customers_edit') %}
-  <div class="v2-header-actions">
-    <a class="v2-pill-btn" href="/customers/new">+ New customer</a>
-  </div>
-  {% endif %}
 </header>
 {% endblock %}
 
 {% block content %}
-<div class="v2-chips">
-  <a href="/v2/customers{% if q %}?q={{ q|urlencode }}{% endif %}" class="v2-chip {% if not view %}on{% endif %}">All</a>
-  <a href="/v2/customers?view=due{% if q %}&q={{ q|urlencode }}{% endif %}" class="v2-chip {% if view == 'due' %}on{% endif %}">Has dues</a>
-  <a href="/v2/customers?view=expiring{% if q %}&q={{ q|urlencode }}{% endif %}" class="v2-chip {% if view == 'expiring' %}on{% endif %}">Expiring</a>
-  <a href="/v2/customers?view=expired{% if q %}&q={{ q|urlencode }}{% endif %}" class="v2-chip {% if view == 'expired' %}on{% endif %}">Expired</a>
-  <a href="/v2/customers?view=followup{% if q %}&q={{ q|urlencode }}{% endif %}" class="v2-chip {% if view == 'followup' %}on{% endif %}">Follow-up</a>
-</div>
+<div class="v2-cust">
+  <form class="v2-cust-search" method="get" action="/v2/customers">
+    {% if provider %}<input type="hidden" name="provider" value="{{ provider }}">{% endif %}
+    {% if railtel_account %}<input type="hidden" name="railtel_account" value="{{ railtel_account }}">{% endif %}
+    {% if area %}<input type="hidden" name="area" value="{{ area }}">{% endif %}
+    {{ search_field('q', q, 'Name, phone or STB', 'v2-search-field') }}
+    <button class="v2-cust-search-btn" type="submit">Search</button>
+  </form>
 
-<form class="v2-search-bar" method="get" action="/v2/customers">
-  {% if view %}<input type="hidden" name="view" value="{{ view }}">{% endif %}
-  <input type="search" name="q" value="{{ q }}" placeholder="Search name, phone, STB, Railtel id…" autocomplete="off">
-</form>
+  <div class="v2-cust-row" role="tablist" aria-label="List">
+    <a href="/v2/customers{% if filter_q %}?{{ filter_q }}{% endif %}" class="v2-chip {% if not view %}on{% endif %}">All</a>
+    <a href="/v2/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=due" class="v2-chip {% if view == 'due' %}on{% endif %}">Dues</a>
+    <a href="/v2/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=expiring" class="v2-chip {% if view == 'expiring' %}on{% endif %}">Expiring</a>
+    <a href="/v2/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=expired" class="v2-chip {% if view == 'expired' %}on{% endif %}">Expired</a>
+    <a href="/v2/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=followup" class="v2-chip {% if view == 'followup' %}on{% endif %}">Follow-up</a>
+    <a href="/v2/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=faulty" class="v2-chip {% if view == 'faulty' %}on{% endif %}">Faulty</a>
+    <a href="/v2/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=inactive" class="v2-chip {% if view in ('inactive', 'inactive_stb', 'terminated_stb') %}on{% endif %}">Inactive</a>
+  </div>
+
+  {% if not fixed_provider %}
+  <div class="v2-cust-row" aria-label="Service">
+    <a href="/v2/customers?{{ qs_core }}" class="v2-chip {% if not provider %}on{% endif %}">All services</a>
+    <a href="/v2/customers?{{ qs_core }}provider=railtel" class="v2-chip {% if provider == 'railtel' %}on{% endif %}">Railtel</a>
+    <a href="/v2/customers?{{ qs_core }}provider=hathway" class="v2-chip {% if provider == 'hathway' %}on{% endif %}">Hathway</a>
+    <a href="/v2/customers?{{ qs_core }}provider=iptv" class="v2-chip {% if provider == 'iptv' %}on{% endif %}">IPTV</a>
+    <a href="/v2/customers?{{ qs_core }}provider=ott" class="v2-chip {% if provider == 'ott' %}on{% endif %}">OTT</a>
+  </div>
+  {% endif %}
+
+  {% if provider == 'railtel' %}
+  <div class="v2-cust-row v2-cust-row-dealers" aria-label="Railtel dealer">
+    <a href="/v2/customers?{% if dealer_filter_q %}{{ dealer_filter_q }}&{% endif %}{% if view %}view={{ view }}&{% endif %}provider=railtel" class="v2-chip {% if provider == 'railtel' and not railtel_account %}on{% endif %}">All dealers</a>
+    {% for dealer_id, dealer_name in railtel_dealers %}
+    <a href="/v2/customers?{% if dealer_filter_q %}{{ dealer_filter_q }}&{% endif %}{% if view %}view={{ view }}&{% endif %}provider=railtel&railtel_account={{ dealer_id }}" class="v2-chip {% if railtel_account == dealer_id %}on{% endif %}">{{ dealer_name }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form class="v2-cust-more" method="get" action="/v2/customers">
+    {% if view %}<input type="hidden" name="view" value="{{ view }}">{% endif %}
+    {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+    {% if provider %}<input type="hidden" name="provider" value="{{ provider }}">{% endif %}
+    {% if railtel_account %}<input type="hidden" name="railtel_account" value="{{ railtel_account }}">{% endif %}
+    <label class="v2-cust-area">
+      Area
+      <select name="area" onchange="this.form.submit()">
+        <option value="">All areas</option>
+        <option value="{{ none_area }}" {% if area == none_area %}selected{% endif %}>No area set</option>
+        {% for a in areas %}
+        <option value="{{ a }}" {% if area|lower == a|lower %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% if q or provider or area or view or railtel_account %}
+    <a class="v2-cust-clear" href="/v2/customers">Clear</a>
+    {% endif %}
+  </form>
+</div>
 
 {% if result.rows %}
 <div class="v2-feed">
   {% for c in result.rows %}
-    {{ feed_card(c, provider_labels, can) }}
+    {{ feed_card(c, provider_labels, can, areas, list_next, fixed_provider) }}
   {% endfor %}
 </div>
 
 {% if result.pages > 1 %}
-<div style="display:flex;justify-content:center;gap:12px;padding:8px 14px 20px">
-  {% set base = '/v2/customers?' ~ ('view=' ~ view ~ '&' if view else '') ~ ('q=' ~ q|urlencode ~ '&' if q else '') %}
+<div class="v2-pager">
+  {% set base = '/v2/customers?' ~ ('view=' ~ view ~ '&' if view else '') ~ (filter_q ~ '&' if filter_q else '') %}
   {% if result.page > 1 %}<a class="v2-pill-btn" href="{{ base }}page={{ result.page - 1 }}">← Prev</a>{% endif %}
-  <span style="align-self:center;color:var(--text-muted);font-size:13px">{{ result.page }} / {{ result.pages }}</span>
+  <span>{{ result.page }} / {{ result.pages }}</span>
   {% if result.page < result.pages %}<a class="v2-pill-btn" href="{{ base }}page={{ result.page + 1 }}">Next →</a>{% endif %}
 </div>
 {% endif %}
@@ -54,7 +112,7 @@
 {% else %}
 <div class="v2-empty">
   <h2>No customers found</h2>
-  <p>Try a different search or filter.</p>
+  <p>Try another name, phone or STB.</p>
   {% if can('customers_edit') %}
   <a class="v2-cta" href="/customers/new" style="display:inline-flex;margin-top:16px">Add customer</a>
   {% endif %}

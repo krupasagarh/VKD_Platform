@@ -1,0 +1,189 @@
+{% from "_search_field.html" import search_field %}
+{% macro inr_tile(paise) -%}
+₹{{ (paise|rupees).split('.')[0] }}
+{%- endmacro %}
+
+{% macro landing_cards(stats, can, fixed_provider=none, hide_collection=false, nav=none, collector_stats=none) %}
+{% set rt = stats.railtel %}
+{% set hw = stats.hathway %}
+{% set iptv = stats.iptv %}
+{% set ott = stats.ott %}
+{% set ex = stats.get('expiring_today', {'connections': 0, 'customers': 0}) %}
+{% set ey = stats.get('expired_yesterday', {'connections': 0, 'customers': 0}) %}
+{% set tm = stats.get('term_expiring_month', {'connections': 0, 'customers': 0}) %}
+{% set collected_href = '/field' if collector_stats else ('/payments?from=' ~ stats.today ~ '&to=' ~ stats.today) %}
+{% set month_href = '/field' if collector_stats and not can('payments') else ('/payments?from=' ~ stats.month_start ~ '&to=' ~ stats.today) %}
+{% set collected_paise = collector_stats.collected_today_paise if collector_stats else stats.collected_today_paise %}
+{% set month_paise = collector_stats.collected_month_paise if collector_stats else stats.collected_month_paise %}
+{% set ur = stats.get('unpaid_renewals_month', {'customers': 0, 'due_paise': 0}) %}
+{% set pending_href = '/v2/customers?view=due' ~ (('&provider=' ~ fixed_provider) if fixed_provider else '') %}
+{% set followup_href = '/v2/unpaid-renewals' ~ (('?provider=' ~ fixed_provider) if fixed_provider else '') %}
+{% set faulty_href = '/v2/customers?view=faulty' ~ (('&provider=' ~ fixed_provider) if fixed_provider else '') %}
+{% set inactive_href = '/v2/customers?view=inactive' ~ (('&provider=' ~ fixed_provider) if fixed_provider else '') %}
+{% set show_today = can('customers_view') or can('payments') or can('portal_actions') %}
+{% set show_svc = (can('customers_view') or can('providers') or can('payments') or can('portal_actions')) and (not fixed_provider or fixed_provider in ['railtel', 'hathway']) %}
+{% set show_money = can('payments') or collector_stats %}
+{% set show_work = can('customers_view') or can('payments') %}
+
+<div class="v2-home">
+
+  {% if can('customers_view') or can('payments') %}
+  <form class="v2-home-search" method="get" action="/v2/customers">
+    {{ search_field('q', '', 'Search name, phone, ID…', 'v2-search-field') }}
+  </form>
+  {% endif %}
+
+  {% if show_today %}
+  <section class="v2-home-today">
+    <div class="v2-sec-title">Today</div>
+    <div class="v2-tiles v2-tiles-3">
+      <a class="v2-tile" href="/v2/expiring-today{% if fixed_provider %}?provider={{ fixed_provider }}{% endif %}">
+        <div class="v2-tile-num{% if ex.customers %} is-warn{% endif %}">{{ ex.customers or 0 }}</div>
+        <div class="v2-tile-label">Expiring today</div>
+      </a>
+      <a class="v2-tile" href="/v2/expiring-today?when=1d{% if fixed_provider %}&provider={{ fixed_provider }}{% endif %}">
+        <div class="v2-tile-num{% if ey.customers %} is-bad{% endif %}">{{ ey.customers or 0 }}</div>
+        <div class="v2-tile-label">Expired yesterday</div>
+      </a>
+      {% if not fixed_provider or fixed_provider == 'railtel' %}
+      <a class="v2-tile" href="/v2/expiring-today?when=term_month&provider=railtel">
+        <div class="v2-tile-num{% if tm.customers %} is-warn{% endif %}">{{ tm.customers or 0 }}</div>
+        <div class="v2-tile-label">Railtel renewals</div>
+      </a>
+      {% else %}
+      <a class="v2-tile" href="{{ inactive_href }}">
+        <div class="v2-tile-num{% if stats.inactive_customers %} is-bad{% endif %}">{{ stats.inactive_customers or 0 }}</div>
+        <div class="v2-tile-label">Inactive / terminated</div>
+      </a>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if show_money %}
+  <section class="v2-home-money">
+    <div class="v2-sec-title">Money</div>
+    <div class="v2-tiles v2-tiles-3">
+      <a class="v2-tile" href="{{ collected_href }}">
+        <div class="v2-tile-num is-ok">{{ inr_tile(collected_paise) }}</div>
+        <div class="v2-tile-label">Today's collection</div>
+      </a>
+      <a class="v2-tile" href="{{ month_href }}">
+        <div class="v2-tile-num">{{ inr_tile(month_paise) }}</div>
+        <div class="v2-tile-label">Monthly collection</div>
+      </a>
+      <a class="v2-tile v2-tile-balance" href="{{ pending_href }}">
+        <div class="v2-tile-num{% if stats.outstanding_paise %} is-warn{% endif %}">{{ inr_tile(stats.outstanding_paise or 0) }}</div>
+        <div class="v2-tile-label">Total Balance</div>
+        {% if collector_stats %}<div class="v2-tile-hint">assigned customers</div>{% endif %}
+      </a>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if show_work %}
+  <section class="v2-home-work">
+    <div class="v2-sec-title">Follow-up</div>
+    <div class="v2-tiles v2-tiles-2">
+      <a class="v2-tile" href="{{ followup_href }}">
+        <div class="v2-tile-num{% if ur.customers %} is-warn{% endif %}">{{ ur.customers or 0 }}</div>
+        <div class="v2-tile-label">Renewed, not paid</div>
+        <div class="v2-tile-hint">this month · {{ inr_tile(ur.due_paise or 0) }}</div>
+      </a>
+      <a class="v2-tile" href="{{ faulty_href }}">
+        <div class="v2-tile-num{% if stats.faulty_customers %} is-bad{% endif %}">{{ stats.faulty_customers or 0 }}</div>
+        <div class="v2-tile-label">Faulty customers</div>
+        <div class="v2-tile-hint">expired and still unpaid</div>
+      </a>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if show_svc %}
+  <section class="v2-home-services">
+    <div class="v2-sec-title">Services</div>
+    <div class="v2-tiles v2-tiles-svc">
+      {% if (not fixed_provider or fixed_provider == 'railtel') and (can('customers_view') or can('providers') or can('payments')) %}
+      <a class="v2-tile" href="/v2/railtel-online">
+        <div class="v2-tile-num">{{ rt.portal_active or rt.live or 0 }}</div>
+        <div class="v2-tile-label">Railtel</div>
+        <div class="v2-tile-hint">
+          {% if rt.online %}<span class="v2-dot is-ok">{{ rt.online }} online</span>
+          {% elif rt.expired %}<span class="v2-dot is-bad">{{ rt.expired }}</span>
+          {% else %}live list{% endif %}
+        </div>
+      </a>
+      {% endif %}
+      {% if (not fixed_provider or fixed_provider == 'hathway') and (can('customers_view') or can('payments')) %}
+      <a class="v2-tile" href="{% if hw.territory %}/v2/customers?view=hathway_live{% elif fixed_provider %}/v2/customers{% else %}/customers?view=hathway{% endif %}">
+        <div class="v2-tile-num">{{ hw.live_customers or 0 }}</div>
+        <div class="v2-tile-label">Hathway</div>
+        <div class="v2-tile-hint">
+          {% if hw.territory %}your areas
+          {% elif hw.unmapped %}<span class="v2-dot is-warn">{{ hw.unmapped }}</span>
+          {% else %}{{ hw.mapped_total or 0 }} mapped{% endif %}
+        </div>
+      </a>
+      {% endif %}
+      {% if not fixed_provider and (can('customers_view') or can('portal_actions')) %}
+      <a class="v2-tile" href="/iptv">
+        <div class="v2-tile-num">{{ iptv.live or 0 }}</div>
+        <div class="v2-tile-label">ANT IPTV</div>
+        <div class="v2-tile-hint">
+          {% if iptv.expired %}<span class="v2-dot is-bad">{{ iptv.expired }}</span>
+          {% elif iptv.expiring %}<span class="v2-dot is-warn">{{ iptv.expiring }}</span>
+          {% else %}ok{% endif %}
+        </div>
+      </a>
+      <a class="v2-tile" href="/ott">
+        <div class="v2-tile-num">{{ ott.live or 0 }}</div>
+        <div class="v2-tile-label">SmartPlay</div>
+        <div class="v2-tile-hint">
+          {% if ott.expired %}<span class="v2-dot is-bad">{{ ott.expired }}</span>
+          {% elif ott.expiring %}<span class="v2-dot is-warn">{{ ott.expiring }}</span>
+          {% else %}ok{% endif %}
+        </div>
+      </a>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% set ua = stats.get('unassigned') or {} %}
+  {% if ua %}
+  <section class="v2-home-unassigned">
+    <div class="v2-sec-title">Un-assigned customers</div>
+    <div class="v2-tiles v2-tiles-2">
+      {% for prov in ['hathway', 'railtel'] %}
+        {% if prov in ua and (not fixed_provider or fixed_provider == prov) %}
+      <a class="v2-tile" href="/v2/customers?view=unassigned&provider={{ prov }}">
+        <div class="v2-tile-num{% if ua[prov] %} is-warn{% endif %}">{{ ua[prov] }}</div>
+        <div class="v2-tile-label">{{ 'Hathway' if prov == 'hathway' else 'Railtel' }}</div>
+        <div class="v2-tile-hint">Un-assigned customers</div>
+      </a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="v2-home-unassigned">
+    <div class="v2-tiles v2-tiles-2">
+      <a class="v2-tile" href="/v2/customers?view=free{% if fixed_provider %}&provider={{ fixed_provider }}{% endif %}">
+        <div class="v2-tile-num">{{ stats.get('free_stbs') or 0 }}</div>
+        <div class="v2-tile-label">Free STBs</div>
+        <div class="v2-tile-hint">Social cause · node points</div>
+      </a>
+      {% set own = stats.get('owner') or {} %}
+      {% if own %}
+      <a class="v2-tile" href="/v2/customers?view=owner{% if fixed_provider %}&provider={{ fixed_provider }}{% endif %}">
+        <div class="v2-tile-num{% if own.due_paise %} is-warn{% endif %}">{{ own.stbs }}</div>
+        <div class="v2-tile-label">Owner collected</div>
+        <div class="v2-tile-hint">{% if own.due_paise %}₹{{ own.due_paise|rupees }} due{% else %}friends · combos{% endif %}</div>
+      </a>
+      {% endif %}
+    </div>
+  </section>
+
+</div>
+{% endmacro %}

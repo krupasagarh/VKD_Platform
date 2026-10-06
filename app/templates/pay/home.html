@@ -1,0 +1,70 @@
+{% extends "pay/base.html" %}
+{% block title %}Find your account{% endblock %}
+
+{% block content %}
+<section class="pay-card pay-card-hero pay-entry-hero">
+  <div class="pay-hero-icon" aria-hidden="true">📺</div>
+  <h1>Pay &amp; renew</h1>
+  <p class="pay-lead">Look up your account, then pay with UPI. We renew the service after payment is verified.</p>
+</section>
+
+{% if not enabled %}
+<section class="pay-card pay-alert">
+  Online payment is temporarily unavailable. Please contact {{ operator }}.
+</section>
+{% else %}
+
+{% if error %}
+<section class="pay-card pay-alert">{{ error }}</section>
+{% endif %}
+
+{% if not upi_ok %}
+<section class="pay-card pay-warn">
+  UPI setup is in progress. You can still look up your account.
+</section>
+{% endif %}
+
+<section class="pay-card pay-entry-card">
+  <div class="pay-tabs" role="tablist">
+    <a href="/pay?mode=mobile" class="pay-tab {% if mode != 'stb' %}pay-tab-on{% endif %}">Mobile number</a>
+    <a href="/pay?mode=stb" class="pay-tab {% if mode == 'stb' %}pay-tab-on{% endif %}">STB / Railtel ID</a>
+  </div>
+
+  {% if mode == 'stb' %}
+  <form method="post" action="/pay/lookup" class="pay-form pay-form-entry">
+    <input type="hidden" name="lookup" value="stb">
+    <label class="pay-label" for="service_id">Hathway STB or Railtel username</label>
+    <input class="pay-input pay-input-service" id="service_id" name="service_id" type="text"
+           autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false"
+           placeholder="e.g. N701234567 or ka.user123" value="{{ service_id or '' }}" required autofocus>
+    <p class="pay-hint">Enter exactly as on your bill or set-top box. We renew <strong>only this</strong> connection after pay.</p>
+    <button type="submit" class="pay-btn pay-btn-primary pay-btn-wide">Find my account</button>
+  </form>
+  {% else %}
+  <form method="post" action="/pay/lookup" class="pay-form pay-form-entry">
+    <input type="hidden" name="lookup" value="mobile">
+    <label class="pay-label" for="phone">Registered mobile</label>
+    <input class="pay-input pay-input-phone" id="phone" name="phone" type="tel"
+           inputmode="tel" autocomplete="tel"
+           placeholder="10-digit number" value="{{ phone or '' }}" required autofocus>
+    <p class="pay-hint">Use the number saved with {{ operator }}. You can pick which TV to renew if you have more than one.</p>
+    <button type="submit" class="pay-btn pay-btn-primary pay-btn-wide">Find my account</button>
+  </form>
+  {% endif %}
+</section>
+
+<section class="pay-steps-card">
+  <div class="pay-steps-title">How it works</div>
+  <ol class="pay-steps-inline">
+    <li>Find account</li>
+    <li>Pay via UPI</li>
+    <li>We verify &amp; renew</li>
+  </ol>
+</section>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/pay.js?v=4"></script>
+{% endblock %}

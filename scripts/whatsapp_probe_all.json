@@ -1,0 +1,7674 @@
+{
+  "summary": {
+    "total": 1094,
+    "yes": 957,
+    "no": 137,
+    "unknown": 0,
+    "error": 0
+  },
+  "db_totals": {
+    "error": 1,
+    "no": 139,
+    "yes": 989
+  },
+  "results": [
+    {
+      "customer_id": 36,
+      "name": "Meenakshi BA",
+      "phone": "8722502268",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 37,
+      "name": "Shivaprakash BA",
+      "phone": "7353744450",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 38,
+      "name": "Nirmala",
+      "phone": "8150047390",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 39,
+      "name": "Munovar BA",
+      "phone": "9844051785",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 40,
+      "name": "Zafar Pasha",
+      "phone": "9164014253",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 41,
+      "name": "Madhusudhan",
+      "phone": "9242883475",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 42,
+      "name": "Suresh BA",
+      "phone": "9164893315",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 43,
+      "name": "Ramdev times",
+      "phone": "9845912651",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 44,
+      "name": "Nagaraju Metro KK",
+      "phone": "9449368885",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 45,
+      "name": "Somasundar",
+      "phone": "9845087548",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 46,
+      "name": "Madhava Tailor",
+      "phone": "9035597724",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 47,
+      "name": "Satyanarayan Oil",
+      "phone": "9449748273",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 48,
+      "name": "RD Electricals BH",
+      "phone": "9448581766",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 49,
+      "name": "Ramdev Garments BH",
+      "phone": "8197578197",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 50,
+      "name": "Satyanarayan Oil",
+      "phone": "9449748273",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 51,
+      "name": "Govinda Tailor BH",
+      "phone": "9036172271",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 52,
+      "name": "Vinoda Medicals GO BH",
+      "phone": "7676456262",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 53,
+      "name": "Sarala Sister BH",
+      "phone": "7899321144",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 54,
+      "name": "Bairavi Glass and plywoods BH",
+      "phone": "9964345090",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 55,
+      "name": "Vijaya pharma",
+      "phone": "9108790599",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 56,
+      "name": "Devraj",
+      "phone": "8431313143",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 57,
+      "name": "SKS Traders",
+      "phone": "9999999999",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 58,
+      "name": "Krupa Home",
+      "phone": "9019563840",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 59,
+      "name": "Cash Collection",
+      "phone": "7259316656",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 60,
+      "name": "Mathrushre digital",
+      "phone": "9880943918",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 61,
+      "name": "Bedirambika Provision Stores BS",
+      "phone": "9141627361",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 62,
+      "name": "Mahalakshmi Metal Stores BS",
+      "phone": "9620336140",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 63,
+      "name": "Kiran Bondade",
+      "phone": "8495050650",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 64,
+      "name": "Gururaj Traders",
+      "phone": "9449644019",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 65,
+      "name": "Gajendra Traders",
+      "phone": "9743211068",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 66,
+      "name": "ARUN KUMAR BS",
+      "phone": "9844114993",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 67,
+      "name": "Devatha garments",
+      "phone": "9036603145",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 68,
+      "name": "Sujith bhushan",
+      "phone": "8310619030",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 69,
+      "name": "Manjunatha jewelers CB",
+      "phone": "8217330089",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 70,
+      "name": "Shashi Shekar",
+      "phone": "9844775221",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 71,
+      "name": "Kiran kumar SU",
+      "phone": "9945019904",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 72,
+      "name": "Sunil Bhushan CB",
+      "phone": "8151998351",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 73,
+      "name": "Bharath Bushan CB",
+      "phone": "9343210041",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 74,
+      "name": "Sarthvalli Suresh CB",
+      "phone": "9964169144",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 75,
+      "name": "Labhu Ram KK",
+      "phone": "7892594805",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 76,
+      "name": "Vani Ravikumar",
+      "phone": "7090116814",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 77,
+      "name": "Pavan",
+      "phone": "9900494951",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 78,
+      "name": "Srinivas",
+      "phone": "9141118164",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 79,
+      "name": "Gopi CG",
+      "phone": "9448101910",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 80,
+      "name": "Manjunath CG",
+      "phone": "9886421367",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 81,
+      "name": "Gopalanna",
+      "phone": "8496811436",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 82,
+      "name": "Santosh",
+      "phone": "7829888895",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 83,
+      "name": "Sridhar Jewerllers",
+      "phone": "9845860845",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 84,
+      "name": "Basavarju",
+      "phone": "8073316105",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 85,
+      "name": "Babu Rajendraprasad",
+      "phone": "9844010819",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 86,
+      "name": "Sree Textiles",
+      "phone": "9844081066",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 87,
+      "name": "Nataraj CG",
+      "phone": "9632440530",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 88,
+      "name": "Nandanna CG",
+      "phone": "9742114905",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 89,
+      "name": "Shivananda Swamy CG",
+      "phone": "7760874650",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 90,
+      "name": "Babanna",
+      "phone": "9986781213",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 91,
+      "name": "Harini",
+      "phone": "7760321026",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 92,
+      "name": "Ambrish PT",
+      "phone": "8453824313",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 93,
+      "name": "Ningaraju",
+      "phone": "9164662659",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 94,
+      "name": "Jayanth",
+      "phone": "9620466295",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 95,
+      "name": "Dakshinamurthy",
+      "phone": "9448326884",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 96,
+      "name": "Jagadish",
+      "phone": "9740016907",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 97,
+      "name": "Pandith GO CN",
+      "phone": "7676969697",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 98,
+      "name": "Dattanna, (GO-CN-5)",
+      "phone": "9448979528",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 99,
+      "name": "Naresh",
+      "phone": "9448892363",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 100,
+      "name": "Kalavati",
+      "phone": "8088372633",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 101,
+      "name": "B S Babu GO CN",
+      "phone": "9844107078",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 102,
+      "name": "Prashanth Ngowdru",
+      "phone": "8453222666",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 103,
+      "name": "Gopanna GO CN",
+      "phone": "9844582635",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 104,
+      "name": "Nanjundappa",
+      "phone": "9448544522",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 105,
+      "name": "Suryanarayan",
+      "phone": "8861595069",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 106,
+      "name": "Manjunath",
+      "phone": "9964901361",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 107,
+      "name": "Subbanna Winding CN",
+      "phone": "9481134199",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 108,
+      "name": "Dr. Sridhar, (GO-CN-16)",
+      "phone": "9845482692",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 109,
+      "name": "Sharma",
+      "phone": "9538125143",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 110,
+      "name": "Jagadesh welding",
+      "phone": "9845141442",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 111,
+      "name": "Venkateshwara traders",
+      "phone": "9844061089",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 112,
+      "name": "Paniraj GO CN",
+      "phone": "9343210005",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 113,
+      "name": "Chandramma",
+      "phone": "9663200624",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 114,
+      "name": "S G Bhaskar",
+      "phone": "9916400202",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 115,
+      "name": "Girish",
+      "phone": "8792249492",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 116,
+      "name": "Kumar Auto CN",
+      "phone": "9686830344",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 117,
+      "name": "Ashwat Narayan GO CN",
+      "phone": "9743211015",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 118,
+      "name": "Madhu RTO GO CN",
+      "phone": "9986684401",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 119,
+      "name": "Nagendra kumar GO CN",
+      "phone": "9916620157",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 120,
+      "name": "Manjanna GO CN",
+      "phone": "8618169701",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 121,
+      "name": "Nagachari",
+      "phone": "9886250769",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 122,
+      "name": "Aravind VH",
+      "phone": "9379109141",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 123,
+      "name": "AMARNATH VH",
+      "phone": "9916226188",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 124,
+      "name": "Sowmya CN",
+      "phone": "9590063985",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 125,
+      "name": "Sujatha Raju CN",
+      "phone": "9620648126",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 126,
+      "name": "Anayya GO CN",
+      "phone": "9964509923",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 127,
+      "name": "Kishore GO CN",
+      "phone": "9844574053",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 128,
+      "name": "Uncle raju GO CN",
+      "phone": "9964002785",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 129,
+      "name": "Shivaprasad NC",
+      "phone": "9740775852",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 130,
+      "name": "Bharath Hotel BA",
+      "phone": "9901966868",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 131,
+      "name": "Venkatesh Welding CN",
+      "phone": "9880855838",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 132,
+      "name": "T S Mohan CN",
+      "phone": "8217078282",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 133,
+      "name": "Shankar Narayana CN",
+      "phone": "9886929394",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 134,
+      "name": "Manindar hardware CN",
+      "phone": "9743530179",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 135,
+      "name": "Fayaz CN",
+      "phone": "9945017979",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 136,
+      "name": "Prakash CN",
+      "phone": "8431400824",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 137,
+      "name": "Mahaveer CN",
+      "phone": "9035141820",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 138,
+      "name": "Mani Painter",
+      "phone": "9901140134",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 139,
+      "name": "Ramsingh",
+      "phone": "9950445406",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 140,
+      "name": "Sannoj",
+      "phone": "6360836152",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 141,
+      "name": "Harish CN",
+      "phone": "9110434599",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 142,
+      "name": "Siddaraju",
+      "phone": "7829766336",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 143,
+      "name": "Manju CN",
+      "phone": "7259801031",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 144,
+      "name": "Manikanta jewelers GO DP",
+      "phone": "9945844813",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 145,
+      "name": "Basaveshwara Jewellers",
+      "phone": "9880881803",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 146,
+      "name": "Dhanalakshmi Jewellers",
+      "phone": "9448410365",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 147,
+      "name": "Harsha Electricals",
+      "phone": "9741627555",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 148,
+      "name": "Vinay",
+      "phone": "9964533743",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 149,
+      "name": "Ranganna Node",
+      "phone": "9448660186",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 150,
+      "name": "S R Traders",
+      "phone": "9986579825",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 151,
+      "name": "Hari Babanna",
+      "phone": "9844020586",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 152,
+      "name": "Siddalingeshara Provision stores",
+      "phone": "9844752937",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 153,
+      "name": "Tippeshanna",
+      "phone": "9886468444",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 154,
+      "name": "Saptagiri Jewelers",
+      "phone": "8884888884",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 155,
+      "name": "Paramesh Tailor",
+      "phone": "9448660203",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 156,
+      "name": "Rajamma",
+      "phone": "9999999999",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 157,
+      "name": "Nagaraju Fertilizers",
+      "phone": "7019868869",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 158,
+      "name": "Srinivas Book Depo",
+      "phone": "9844040656",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 159,
+      "name": "Ramu",
+      "phone": "8660162117",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 160,
+      "name": "Kiran DP",
+      "phone": "8892955600",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 161,
+      "name": "Venkataraju",
+      "phone": "9036762632",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 162,
+      "name": "Shantaram Jewellers",
+      "phone": "9986397858",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 163,
+      "name": "Srikanth",
+      "phone": "9448250911",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 164,
+      "name": "TN Srinivas",
+      "phone": "9141122410",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 165,
+      "name": "Ashok Provision",
+      "phone": "8884827009",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 166,
+      "name": "Shilpa Auto Links DP",
+      "phone": "9448326966",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 167,
+      "name": "Adarsh Jewelers",
+      "phone": "9448431225",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 168,
+      "name": "KCN Prasad",
+      "phone": "9740644980",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 169,
+      "name": "Shashi Electricals DP",
+      "phone": "9448523295",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 170,
+      "name": "Sujith DP",
+      "phone": "9036176467",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 171,
+      "name": "Gowramma GO DP",
+      "phone": "8951439529",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 172,
+      "name": "Suresh DP",
+      "phone": "8884087707",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 173,
+      "name": "Anantaram Shetty",
+      "phone": "9739569368",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 174,
+      "name": "Saptagiri jewellers home",
+      "phone": "8884888884",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 175,
+      "name": "Madhu",
+      "phone": "9164435828",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 176,
+      "name": "Prakash gunda",
+      "phone": "7795846127",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 177,
+      "name": "KALYANKUMAR",
+      "phone": "9845901153",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 178,
+      "name": "Kishor GT",
+      "phone": "9916886887",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 179,
+      "name": "Srinivas Flower",
+      "phone": "9449743016",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 180,
+      "name": "Shadakshari Tea",
+      "phone": "9964594252",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 181,
+      "name": "Basavaraju",
+      "phone": "9945300212",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 182,
+      "name": "Lakshman GT",
+      "phone": "9620555333",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 183,
+      "name": "Murthy",
+      "phone": "9743442848",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 184,
+      "name": "Nagarathna Hotel",
+      "phone": "9036245561",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 185,
+      "name": "Muppinaiah S R",
+      "phone": "9972100838",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 186,
+      "name": "Chethan TR",
+      "phone": "8971906119",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 187,
+      "name": "Rangaraju",
+      "phone": "9844490681",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 188,
+      "name": "Shashi",
+      "phone": "9844085620",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 189,
+      "name": "Manju tea GO GR",
+      "phone": "9945399003",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 190,
+      "name": "Narendrakumar",
+      "phone": "9518155831",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 191,
+      "name": "Saroja GO GR",
+      "phone": "9108366548",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 192,
+      "name": "Kumaramma",
+      "phone": "6364137250",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 193,
+      "name": "Giriraj HG",
+      "phone": "7795005541",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 194,
+      "name": "Lingaraju GO VT",
+      "phone": "9742670581",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 195,
+      "name": "Shankarappa HG",
+      "phone": "9886238957",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 196,
+      "name": "Yoganand Flower",
+      "phone": "9972566284",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 197,
+      "name": "Doddaiah",
+      "phone": "9986919112",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 198,
+      "name": "Kempanna",
+      "phone": "9986333090",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 199,
+      "name": "Leelavathi",
+      "phone": "8748917350",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 200,
+      "name": "Rambhagavan",
+      "phone": "8197892929",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 201,
+      "name": "vinay T H",
+      "phone": "9743305536",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 202,
+      "name": "VEENA TG",
+      "phone": "9980312400",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 203,
+      "name": "Kempaiah HB",
+      "phone": "9148001706",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 204,
+      "name": "Madhu HG",
+      "phone": "7892687960",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 205,
+      "name": "Honnappa",
+      "phone": "9731539693",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 206,
+      "name": "Channabasavaiah Provission",
+      "phone": "9742259417",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 207,
+      "name": "Ravi Vishnu",
+      "phone": "9844432812",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 208,
+      "name": "Delux Tailor",
+      "phone": "9945153386",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 209,
+      "name": "Bhagavan Traders",
+      "phone": "9986120140",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 210,
+      "name": "Devaraja kt",
+      "phone": "9019795535",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 211,
+      "name": "Nagendra Kumar LR",
+      "phone": "9886192704",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 212,
+      "name": "Rajalakshmi Enterprises",
+      "phone": "9844285287",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 213,
+      "name": "Subanna Provision Store HO",
+      "phone": "9900940370",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 214,
+      "name": "Katyayini Stores",
+      "phone": "9964532360",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 215,
+      "name": "Ashok Babu",
+      "phone": "9241051099",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 216,
+      "name": "Triyambaka kumar Busi",
+      "phone": "8217519390",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 217,
+      "name": "Divakar",
+      "phone": "8073307426",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 218,
+      "name": "CHANDAN BESCOM",
+      "phone": "9886220227",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 219,
+      "name": "Narasimha Murthy",
+      "phone": "9449110575",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 220,
+      "name": "Sridhar HO",
+      "phone": "9844390240",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 221,
+      "name": "Arun Vasavi Medicals KK",
+      "phone": "9886428679",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 222,
+      "name": "Darshan HO",
+      "phone": "9448326944",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 223,
+      "name": "Anand kumar T Lawyer HO",
+      "phone": "6362697509",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 224,
+      "name": "Renukamba provision store HO",
+      "phone": "9480627551",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 225,
+      "name": "Suresh HO",
+      "phone": "9845294030",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 226,
+      "name": "Manjanna Whole Sale HO",
+      "phone": "9986336803",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 227,
+      "name": "Kavitha RT",
+      "phone": "9844162730",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 228,
+      "name": "Satyanarayan HO",
+      "phone": "8310065946",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 229,
+      "name": "MR Fancy",
+      "phone": "8123227150",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 230,
+      "name": "pavan KG",
+      "phone": "9448175144",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 231,
+      "name": "Basavaraju Shastri",
+      "phone": "9972748312",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 232,
+      "name": "Ramesh",
+      "phone": "9019994424",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 233,
+      "name": "Mallikarjunaiah",
+      "phone": "8861591699",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 234,
+      "name": "Yateesh KG",
+      "phone": "9019858388",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 235,
+      "name": "Basavaraj",
+      "phone": "9986804626",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 236,
+      "name": "Preetham, (GO-KG-8)",
+      "phone": "9480245199",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 237,
+      "name": "Kanaka lakshmi jewellers",
+      "phone": "9448792408",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 238,
+      "name": "Pradeep Basavaraj shastrigalu",
+      "phone": "9844074577",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 239,
+      "name": "Ganganna Provision store KG",
+      "phone": "9844121151",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 240,
+      "name": "Govindaraju",
+      "phone": "9743124837",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 241,
+      "name": "Lokanna KG",
+      "phone": "9108626449",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 242,
+      "name": "Devatha garments home",
+      "phone": "9036603145",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 243,
+      "name": "Danush",
+      "phone": "8374595861",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 244,
+      "name": "Padmavathi",
+      "phone": "9035596430",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 245,
+      "name": "Dinesh KG",
+      "phone": "9844997300",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 246,
+      "name": "Krishnan Metals",
+      "phone": "9986601263",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 247,
+      "name": "Manjunath Provision KK",
+      "phone": "9916702544",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 248,
+      "name": "Praveen Kum kum KK",
+      "phone": "9986222333",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 249,
+      "name": "Shashi Kumar KK",
+      "phone": "9972448126",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 250,
+      "name": "Goutham Kappanna KK",
+      "phone": "9886250218",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 251,
+      "name": "Rakesh KK",
+      "phone": "7019970145",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 252,
+      "name": "Rangaswamy Bakery",
+      "phone": "9108159513",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 253,
+      "name": "Siddalingaiah Hotel",
+      "phone": "9980652364",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 254,
+      "name": "Mahalingappa",
+      "phone": "9844782761",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 255,
+      "name": "Shivanna kodi",
+      "phone": "9964801032",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 256,
+      "name": "Kiran Kumar KO",
+      "phone": "6363316415",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 257,
+      "name": "Vishwanath",
+      "phone": "9164131239",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 258,
+      "name": "Thimappa",
+      "phone": "9980988371",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 259,
+      "name": "Bhyrav Kumar",
+      "phone": "9740714502",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 260,
+      "name": "Krishnappa",
+      "phone": "9611819110",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 261,
+      "name": "Suresh Babu",
+      "phone": "9740124474",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 262,
+      "name": "Varadaraj",
+      "phone": "9739171418",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 263,
+      "name": "Srinivas Murthy",
+      "phone": "9916004728",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 264,
+      "name": "Darshan",
+      "phone": "8880032500",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 265,
+      "name": "Mohan Tailor",
+      "phone": "9986397756",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 266,
+      "name": "Nagaraju TV",
+      "phone": "9845837120",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 267,
+      "name": "Prasanna anna",
+      "phone": "9448130019",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 268,
+      "name": "Bhaskar Tailor",
+      "phone": "9901339931",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 269,
+      "name": "Ramakrishnachar",
+      "phone": "8710037354",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 270,
+      "name": "Jayadevappa Lawyer",
+      "phone": "9886637138",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 271,
+      "name": "Manjanna Tailor",
+      "phone": "9886437547",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 272,
+      "name": "Nagabhushan",
+      "phone": "9844624742",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 273,
+      "name": "Pushpamma",
+      "phone": "9164074445",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 274,
+      "name": "Manjunath",
+      "phone": "9742555760",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 275,
+      "name": "Drakshayanamma",
+      "phone": "8748861237",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 276,
+      "name": "Malleshanna",
+      "phone": "9741065540",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 277,
+      "name": "Shivanand",
+      "phone": "8861974999",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 278,
+      "name": "Vijayanna",
+      "phone": "7019060334",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 279,
+      "name": "Gangadhar KT",
+      "phone": "9844901071",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 280,
+      "name": "Panchaksharaiah",
+      "phone": "8152071485",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 281,
+      "name": "Appi",
+      "phone": "9886187328",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 282,
+      "name": "Ravikumar",
+      "phone": "9743743346",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 283,
+      "name": "Shivu Pujar",
+      "phone": "9742621620",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 284,
+      "name": "Nagaraju",
+      "phone": "8884285519",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 285,
+      "name": "Sukanya Sister",
+      "phone": "9986102258",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 286,
+      "name": "Eshwar",
+      "phone": "9740487084",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 287,
+      "name": "Anil Kumar",
+      "phone": "9844735635",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 288,
+      "name": "Arjun GO KO",
+      "phone": "9972566568",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 289,
+      "name": "Narasimha Murthy Archakaru KT",
+      "phone": "9535358572",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 290,
+      "name": "Rangamma GO KO",
+      "phone": "7483077224",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 291,
+      "name": "Bhagyamma GO KO",
+      "phone": "9141476092",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 292,
+      "name": "Ganganna GO KO",
+      "phone": "9980964532",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 293,
+      "name": "ShivaShankar KT",
+      "phone": "9945424929",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 294,
+      "name": "Naveen Airtel KT",
+      "phone": "9742349401",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 295,
+      "name": "Mohan Achar",
+      "phone": "9513027535",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 296,
+      "name": "Kala HT",
+      "phone": "9620146392",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 297,
+      "name": "Venkatesh murthi",
+      "phone": "9916580492",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 298,
+      "name": "Chaya",
+      "phone": "9663179222",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 299,
+      "name": "Jayaram",
+      "phone": "9731996357",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 300,
+      "name": "Srinivas KT",
+      "phone": "8496881451",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 301,
+      "name": "pushpa",
+      "phone": "8884749759",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 302,
+      "name": "prakashanna gowdru",
+      "phone": "9448833189",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 303,
+      "name": "Ramamani",
+      "phone": "9113536985",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 304,
+      "name": "Chandru kumar",
+      "phone": "9148167378",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 305,
+      "name": "Pradeep KT",
+      "phone": "9742114897",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 306,
+      "name": "Mahesh kote",
+      "phone": "7892943792",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 307,
+      "name": "Mohid Pasha",
+      "phone": "9008272952",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 308,
+      "name": "Azam Watch",
+      "phone": "9743464347",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 309,
+      "name": "Saleem Pasha",
+      "phone": "7338594822",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 310,
+      "name": "Zamrudh",
+      "phone": "9945067708",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 311,
+      "name": "Musadiq",
+      "phone": "9902265506",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 312,
+      "name": "Sharif Biriyani Lb",
+      "phone": "8970304242",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 313,
+      "name": "Jabeen Hotel",
+      "phone": "9148181260",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 314,
+      "name": "Fayaz LLB",
+      "phone": "6360495513",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 315,
+      "name": "Amjad PL",
+      "phone": "9008289542",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 316,
+      "name": "Syed Mujeeb",
+      "phone": "9141737971",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 317,
+      "name": "Yasmin Taj",
+      "phone": "8867504691",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 318,
+      "name": "Krishnaveni",
+      "phone": "8861124991",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 319,
+      "name": "Ramanna Chats",
+      "phone": "9741173949",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 320,
+      "name": "Siri MAG",
+      "phone": "9844080849",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 321,
+      "name": "Ramachar",
+      "phone": "9844020589",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 322,
+      "name": "Rajkumar Setu",
+      "phone": "8073808684",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 323,
+      "name": "Manorama",
+      "phone": "9353574105",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 324,
+      "name": "Devi Lal",
+      "phone": "9019634550",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 325,
+      "name": "Ramprasad GO MC",
+      "phone": "9343304248",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 326,
+      "name": "Nataraj GO MC",
+      "phone": "9880056648",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 327,
+      "name": "Chandan singh MC",
+      "phone": "9448297630",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 328,
+      "name": "Gangadhar veg GO MC",
+      "phone": "9886643733",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 329,
+      "name": "Nagaraju likith GO MC",
+      "phone": "7760195695",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 330,
+      "name": "Kishan MC",
+      "phone": "7892038749",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 331,
+      "name": "Kiran traders GO MC",
+      "phone": "9980092420",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 332,
+      "name": "Prakash veg GO MC",
+      "phone": "9844118194",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 333,
+      "name": "Parvathi GO MC",
+      "phone": "9141664585",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 334,
+      "name": "Chandru GO MC",
+      "phone": "9986481556",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 335,
+      "name": "Shantanna GO MC",
+      "phone": "9739519143",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 336,
+      "name": "Chetana Muncipal MC",
+      "phone": "9743050544",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 337,
+      "name": "Akshaya bekery MC",
+      "phone": "9483091762",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 338,
+      "name": "Nagaraju MC",
+      "phone": "9113070195",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 339,
+      "name": "Hemalatha",
+      "phone": "8861778315",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 340,
+      "name": "Ramesh MC",
+      "phone": "7338569040",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 341,
+      "name": "Prdeep hotel",
+      "phone": "9972747979",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 342,
+      "name": "Mayur",
+      "phone": "9964820494",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 343,
+      "name": "Chandrashetti",
+      "phone": "9591861636",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 344,
+      "name": "Jabeer",
+      "phone": "9686771991",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 345,
+      "name": "Zakir pasha",
+      "phone": "9448449090",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 346,
+      "name": "Rajendra Lodge",
+      "phone": "9008730394",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 347,
+      "name": "Shabuddin",
+      "phone": "9845413236",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 348,
+      "name": "Narayana Gowdru HOME",
+      "phone": "7026522666",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 349,
+      "name": "Nataraju",
+      "phone": "9740413515",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 350,
+      "name": "Suma Madam",
+      "phone": "9986854603",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 351,
+      "name": "Yoganand Sounds",
+      "phone": "9900824405",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 352,
+      "name": "Prakash MST",
+      "phone": "9449203777",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 353,
+      "name": "Shantanna",
+      "phone": "8748989080",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 354,
+      "name": "Sharadha",
+      "phone": "9591103791",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 355,
+      "name": "Sree Photo Shudio",
+      "phone": "9448014499",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 356,
+      "name": "Jayalakshmamma",
+      "phone": "9743037131",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 357,
+      "name": "Ramanna Pigmi",
+      "phone": "9141140078",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 358,
+      "name": "Babanna Flower MST",
+      "phone": "8867847628",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 359,
+      "name": "Prashanth MST",
+      "phone": "9620871941",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 360,
+      "name": "Jagadish MST",
+      "phone": "9986601243",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 361,
+      "name": "Gunashekar MST",
+      "phone": "9886932245",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 362,
+      "name": "Ananda Plumber MST",
+      "phone": "9538564302",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 363,
+      "name": "Rajesh MST",
+      "phone": "9535489787",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 364,
+      "name": "MAnjunathachar GO MS",
+      "phone": "9880642273",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 365,
+      "name": "Abhilash MST",
+      "phone": "9916088595",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 366,
+      "name": "Nataraju GO MS",
+      "phone": "9141945800",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 367,
+      "name": "Zahur",
+      "phone": "9844977979",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 368,
+      "name": "Nagaraju MST",
+      "phone": "9845403012",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 369,
+      "name": "Shankaranna Tailor",
+      "phone": "9844685864",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 370,
+      "name": "Swamy B S Sanath agency",
+      "phone": "9844185033",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 371,
+      "name": "Kalavathi",
+      "phone": "9844106812",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 372,
+      "name": "Venkataraju mst",
+      "phone": "9739302217",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 373,
+      "name": "Dr Prasad",
+      "phone": "9880800812",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 374,
+      "name": "Chirag NC",
+      "phone": "9739254888",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 375,
+      "name": "Nitina Kailash",
+      "phone": "9980000778",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 376,
+      "name": "Jameel",
+      "phone": "9980324516",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 377,
+      "name": "Nandini",
+      "phone": "9964094696",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 378,
+      "name": "Raziya khaum",
+      "phone": "9901611062",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 379,
+      "name": "Sundranna NC",
+      "phone": "9113984763",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 380,
+      "name": "Chirag NC",
+      "phone": "9739254888",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 381,
+      "name": "Amar Cycle Shop NC",
+      "phone": "9480629324",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 382,
+      "name": "Bhilal",
+      "phone": "9999999999",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 383,
+      "name": "Toufiq",
+      "phone": "9663344676",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 384,
+      "name": "Mohammed Shafi",
+      "phone": "9844473846",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 385,
+      "name": "Varun Tea",
+      "phone": "9449391877",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 386,
+      "name": "Subramanya",
+      "phone": "9343081741",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 387,
+      "name": "Naveen PT",
+      "phone": "9964593878",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 388,
+      "name": "Harish Milk PT",
+      "phone": "9448979517",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 389,
+      "name": "Swamy provision PT",
+      "phone": "9449440308",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 390,
+      "name": "Narayana PT",
+      "phone": "9743396724",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 391,
+      "name": "Divakar HO",
+      "phone": "9164751019",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 392,
+      "name": "Venkatesh Babu PT",
+      "phone": "9448834280",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 393,
+      "name": "Virupakshi PT",
+      "phone": "9986922469",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 394,
+      "name": "Manjunath C B PT",
+      "phone": "8710924191",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 395,
+      "name": "Ravindranatha Gupta PT",
+      "phone": "9901122622",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 396,
+      "name": "Rakshith",
+      "phone": "7026030766",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 397,
+      "name": "Ravi tea hotel",
+      "phone": "9980098854",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 398,
+      "name": "Farooq Gujari",
+      "phone": "9964713655",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 399,
+      "name": "Mouveen",
+      "phone": "8050150822",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 400,
+      "name": "Navaz",
+      "phone": "9845672039",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 401,
+      "name": "Sikandar",
+      "phone": "9964593836",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 402,
+      "name": "Siddiq",
+      "phone": "7026400974",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 403,
+      "name": "Khaleel Master",
+      "phone": "9980568217",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 404,
+      "name": "Mansoor",
+      "phone": "9741403061",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 405,
+      "name": "Reshma",
+      "phone": "8123649035",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 406,
+      "name": "Mohammed Tanveer POR",
+      "phone": "9886017885",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 407,
+      "name": "SK Foods",
+      "phone": "9739687096",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 408,
+      "name": "Rani PR",
+      "phone": "8095844803",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 409,
+      "name": "Shankar PR",
+      "phone": "8971153381",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 410,
+      "name": "Shankarappa PR",
+      "phone": "9964571938",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 411,
+      "name": "Cheluvaraju",
+      "phone": "9964394238",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 412,
+      "name": "Sannamallaiah",
+      "phone": "9448024690",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 413,
+      "name": "Ramachandra Gupta",
+      "phone": "9448590593",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 414,
+      "name": "Madhu PR",
+      "phone": "8618373630",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 415,
+      "name": "Santosh Flower",
+      "phone": "9964341066",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 416,
+      "name": "Rajashekar PR",
+      "phone": "9902896292",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 417,
+      "name": "Kumar PR",
+      "phone": "6360828413",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 418,
+      "name": "Govindaraju TS",
+      "phone": "9844082568",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 419,
+      "name": "Jayanna",
+      "phone": "8660377528",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 420,
+      "name": "Hemanthachar",
+      "phone": "7406691932",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 421,
+      "name": "Vaniprasad",
+      "phone": "7406035700",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 422,
+      "name": "Vijiyamma",
+      "phone": "9606598794",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 423,
+      "name": "Madhu TR",
+      "phone": "8548859715",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 424,
+      "name": "Indramma",
+      "phone": "7259801031",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 425,
+      "name": "Srinivas PR",
+      "phone": "7975871018",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 426,
+      "name": "Jayanthi",
+      "phone": "9972749495",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 427,
+      "name": "Rangasons, (GO-RS-1)",
+      "phone": "9844624732",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 428,
+      "name": "Swamy gold GO RS",
+      "phone": "9686849069",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 429,
+      "name": "Mahadev",
+      "phone": "9731828787",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 430,
+      "name": "Rajesh RS",
+      "phone": "9844253406",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 431,
+      "name": "T G Shivanna",
+      "phone": "9448603646",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 432,
+      "name": "Raju kara GO RS",
+      "phone": "9844181012",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 433,
+      "name": "Mallesh railway",
+      "phone": "9945016927",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 434,
+      "name": "Shashi lab",
+      "phone": "9448747165",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 435,
+      "name": "Prathiba Raju",
+      "phone": "6362621891",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 436,
+      "name": "Yuvaraj",
+      "phone": "8277589163",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 437,
+      "name": "Kavitha GO RS",
+      "phone": "9945214808",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 438,
+      "name": "Harish medicals GO RS",
+      "phone": "9844066781",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 439,
+      "name": "Jenukal Hospital RS",
+      "phone": "9448238094",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 440,
+      "name": "Gangadhar",
+      "phone": "9972228339",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 441,
+      "name": "Mahesh Kumar Railway RS",
+      "phone": "9740473792",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 442,
+      "name": "Gaddigappa RS",
+      "phone": "9743004538",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 443,
+      "name": "Sudarshan HM",
+      "phone": "9480877140",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 444,
+      "name": "Lucky porlar",
+      "phone": "6362621891",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 445,
+      "name": "Gayithramma",
+      "phone": "8546902780",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 446,
+      "name": "Jagadish RS",
+      "phone": "8495004030",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 447,
+      "name": "Dinesh",
+      "phone": "8310411256",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 448,
+      "name": "Banu Prashanth",
+      "phone": "8217390551",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 449,
+      "name": "Arun kumar GO RM",
+      "phone": "9964593765",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 450,
+      "name": "Sirish",
+      "phone": "9844201192",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 451,
+      "name": "Prasanna vishwanath",
+      "phone": "9742338833",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 452,
+      "name": "Siddarameshwara traders GO RM",
+      "phone": "7899158774",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 453,
+      "name": "Suresh",
+      "phone": "8970308006",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 454,
+      "name": "Sharada Stores",
+      "phone": "9844574338",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 455,
+      "name": "Bhagyamma",
+      "phone": "6360796374",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 456,
+      "name": "Dhananjaya Jain Temple",
+      "phone": "9739685880",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 457,
+      "name": "Renukappa",
+      "phone": "9844252378",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 458,
+      "name": "Chandrakeerthi jain",
+      "phone": "9008240806",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 459,
+      "name": "Janardhan GO RM",
+      "phone": "9742378672",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 460,
+      "name": "Yogishanna",
+      "phone": "9448175143",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 461,
+      "name": "Prakash Sharada Stores",
+      "phone": "9606319477",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 462,
+      "name": "Sharadamma Rm",
+      "phone": "7019155894",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 463,
+      "name": "Lokesh RT",
+      "phone": "7975888070",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 464,
+      "name": "Umesh",
+      "phone": "9964989629",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 465,
+      "name": "Somashekar",
+      "phone": "9964828283",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 466,
+      "name": "Rajashekar",
+      "phone": "8746859005",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 467,
+      "name": "Raju Tea Hotel",
+      "phone": "9481612848",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 468,
+      "name": "Manjunath",
+      "phone": "9844080489",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 469,
+      "name": "Sateesh Babu GO SR",
+      "phone": "9141615761",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 470,
+      "name": "Naveen stylu GO SR",
+      "phone": "9886450925",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 471,
+      "name": "Shukrulla sharif",
+      "phone": "7892620234",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 472,
+      "name": "Ranjith",
+      "phone": "8746998536",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 473,
+      "name": "Imtiyaz SR",
+      "phone": "9880843769",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 474,
+      "name": "Prasanna",
+      "phone": "9743139118",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 475,
+      "name": "Nagaraju Kara",
+      "phone": "7019529233",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 476,
+      "name": "Gangadhar",
+      "phone": "9448427733",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 477,
+      "name": "Rajesh GO SR",
+      "phone": "9886398141",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 478,
+      "name": "Roopa",
+      "phone": "9902226341",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 479,
+      "name": "Prajawani GO SR",
+      "phone": "9448747367",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 480,
+      "name": "Khadar GO SR",
+      "phone": "6361167539",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 481,
+      "name": "Srinivas Balaji textile",
+      "phone": "9844301066",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 482,
+      "name": "Chain singh",
+      "phone": "9036730563",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 483,
+      "name": "Gangadhar SR",
+      "phone": "9740572501",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 484,
+      "name": "Annaya babu",
+      "phone": "9844336808",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 485,
+      "name": "Aslam GO SR",
+      "phone": "9886786786",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 486,
+      "name": "Manjanna winding GO SR",
+      "phone": "9844677601",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 487,
+      "name": "Azeez",
+      "phone": "9590932079",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 488,
+      "name": "Jeelan",
+      "phone": "9686558242",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 489,
+      "name": "Ashwin",
+      "phone": "9663092317",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 490,
+      "name": "Sunil",
+      "phone": "9738781278",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 491,
+      "name": "Deepu",
+      "phone": "9901187078",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 492,
+      "name": "Lokesh GO SK",
+      "phone": "9448573626",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 493,
+      "name": "Kikeri Traders",
+      "phone": "9986519690",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 494,
+      "name": "Bagepalli Jewellers",
+      "phone": "9448533060",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 495,
+      "name": "SS Jewellers SK",
+      "phone": "9986149008",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 496,
+      "name": "Rakesh",
+      "phone": "8867660046",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 497,
+      "name": "Parvathi Traders",
+      "phone": "9739583719",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 498,
+      "name": "Chandrashekar",
+      "phone": "9632801783",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 499,
+      "name": "Balaji",
+      "phone": "8088999836",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 500,
+      "name": "SM Jewellers",
+      "phone": "9916775922",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 501,
+      "name": "Anand SKPT",
+      "phone": "9999999999",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 502,
+      "name": "T R Amar GO SK",
+      "phone": "9742659292",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 503,
+      "name": "Lakshmi Narayan SK",
+      "phone": "9448971658",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 504,
+      "name": "Murgeshanna SK",
+      "phone": "9964182604",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 505,
+      "name": "Om Traders",
+      "phone": "8722136906",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 506,
+      "name": "Babanna SK",
+      "phone": "9741485592",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 507,
+      "name": "Mohan gold",
+      "phone": "9964732038",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 508,
+      "name": "Ananda",
+      "phone": "8147220238",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 509,
+      "name": "Shivanna",
+      "phone": "9686669736",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 510,
+      "name": "Sateesh Babu",
+      "phone": "8867444558",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 511,
+      "name": "Narashimha Murthy",
+      "phone": "9986444646",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 512,
+      "name": "Radamma",
+      "phone": "7760404837",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 513,
+      "name": "Geetha",
+      "phone": "8431055974",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 514,
+      "name": "Manjunath tr",
+      "phone": "6363108475",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 515,
+      "name": "Chandramma SB",
+      "phone": "7899383404",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 516,
+      "name": "Venkateswara Printers",
+      "phone": "9448938160",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 517,
+      "name": "Lohith SVP",
+      "phone": "9686852800",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 518,
+      "name": "Manoj SVP",
+      "phone": "9113278282",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 519,
+      "name": "N Manjunath SVP",
+      "phone": "9945152842",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 520,
+      "name": "Kumar Vegetable SVP",
+      "phone": "8867606438",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 521,
+      "name": "Dinesh GO SV",
+      "phone": "9902406064",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 522,
+      "name": "Bedarelingappa Hospital SVP",
+      "phone": "7411964484",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 523,
+      "name": "Mithun SVP",
+      "phone": "9880248442",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 524,
+      "name": "Ganesha jewelers GO GR",
+      "phone": "9481489641",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 525,
+      "name": "Srinivas SVP",
+      "phone": "9743758123",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 526,
+      "name": "Krishna Svp",
+      "phone": "9738556447",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 527,
+      "name": "Skanda Hair Dresses",
+      "phone": "8095454177",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 528,
+      "name": "NP Set",
+      "phone": "9986441081",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 529,
+      "name": "Subramanyam",
+      "phone": "9019867618",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 530,
+      "name": "Kumaraswamy",
+      "phone": "9844745800",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 531,
+      "name": "Prathap VT",
+      "phone": "8296655086",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 532,
+      "name": "Suresh Paper",
+      "phone": "9880184707",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 533,
+      "name": "Shanmuk",
+      "phone": "9448372153",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 534,
+      "name": "Arun kumar",
+      "phone": "9844745800",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 535,
+      "name": "Shankarachar",
+      "phone": "9449302261",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 536,
+      "name": "Jayamma",
+      "phone": "8073163079",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 537,
+      "name": "Yateesh",
+      "phone": "9141738856",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 538,
+      "name": "Rakesh Chandra",
+      "phone": "9449732799",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 539,
+      "name": "Sarvamangala",
+      "phone": "9886359242",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 540,
+      "name": "Anandbabu",
+      "phone": "9844081383",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 541,
+      "name": "Kumar VH",
+      "phone": "9035141641",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 542,
+      "name": "Kiran Kumar",
+      "phone": "9844311858",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 543,
+      "name": "SK Umesh",
+      "phone": "9844416752",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 544,
+      "name": "Chandranna Milk",
+      "phone": "9341095250",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 545,
+      "name": "Vasanth Kumar VH",
+      "phone": "9901583686",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 546,
+      "name": "Naganandanna GO VT",
+      "phone": "9742916988",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 547,
+      "name": "Lakshmi Prasad",
+      "phone": "9964006349",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 548,
+      "name": "Govindaiah work shop GO VT",
+      "phone": "9844299260",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 549,
+      "name": "Jayaram GO VT",
+      "phone": "8884904450",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 550,
+      "name": "Sagar",
+      "phone": "9986781259",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 551,
+      "name": "Vinayak prasad",
+      "phone": "9448574086",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 552,
+      "name": "Sadanna Node",
+      "phone": "9739495732",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 554,
+      "name": "Shimsha",
+      "phone": "9945655511",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 555,
+      "name": "Girish",
+      "phone": "9481859555",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 556,
+      "name": "Rafeeq Fruit",
+      "phone": "7676384210",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 557,
+      "name": "Sujaram",
+      "phone": "9739695764",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 558,
+      "name": "Gowramma",
+      "phone": "9740823543",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 559,
+      "name": "Chandan Tailor",
+      "phone": "9844070649",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 560,
+      "name": "Krupa Internet",
+      "phone": "9019563840",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 561,
+      "name": "Nanda",
+      "phone": "7090040070",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 562,
+      "name": "Dileep (Cable)",
+      "phone": "9743323205",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 563,
+      "name": "Lakshmamma",
+      "phone": "9742965423",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 564,
+      "name": "Pooja traders",
+      "phone": "9482154308",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 565,
+      "name": "Kishor",
+      "phone": "9844145632",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 566,
+      "name": "Amjad Khan",
+      "phone": "9901884721",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 567,
+      "name": "Girish Kumar",
+      "phone": "9980628713",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 568,
+      "name": "Pooja",
+      "phone": "7406830627",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 569,
+      "name": "Nagamani",
+      "phone": "7337666277",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 570,
+      "name": "Chethan",
+      "phone": "8618113577",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 571,
+      "name": "Sridhar TG",
+      "phone": "7406903070",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 572,
+      "name": "Akmal",
+      "phone": "9945134814",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 573,
+      "name": "MUNOVAR PASHA",
+      "phone": "9880262599",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 574,
+      "name": "T G Pooja",
+      "phone": "9741799925",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 575,
+      "name": "Kumara Swamy A T",
+      "phone": "7349343693",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 576,
+      "name": "Shashi Kiran T S",
+      "phone": "9916644439",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 577,
+      "name": "SANGEETHA DK",
+      "phone": "9964229314",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 578,
+      "name": "Firoz pasha Z",
+      "phone": "8660749866",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 579,
+      "name": "KOUSHAL TK",
+      "phone": "8105124880",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 580,
+      "name": "Kavya",
+      "phone": "9945733113",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 581,
+      "name": "Brajesh Kumar Meena",
+      "phone": "9261111122",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 582,
+      "name": "H R Thammaiah",
+      "phone": "7019068371",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 583,
+      "name": "FAZAL REHAMAN",
+      "phone": "9902794638",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 584,
+      "name": "Syed Irfan",
+      "phone": "9945050345",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 585,
+      "name": "Inamul Haque",
+      "phone": "9835601777",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 586,
+      "name": "Chidanandaswamy S P",
+      "phone": "9900640191",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 587,
+      "name": "Prasanna D R",
+      "phone": "9986317811",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 588,
+      "name": "Shamanth kumar",
+      "phone": "9845883699",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 589,
+      "name": "Roopa G C",
+      "phone": "9353830075",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 590,
+      "name": "Sagar T V",
+      "phone": "7026472493",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 591,
+      "name": "Swamy K R",
+      "phone": "9980041633",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 592,
+      "name": "Aishwarya H S",
+      "phone": "8073641727",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 593,
+      "name": "Nimmanapalli Srinivasa Reddy",
+      "phone": "6303179997",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 594,
+      "name": "Akash T S",
+      "phone": "7019788754",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 595,
+      "name": "Hemanth G K",
+      "phone": "9739841075",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 596,
+      "name": "Keerthana L G",
+      "phone": "8197020434",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 597,
+      "name": "Bharath E V",
+      "phone": "9164233458",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 598,
+      "name": "Srikantha H K",
+      "phone": "9743778220",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 599,
+      "name": "Basalingaiah H K",
+      "phone": "9611914123",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 600,
+      "name": "Kiran Kumar B",
+      "phone": "8618620915",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 601,
+      "name": "Leelavathi M",
+      "phone": "9902394919",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 602,
+      "name": "Kishor M S",
+      "phone": "9986811190",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 603,
+      "name": "Nikitha L",
+      "phone": "9743130948",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 604,
+      "name": "Suhas Skashyap",
+      "phone": "9591608587",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 605,
+      "name": "Sujith C.N",
+      "phone": "9742914643",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 606,
+      "name": "ravikumar v",
+      "phone": "9886666708",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 607,
+      "name": "kalpana bs",
+      "phone": "9886588990",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 608,
+      "name": "SUPRIYA AP",
+      "phone": "9740780910",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 609,
+      "name": "Jayachandra T R",
+      "phone": "8453687891",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 610,
+      "name": "Virupakshappa",
+      "phone": "9448416567",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 611,
+      "name": "Sachin S P",
+      "phone": "8088333561",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 612,
+      "name": "Darshan S P",
+      "phone": "9886526600",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 613,
+      "name": "Priyanka R",
+      "phone": "7848969911",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 614,
+      "name": "Nagaprasad N S",
+      "phone": "9036404108",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 615,
+      "name": "S Yukthi Prasad",
+      "phone": "9110205588",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 616,
+      "name": "Swapna Shiva",
+      "phone": "7483850042",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 617,
+      "name": "Banti",
+      "phone": "9241347437",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 618,
+      "name": "Yogesh Panduranga",
+      "phone": "9036655261",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 619,
+      "name": "A Suresh",
+      "phone": "8748924918",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 620,
+      "name": "MAHESH S",
+      "phone": "8431819111",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 621,
+      "name": "Bharath S D",
+      "phone": "9019934765",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 622,
+      "name": "Akash hr",
+      "phone": "7899349109",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 623,
+      "name": "Suman L",
+      "phone": "9483884489",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 624,
+      "name": "Kavya E L",
+      "phone": "7259284543",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 625,
+      "name": "Waseem Akram",
+      "phone": "9880245143",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 626,
+      "name": "NAMRATHA OIL REFINERIES PRIVATE LIMITED",
+      "phone": "6363385858",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 627,
+      "name": "Avinash",
+      "phone": "9844983001",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 628,
+      "name": "Lingaraju MS",
+      "phone": "9844429942",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 629,
+      "name": "Mohan Kumar R",
+      "phone": "8296742115",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 630,
+      "name": "Shabbirahmed Hanaji",
+      "phone": "9019952629",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 631,
+      "name": "VIJAY TC",
+      "phone": "8553227520",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 632,
+      "name": "Supriya T K",
+      "phone": "9986802137",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 633,
+      "name": "Harish G R",
+      "phone": "9019469566",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 634,
+      "name": "Sharvan Kumar",
+      "phone": "8088022929",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 635,
+      "name": "Abhishek H",
+      "phone": "8073645743",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 636,
+      "name": "Meghashree H S",
+      "phone": "7899025102",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 637,
+      "name": "Akash H R",
+      "phone": "7899856965",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 638,
+      "name": "Varun N",
+      "phone": "9535388965",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 639,
+      "name": "Lohith S R",
+      "phone": "8660568665",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 640,
+      "name": "Bharath S D",
+      "phone": "9916139547",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 641,
+      "name": "Bharath S D",
+      "phone": "9902078535",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 642,
+      "name": "Nagaratna",
+      "phone": "9164336935",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 643,
+      "name": "Vindhuraj S B",
+      "phone": "8722991438",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 644,
+      "name": "Chethan kumar S P",
+      "phone": "8123360892",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 645,
+      "name": "Neelakantappa KS",
+      "phone": "8970842652",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 646,
+      "name": "Innovative Fiber Solutions Private Limited",
+      "phone": "6362353679",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 647,
+      "name": "INNOVATIVE FIBER SOLUTIONS PVT LTD",
+      "phone": "7977743886",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 648,
+      "name": "sathyanarayana k",
+      "phone": "9590734565",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 649,
+      "name": "Chandana H K",
+      "phone": "8660346198",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 650,
+      "name": "GOUTHAM L",
+      "phone": "8431555333",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 651,
+      "name": "Anuradha",
+      "phone": "8088377089",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 652,
+      "name": "Satish R M",
+      "phone": "8310687832",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 653,
+      "name": "Jayamma",
+      "phone": "9964451594",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 654,
+      "name": "B N Ashoka",
+      "phone": "9844489227",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 655,
+      "name": "VYSHAK TS",
+      "phone": "9964006348",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 656,
+      "name": "Manjunath",
+      "phone": "7892169714",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 657,
+      "name": "T Suresh",
+      "phone": "8861592654",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 658,
+      "name": "Varshitha",
+      "phone": "7349635026",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 659,
+      "name": "Ramamohan PJ",
+      "phone": "8123513376",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 660,
+      "name": "Sharooq Khan",
+      "phone": "9945066691",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 661,
+      "name": "Paramesh",
+      "phone": "9886522381",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 662,
+      "name": "Abhijith",
+      "phone": "9986911204",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 663,
+      "name": "YASHASVINI M C",
+      "phone": "9742902206",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 664,
+      "name": "Kannika G",
+      "phone": "8618035958",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 665,
+      "name": "Lokesh",
+      "phone": "9844374509",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 666,
+      "name": "Supriya T S",
+      "phone": "9900314573",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 667,
+      "name": "KARAN TEXTILES",
+      "phone": "8884970000",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 668,
+      "name": "Bharath S D",
+      "phone": "7411990570",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 669,
+      "name": "Keerthi H D",
+      "phone": "9900778220",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 670,
+      "name": "Mohammed Saqlain",
+      "phone": "6360879941",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 671,
+      "name": "Giridhara B T",
+      "phone": "9141212126",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 672,
+      "name": "sujith bhushan sb",
+      "phone": "9060301666",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 673,
+      "name": "Shwetha Y",
+      "phone": "9686054524",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 674,
+      "name": "Shobha R S",
+      "phone": "7892045275",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 675,
+      "name": "Suresh Babu S R",
+      "phone": "9844013044",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 676,
+      "name": "Rekha",
+      "phone": "8197161453",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 677,
+      "name": "Singri Datta Prasad",
+      "phone": "9844377016",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 678,
+      "name": "Marjeena K",
+      "phone": "7676204099",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 679,
+      "name": "Nandini K B",
+      "phone": "7975828583",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 680,
+      "name": "suneel t n",
+      "phone": "8951519503",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 681,
+      "name": "Harish A.R",
+      "phone": "9164480996",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 682,
+      "name": "ASHWIN",
+      "phone": "9986455543",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 683,
+      "name": "Niranjan",
+      "phone": "9148441778",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 684,
+      "name": "Kallesh R",
+      "phone": "9036738144",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 685,
+      "name": "Radhika B S",
+      "phone": "9844322481",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 686,
+      "name": "Nischith H U",
+      "phone": "8151866630",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 687,
+      "name": "Bhanumathi H N",
+      "phone": "8123033740",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 688,
+      "name": "Master Manju K V",
+      "phone": "7975072189",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 689,
+      "name": "Danish Pasha",
+      "phone": "8951272890",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 690,
+      "name": "RAMAMOHAN",
+      "phone": "9844052356",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 691,
+      "name": "Krishna",
+      "phone": "8179216889",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 692,
+      "name": "Sachin",
+      "phone": "9448940810",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 693,
+      "name": "Sujith C M",
+      "phone": "9844046769",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 694,
+      "name": "Dhananjaya M",
+      "phone": "9844929932",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 695,
+      "name": "AKBARPASHA",
+      "phone": "9916877929",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 696,
+      "name": "Apoorva T",
+      "phone": "8217675206",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 697,
+      "name": "G S Nagendra Babu",
+      "phone": "7975573402",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 698,
+      "name": "B RATNA ANANDA",
+      "phone": "9886960618",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 699,
+      "name": "Guruprasad T N",
+      "phone": "7899978220",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 700,
+      "name": "Hemanth H A",
+      "phone": "9964072348",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 701,
+      "name": "SUMAHARIBABU",
+      "phone": "9844407771",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 702,
+      "name": "Arihant K Bansal",
+      "phone": "8171887766",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 703,
+      "name": "C C Saroja",
+      "phone": "9738363305",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 704,
+      "name": "Mohammed Shoaib",
+      "phone": "8088663661",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 705,
+      "name": "Divya B C",
+      "phone": "9900800560",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 706,
+      "name": "Bharath G R",
+      "phone": "7846025446",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 707,
+      "name": "K R Srinivasa Prasad",
+      "phone": "9844918858",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 708,
+      "name": "T K Tanveer Ulla Shariff",
+      "phone": "9611857886",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 709,
+      "name": "Lokesh A S",
+      "phone": "9964418376",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 710,
+      "name": "Ajith Kumar T N",
+      "phone": "9620457411",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 711,
+      "name": "Ashoka S",
+      "phone": "9663199468",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 712,
+      "name": "Thejeshwara M S",
+      "phone": "8861432166",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 713,
+      "name": "Meena Suresh",
+      "phone": "9964338124",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 714,
+      "name": "Ajayurs R",
+      "phone": "8073980092",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 715,
+      "name": "Sahana S D",
+      "phone": "9482997604",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 716,
+      "name": "Shashikiran K",
+      "phone": "8123798494",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 717,
+      "name": "Eshwara Chandra T P",
+      "phone": "8088992265",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 718,
+      "name": "C Yogesha",
+      "phone": "9844273100",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 719,
+      "name": "Syed Suhail Ahamed M",
+      "phone": "9449281084",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 720,
+      "name": "Ashwini Jogondar",
+      "phone": "8548929876",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 721,
+      "name": "Ranganathaswamy NS",
+      "phone": "9480282010",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 722,
+      "name": "maria smitha d souza",
+      "phone": "9535669228",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 723,
+      "name": "Hamsavani SC",
+      "phone": "9741034399",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 724,
+      "name": "Sumanth T N",
+      "phone": "9844009530",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 725,
+      "name": "gautami sadashivaiah",
+      "phone": "9620669118",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 726,
+      "name": "Dayasagar P Bhyrate",
+      "phone": "7022360546",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 727,
+      "name": "Raghu B R",
+      "phone": "9845028954",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 728,
+      "name": "Ramya R",
+      "phone": "9141355097",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 729,
+      "name": "Farooq Pasha",
+      "phone": "9740696203",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 730,
+      "name": "Amit Dev",
+      "phone": "9844156769",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 731,
+      "name": "Shankar Lal Patel",
+      "phone": "8105386566",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 732,
+      "name": "Keerthana K",
+      "phone": "9741936025",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 733,
+      "name": "Ramachandra Guptha HS",
+      "phone": "9742992909",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 734,
+      "name": "chethan",
+      "phone": "9986853450",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 735,
+      "name": "G N Sateesh Kumar",
+      "phone": "7019000693",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 736,
+      "name": "Ravikumar V",
+      "phone": "9986334422",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 737,
+      "name": "Arjun",
+      "phone": "8050945103",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 738,
+      "name": "Umamaheshwara C S",
+      "phone": "7892169992",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 739,
+      "name": "Shivakumar K S",
+      "phone": "9686756685",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 740,
+      "name": "Pavan D K",
+      "phone": "9535395424",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 741,
+      "name": "Nachiketh S",
+      "phone": "7259014301",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 742,
+      "name": "syed khalander",
+      "phone": "6362353665",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 743,
+      "name": "T Y Bindu Sing",
+      "phone": "9900890852",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 744,
+      "name": "Manish Kumar Agarwal",
+      "phone": "9886758669",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 745,
+      "name": "S V Vijaya Kumar",
+      "phone": "9844321157",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 746,
+      "name": "Bhoomika N R",
+      "phone": "9620268041",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 747,
+      "name": "Rukmangada D",
+      "phone": "8618565480",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 748,
+      "name": "Avinash N",
+      "phone": "6362906340",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 749,
+      "name": "Panchakshari T M",
+      "phone": "8971748510",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 750,
+      "name": "Mohammed Adnan Sayeed",
+      "phone": "9986581992",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 751,
+      "name": "Jeevitha H M",
+      "phone": "9482519704",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 752,
+      "name": "Subramanya G",
+      "phone": "7892398826",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 753,
+      "name": "Ramya H R",
+      "phone": "7892340881",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 754,
+      "name": "Basavalingappa",
+      "phone": "9743654870",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 755,
+      "name": "Nijaguna M",
+      "phone": "9743313589",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 756,
+      "name": "H R Lakshminarayan",
+      "phone": "8618585209",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 757,
+      "name": "Chidananda M C",
+      "phone": "8951552692",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 758,
+      "name": "Prakash K R",
+      "phone": "9448480122",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 759,
+      "name": "Tasmiya Sultana",
+      "phone": "6362865153",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 760,
+      "name": "Abhijith C M",
+      "phone": "9113286864",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 761,
+      "name": "PUNITH S S",
+      "phone": "7760753475",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 762,
+      "name": "Mukundbhargav BK",
+      "phone": "9113681051",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 763,
+      "name": "Mallikarjuna M M",
+      "phone": "9986481778",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 764,
+      "name": "Eswarappa M C",
+      "phone": "9880210743",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 765,
+      "name": "G S Lokesh",
+      "phone": "9620554866",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 766,
+      "name": "Vanajakshi",
+      "phone": "9353315493",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 767,
+      "name": "Shafeeq Pasha",
+      "phone": "9964044433",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 768,
+      "name": "Prasannkumar K S",
+      "phone": "9986963666",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 769,
+      "name": "gowtham gowda tr",
+      "phone": "9902688493",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 770,
+      "name": "Dinesh A",
+      "phone": "7892754967",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 771,
+      "name": "G C Radha",
+      "phone": "7019465759",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 772,
+      "name": "Lokesh H L",
+      "phone": "8660496137",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 773,
+      "name": "Sampathkumar R",
+      "phone": "9343054777",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 774,
+      "name": "Tata T L",
+      "phone": "9513499922",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 775,
+      "name": "Rajiv Echanur Rajaratnam",
+      "phone": "9480192788",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 776,
+      "name": "Pushpa K S",
+      "phone": "8073015545",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 777,
+      "name": "SHASHISHEKAR GUPTA BN",
+      "phone": "9844020390",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 778,
+      "name": "MOHAMMED AMAAN ULLA",
+      "phone": "9900313323",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 779,
+      "name": "SREEDHAR RB",
+      "phone": "9986190927",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 780,
+      "name": "Vindhya S",
+      "phone": "9448101900",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 781,
+      "name": "Prajwal R",
+      "phone": "7349218248",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 782,
+      "name": "Krishnaprasad G N",
+      "phone": "8147292442",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 783,
+      "name": "Namratha R S",
+      "phone": "7996115059",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 784,
+      "name": "Rajashekar HS",
+      "phone": "9986072133",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 785,
+      "name": "GIRISH G S",
+      "phone": "9945078979",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 786,
+      "name": "G Haneef Pasha",
+      "phone": "9901365090",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 787,
+      "name": "Naveen V M",
+      "phone": "9380517374",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 788,
+      "name": "Varsha S",
+      "phone": "7483574613",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 789,
+      "name": "Lavanya T S",
+      "phone": "7022615357",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 790,
+      "name": "Indumathi M S",
+      "phone": "8722041410",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 791,
+      "name": "M Shridhar",
+      "phone": "7026027880",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 792,
+      "name": "Mohamed Ruman",
+      "phone": "6362222737",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 793,
+      "name": "Jannela Venkata Ramana",
+      "phone": "7032004442",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 794,
+      "name": "Suheelabanu K M",
+      "phone": "8123494717",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 795,
+      "name": "Nischal Y R",
+      "phone": "7019081236",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 796,
+      "name": "UMAMAHESH",
+      "phone": "9964431327",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 797,
+      "name": "Raghu G",
+      "phone": "9902445382",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 798,
+      "name": "Akram pasha",
+      "phone": "7760150309",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 799,
+      "name": "Ravish M P",
+      "phone": "9743737370",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 800,
+      "name": "Manjunath D E",
+      "phone": "9448834307",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 801,
+      "name": "Aslam Pasha",
+      "phone": "9740518138",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 802,
+      "name": "Dheeraj R",
+      "phone": "9008644525",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 803,
+      "name": "H S Girish",
+      "phone": "9844249166",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 804,
+      "name": "Sumitradevi Durgaram Patel",
+      "phone": "9620128658",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 805,
+      "name": "Spoorthi M",
+      "phone": "7899776590",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 806,
+      "name": "Rakshith M N",
+      "phone": "8073269535",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 807,
+      "name": "NATHARAM",
+      "phone": "9986554975",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 808,
+      "name": "Gurugadahalli Rudresh Sharanth",
+      "phone": "9743113033",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 809,
+      "name": "B N Hema",
+      "phone": "8217384897",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 810,
+      "name": "Manjunath H B",
+      "phone": "9606555583",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 811,
+      "name": "Kantaraju (Fertilizer) (Home)",
+      "phone": "9343210099",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 812,
+      "name": "H R Hemaraju",
+      "phone": "9743313592",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 813,
+      "name": "Pardeep Singh",
+      "phone": "9817712603",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 814,
+      "name": "G T Vishnuvardhan",
+      "phone": "9731906350",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 815,
+      "name": "Shadakshari T M",
+      "phone": "9480281917",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 816,
+      "name": "Supreeth S",
+      "phone": "7338271153",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 817,
+      "name": "Krishna Iyengar B R",
+      "phone": "9964669328",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 818,
+      "name": "L Naresh Kumar",
+      "phone": "6361279927",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 819,
+      "name": "Akshatha H M",
+      "phone": "8660718372",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 820,
+      "name": "Pradeep",
+      "phone": "9035141984",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 821,
+      "name": "sateesh",
+      "phone": "9844495400",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 822,
+      "name": "naresh a kandoi",
+      "phone": "8197948042",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 823,
+      "name": "Reshma Banu",
+      "phone": "9741151112",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 824,
+      "name": "ARUN KUMAR T M",
+      "phone": "9945218454",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 825,
+      "name": "Rajesh T S",
+      "phone": "9986530616",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 826,
+      "name": "amruth m",
+      "phone": "9964006390",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 827,
+      "name": "Yatish K B",
+      "phone": "8861571875",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 828,
+      "name": "Manju Karthik",
+      "phone": "9739708597",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 829,
+      "name": "Buddhiprasad B S",
+      "phone": "9886957777",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 830,
+      "name": "K Manjunath",
+      "phone": "9449626955",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 831,
+      "name": "Ramya H R",
+      "phone": "9148287555",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 832,
+      "name": "Jagadeesh Gowda J S",
+      "phone": "8880844448",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 833,
+      "name": "Amarnath R K",
+      "phone": "9844884060",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 834,
+      "name": "SALMA SULTHANA",
+      "phone": "7019668729",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 835,
+      "name": "Shashank K S",
+      "phone": "9964758367",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 836,
+      "name": "Dheeraj R",
+      "phone": "8050675662",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 837,
+      "name": "M L Mahesh Kumar",
+      "phone": "9686563647",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 838,
+      "name": "Murari Nithya Laxmi",
+      "phone": "9663265425",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 839,
+      "name": "Anil Kumar H N",
+      "phone": "9632306465",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 840,
+      "name": "Kavitha",
+      "phone": "9449866272",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 841,
+      "name": "Marulasiddaswamy",
+      "phone": "9742908349",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 842,
+      "name": "SURESH B",
+      "phone": "7022009221",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 843,
+      "name": "Giriraj C K",
+      "phone": "8951885933",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 844,
+      "name": "Jayanth M S",
+      "phone": "9886942008",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 845,
+      "name": "K N Swaroop",
+      "phone": "9743898167",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 846,
+      "name": "Madhukumar M J",
+      "phone": "9164499807",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 847,
+      "name": "Shilpa N P",
+      "phone": "8105280309",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 848,
+      "name": "UMA S N",
+      "phone": "9964338098",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 849,
+      "name": "dadapeer",
+      "phone": "7815010363",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 850,
+      "name": "Keerthana G",
+      "phone": "7411495491",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 851,
+      "name": "NATARAJ A",
+      "phone": "9535358916",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 852,
+      "name": "Shahbaz Anjum K M",
+      "phone": "9738560934",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 853,
+      "name": "Apoorva V K",
+      "phone": "9482047068",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 854,
+      "name": "Muralidaar AC",
+      "phone": "9686071863",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 855,
+      "name": "Sudarshan G",
+      "phone": "9353570656",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 856,
+      "name": "Nagaraju S",
+      "phone": "9483573333",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 857,
+      "name": "Asif Hussain",
+      "phone": "9242149832",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 858,
+      "name": "Chidananda   N",
+      "phone": "9448085371",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 859,
+      "name": "Zahid",
+      "phone": "9902116050",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 860,
+      "name": "Amrutha M G",
+      "phone": "8317349947",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 861,
+      "name": "MeghaDivakar",
+      "phone": "9916012086",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 862,
+      "name": "Nagaraj H S",
+      "phone": "9886888640",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 863,
+      "name": "Parashivamurthy M",
+      "phone": "9844612857",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 864,
+      "name": "Ashwin B K",
+      "phone": "9902776041",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 865,
+      "name": "Giriraj C K",
+      "phone": "8762719383",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 866,
+      "name": "Prasad C R",
+      "phone": "9980168809",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 867,
+      "name": "H R Yatheesh",
+      "phone": "9449696747",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 868,
+      "name": "T M Varshitha",
+      "phone": "7338595971",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 869,
+      "name": "B Manjunatha",
+      "phone": "9483550219",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 870,
+      "name": "Ravindra Reddy M",
+      "phone": "9986962800",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 871,
+      "name": "S Shubha",
+      "phone": "7848059469",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 872,
+      "name": "Vinay H N",
+      "phone": "9742778181",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 873,
+      "name": "Tejraj E G",
+      "phone": "9611930006",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 874,
+      "name": "Gowtham Gowda T R",
+      "phone": "8050614949",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 875,
+      "name": "Lokesh H L",
+      "phone": "9945513472",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 876,
+      "name": "Dr Shashikiran D S",
+      "phone": "8310589681",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 877,
+      "name": "Sunil T R",
+      "phone": "9880152718",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 878,
+      "name": "Madhu T R",
+      "phone": "7019294121",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 879,
+      "name": "G Nagendra Kumar",
+      "phone": "9986375553",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 880,
+      "name": "Yashwanth H R",
+      "phone": "9686432645",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 881,
+      "name": "Kushal G K",
+      "phone": "9844151234",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 882,
+      "name": "Raghu K U",
+      "phone": "8496009600",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 883,
+      "name": "K S Mohan",
+      "phone": "9008755658",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 884,
+      "name": "Chethan H B",
+      "phone": "9901904647",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 885,
+      "name": "Premaleela",
+      "phone": "9110261290",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 886,
+      "name": "Balaganesh A",
+      "phone": "9481553151",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 887,
+      "name": "Sharath Raj T S",
+      "phone": "8431393307",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 888,
+      "name": "UNITY TRANSPORTS  GT",
+      "phone": "9448747274",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 889,
+      "name": "Abhishek Patel T R",
+      "phone": "8217707965",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 890,
+      "name": "K.Spoorthi",
+      "phone": "7411222767",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 891,
+      "name": "Lokesha AR",
+      "phone": "9686445500",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 892,
+      "name": "PRABHUSWAMY BC",
+      "phone": "9844091251",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 893,
+      "name": "Arpitha Subramanya C S",
+      "phone": "8088944171",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 894,
+      "name": "Veda Teacher",
+      "phone": "9480711760",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 895,
+      "name": "Manojkumar TG",
+      "phone": "9113583772",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 896,
+      "name": "prasad m p",
+      "phone": "9448593167",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 897,
+      "name": "Govinda kumar",
+      "phone": "8088018590",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 898,
+      "name": "L Sampath Kumar",
+      "phone": "9844453656",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 899,
+      "name": "Manjunatha T R",
+      "phone": "9844473477",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 900,
+      "name": "Dhananjaya M",
+      "phone": "9113699014",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 901,
+      "name": "Kusuma J",
+      "phone": "9019261210",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 902,
+      "name": "Naren K V",
+      "phone": "9739770222",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 903,
+      "name": "B C Umesharadhya",
+      "phone": "9844082205",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 904,
+      "name": "Vaishnavi N",
+      "phone": "9972940153",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 905,
+      "name": "Ramachandra H C",
+      "phone": "8618439585",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 906,
+      "name": "Ramya",
+      "phone": "8971664750",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 907,
+      "name": "Panchaksharaiah as",
+      "phone": "9886798854",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 908,
+      "name": "Manikanta A N",
+      "phone": "9187100536",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 909,
+      "name": "Manikanta A N",
+      "phone": "8310691563",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 910,
+      "name": "Jayaprakasha T",
+      "phone": "9449556598",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 911,
+      "name": "Zakir Ahmed Khan",
+      "phone": "7760737510",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 912,
+      "name": "Sudarshan G",
+      "phone": "9964852099",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 913,
+      "name": "Mohammed Riyaz",
+      "phone": "9448403042",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 914,
+      "name": "Megha K",
+      "phone": "8105330675",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 915,
+      "name": "Varshini M O",
+      "phone": "7204357071",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 916,
+      "name": "Syed Alfa",
+      "phone": "8310555097",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 917,
+      "name": "G Sreedhara",
+      "phone": "9448520688",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 918,
+      "name": "Shashank T S",
+      "phone": "7259094483",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 919,
+      "name": "Meghana H P",
+      "phone": "8904709747",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 920,
+      "name": "B N Gangaraju",
+      "phone": "8884568850",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 921,
+      "name": "Chaithanya D",
+      "phone": "9986180735",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 922,
+      "name": "Sowmya J",
+      "phone": "9743760700",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 923,
+      "name": "Amarkarthik B V",
+      "phone": "9110441040",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 924,
+      "name": "Prakash K",
+      "phone": "9480494155",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 925,
+      "name": "Kumar Bidre",
+      "phone": "8073370196",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 926,
+      "name": "Jagadamba",
+      "phone": "9019735043",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 927,
+      "name": "Srikanth MS",
+      "phone": "9448250911",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 928,
+      "name": "Surya foot wear",
+      "phone": "9743113375",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 929,
+      "name": "Prashanth (wines)",
+      "phone": "9632050179",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 930,
+      "name": "D.K Electricals",
+      "phone": "9448174089",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 931,
+      "name": "Devatha Garments, (BS-12)",
+      "phone": "9844580808",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 932,
+      "name": "Devaraj SLV",
+      "phone": "9449350998",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 933,
+      "name": "Sambashiva Murthy",
+      "phone": "7019679813",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 934,
+      "name": "Prathap",
+      "phone": "9880811276",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 935,
+      "name": "Manju pipe",
+      "phone": "9379474041",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 936,
+      "name": "Kailash CN",
+      "phone": "9986596558",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 937,
+      "name": "Shivanna",
+      "phone": "9844113298",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 939,
+      "name": "Nataraj (hotel), (GO-CN-61)",
+      "phone": "9008759376",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 940,
+      "name": "Muneshwara kolimotte kendra",
+      "phone": "8217845970",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 941,
+      "name": "Kumar",
+      "phone": "8310357566",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 942,
+      "name": "Sangam Cycle shop",
+      "phone": "9945399225",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 943,
+      "name": "Shivakumar Jewellers",
+      "phone": "9739256276",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 944,
+      "name": "Venkatesh",
+      "phone": "9980523981",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 945,
+      "name": "Krishnamurthy",
+      "phone": "9945266501",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 946,
+      "name": "Honnappa(Master)",
+      "phone": "8197888894",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 948,
+      "name": "Arun kumar(sale)",
+      "phone": "7010698943",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 949,
+      "name": "Shobha",
+      "phone": "7899588495",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 950,
+      "name": "Chandra",
+      "phone": "9964287015",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 951,
+      "name": "SRV",
+      "phone": "9343210033",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 952,
+      "name": "Balaji Medicals  BH",
+      "phone": "9886320144",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 953,
+      "name": "Suryanarayana",
+      "phone": "9342327237",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 955,
+      "name": "Umesh",
+      "phone": "9964566199",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 957,
+      "name": "Naveen (Flower)",
+      "phone": "9880567935",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 958,
+      "name": "Manju (Uncle)",
+      "phone": "9642891333",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 959,
+      "name": "Yateesh (GAS)",
+      "phone": "9164523536",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 960,
+      "name": "Mubarak",
+      "phone": "8242248880",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 962,
+      "name": "Arun kumar KT",
+      "phone": "9448245239",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 963,
+      "name": "Fayaz",
+      "phone": "9591691922",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 965,
+      "name": "Hyder  Mechanic",
+      "phone": "9964060819",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 966,
+      "name": "Chandranna Gowdru",
+      "phone": "9742916276",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 967,
+      "name": "Mousin",
+      "phone": "9731984808",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 968,
+      "name": "Puttamma",
+      "phone": "9632412828",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 970,
+      "name": "Sagar Handloom",
+      "phone": "9980645666",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 971,
+      "name": "Venkatesh",
+      "phone": "8453373005",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 972,
+      "name": "Shashidhar Babu GR",
+      "phone": "9353032854",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 973,
+      "name": "Girish RM",
+      "phone": "9844215081",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 974,
+      "name": "Muktha",
+      "phone": "8105106025",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 975,
+      "name": "Chandranna, (GO-KO-26)",
+      "phone": "7406614755",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 976,
+      "name": "Inayath pasha, (PL-26)",
+      "phone": "9945051562",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 977,
+      "name": "Krishna Hair Dresses",
+      "phone": "7676243922",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 978,
+      "name": "Suresh Kumar",
+      "phone": "9449452800",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 979,
+      "name": "Kannika Agency",
+      "phone": "9448660288",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 980,
+      "name": "Harish",
+      "phone": "9380147847",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 981,
+      "name": "Hemanth (Segepudi)",
+      "phone": "9986633466",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 982,
+      "name": "Kumara (Hospital)",
+      "phone": "9741070880",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 983,
+      "name": "New Moidin Bedding house",
+      "phone": "9901605353",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 984,
+      "name": "Ranganna",
+      "phone": "8660324196",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 985,
+      "name": "Manu",
+      "phone": "9844788507",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 986,
+      "name": "Dhananjaya (panipuri)",
+      "phone": "9590022433",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 987,
+      "name": "Yashwanth, (MST-36)",
+      "phone": "9353444574",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 988,
+      "name": "Munna (Tailor), (SR-5)",
+      "phone": "9008584694",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 989,
+      "name": "Chandu Jewellers, (VT-2)",
+      "phone": "9739455811",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 990,
+      "name": "Manu ( flower), (GO-BH)",
+      "phone": "9448747267",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 991,
+      "name": "Goutham Kappanna KK",
+      "phone": "9886250218",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 992,
+      "name": "Manohar, (MAG-12)",
+      "phone": "9663436244",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 993,
+      "name": "Shivamma(SU-52)",
+      "phone": "9901158175",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 994,
+      "name": "Vishnu Kumar Shetty",
+      "phone": "9164383185",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 995,
+      "name": "Natesh, (GO-SR-10)",
+      "phone": "9886836939",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 996,
+      "name": "Manju (flower)",
+      "phone": "7892357676",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 997,
+      "name": "Lakshmi Devamma",
+      "phone": "7204784354",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 998,
+      "name": "Babu, (HO-23)",
+      "phone": "9844211231",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 999,
+      "name": "Sujith DP",
+      "phone": "9036176467",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1000,
+      "name": "Lokesh (Textiles), (DP-90)",
+      "phone": "9964252573",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1001,
+      "name": "Ranjith MC",
+      "phone": "9448660385",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1002,
+      "name": "Durga",
+      "phone": "8970469158",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1003,
+      "name": "Vijayamma MST",
+      "phone": "9986662298",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1004,
+      "name": "Mahesh AST",
+      "phone": "8217874366",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1005,
+      "name": "Rekha",
+      "phone": "7338469243",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1006,
+      "name": "Papai halder",
+      "phone": "9091891517",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1007,
+      "name": "Vinay RS",
+      "phone": "8197536885",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1008,
+      "name": "Praveen",
+      "phone": "9611324029",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1009,
+      "name": "Nagaraju (Metro- Home)",
+      "phone": "9448660342",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1010,
+      "name": "Chaitra (Sister)",
+      "phone": "9535119323",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1011,
+      "name": "Chandranna KT",
+      "phone": "9916649214",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1012,
+      "name": "Waseem",
+      "phone": "9632881181",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1013,
+      "name": "Vinay CN",
+      "phone": "9916887058",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1014,
+      "name": "SS Shekar",
+      "phone": "9916969918",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1015,
+      "name": "Kanchi Electricals",
+      "phone": "9482859492",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1016,
+      "name": "Harish (Tailor)",
+      "phone": "9916217376",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1017,
+      "name": "Chandru  (Vodophone)",
+      "phone": "9886021141",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1018,
+      "name": "Babu Bagepalli",
+      "phone": "9886674684",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1019,
+      "name": "Manju",
+      "phone": "7676766456",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1020,
+      "name": "Rudresh.playwood",
+      "phone": "9916701249",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1021,
+      "name": "Mahalingeswara Stores",
+      "phone": "8971157033",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1022,
+      "name": "Bhanu Priya",
+      "phone": "9880572515",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1023,
+      "name": "Naveen",
+      "phone": "9632263072",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1024,
+      "name": "Ramaswamy",
+      "phone": "6360400986",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1025,
+      "name": "Sachin flower",
+      "phone": "7760444932",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1026,
+      "name": "Kumar (Bale)",
+      "phone": "9743907828",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1027,
+      "name": "Mallikanna",
+      "phone": "7406792088",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1028,
+      "name": "Asha HG",
+      "phone": "7760640376",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1029,
+      "name": "Balaji medicals, (HO-121)",
+      "phone": "9036158048",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1030,
+      "name": "Venkatesh",
+      "phone": "9741324453",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1031,
+      "name": "Vasu dev KG",
+      "phone": "9380231989",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1032,
+      "name": "Devatha Garments Home",
+      "phone": "9844580808",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1033,
+      "name": "Latha",
+      "phone": "8073715313",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1034,
+      "name": "Ravikumar KT",
+      "phone": "9590630164",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1035,
+      "name": "Rajanna (Coconut)",
+      "phone": "7204466343",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1036,
+      "name": "Bhavani Bai",
+      "phone": "8088153870",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1037,
+      "name": "Sharadamma",
+      "phone": "9945339448",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1038,
+      "name": "Srinivas (Koutu)",
+      "phone": "8296977306",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1039,
+      "name": "Jaganna Pujari",
+      "phone": "7483600173",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1040,
+      "name": "Hanumanthraj",
+      "phone": "9743663064",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1041,
+      "name": "Mohammed Gouse",
+      "phone": "8792595866",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1043,
+      "name": "Rajeshwari, (MAG-11)",
+      "phone": "8660419756",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1044,
+      "name": "Shekarappa, (MAG-2)",
+      "phone": "9964388821",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1045,
+      "name": "Basheer Cycle Shop, (MC-66)",
+      "phone": "9986372224",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1047,
+      "name": "Basavaraju, (MC-33)",
+      "phone": "9740284615",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1048,
+      "name": "Kumar MC",
+      "phone": "9449659629",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1049,
+      "name": "Kotresh, (MC-23)",
+      "phone": "9019387878",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1050,
+      "name": "Vijay Kumar BC",
+      "phone": "8970164248",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1051,
+      "name": "Sairam",
+      "phone": "9113850585",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1052,
+      "name": "Swamy (MC)",
+      "phone": "8867652877",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1053,
+      "name": "Gowthan mC",
+      "phone": "9964706010",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1054,
+      "name": "Saleem",
+      "phone": "9964358185",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1055,
+      "name": "Rafi",
+      "phone": "9916212557",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1056,
+      "name": "Mubarak ML",
+      "phone": "9743772284",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1057,
+      "name": "Akbar",
+      "phone": "7019539372",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1058,
+      "name": "Irfan ML",
+      "phone": "9141718722",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1059,
+      "name": "Chethana (Manjunath Lodge)",
+      "phone": "9886442154",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1060,
+      "name": "Datta",
+      "phone": "9886868623",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1061,
+      "name": "Krishnamurthachar",
+      "phone": "8150800012",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1062,
+      "name": "Manjunath.T.N",
+      "phone": "9986662298",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1063,
+      "name": "Afroz NC",
+      "phone": "8123669073",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1064,
+      "name": "Zallu",
+      "phone": "9886786622",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1065,
+      "name": "Jafar Sadik keb",
+      "phone": "9964637147",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1066,
+      "name": "Mujju (Mechanic)",
+      "phone": "9945228482",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1067,
+      "name": "Mubharaq",
+      "phone": "7353916897",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1068,
+      "name": "Jameer Pasha",
+      "phone": "8217272185",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1069,
+      "name": "Shafi",
+      "phone": "9448449080",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1070,
+      "name": "Irfan",
+      "phone": "9844110290",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1072,
+      "name": "Prakash",
+      "phone": "9731585422",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1073,
+      "name": "Nagesh PR",
+      "phone": "8217775173",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1074,
+      "name": "Muniraj (Railway) (RS)",
+      "phone": "9980995756",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1075,
+      "name": "Brajendra",
+      "phone": "8431400844",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1076,
+      "name": "Sujatha Sister",
+      "phone": "9164637358",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1077,
+      "name": "Ravish",
+      "phone": "9743147587",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1078,
+      "name": "Dr.Sunil babu",
+      "phone": "9379835270",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1079,
+      "name": "Sirish 2 RM",
+      "phone": "9036634563",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1080,
+      "name": "Abdesh Pani Puri",
+      "phone": "8618243697",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1081,
+      "name": "Punith",
+      "phone": "9108084695",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1082,
+      "name": "Shivakumar",
+      "phone": "9743466420",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1083,
+      "name": "Ansari pasha (SR)",
+      "phone": "9743550952",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1084,
+      "name": "Bhilal  SR",
+      "phone": "9535358656",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1085,
+      "name": "Maksood, (SH-2)",
+      "phone": "9449838736",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1086,
+      "name": "Vikram_SR",
+      "phone": "9620650132",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1087,
+      "name": "Jahanara, (GO-SR-2)",
+      "phone": "9901726208",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1088,
+      "name": "Shoukat husain",
+      "phone": "9535920716",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1089,
+      "name": "Sunitha",
+      "phone": "9742642316",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1090,
+      "name": "Nagesh babu, (SK-31)",
+      "phone": "9686628025",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1091,
+      "name": "Shankar (SVP)",
+      "phone": "9448655207",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1092,
+      "name": "Nilesh",
+      "phone": "9739549453",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1093,
+      "name": "Babanna (Gold Smith)",
+      "phone": "9844284949",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1094,
+      "name": "Yogeesh",
+      "phone": "6366221395",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1095,
+      "name": "Lohith",
+      "phone": "8884274803",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1096,
+      "name": "Mahesh aruna",
+      "phone": "9448326899",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1097,
+      "name": "vijay kumar bv aruna",
+      "phone": "9738850200",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1098,
+      "name": "Anapurna aruna",
+      "phone": "9482331367",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1099,
+      "name": "Avinash",
+      "phone": "9844001270",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1100,
+      "name": "Honnarajayya",
+      "phone": "9448979501",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1101,
+      "name": "Dhanvik_aruna",
+      "phone": "8105595138",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1102,
+      "name": "Krupasagar H",
+      "phone": "7676388176",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1103,
+      "name": "Akbar Internet",
+      "phone": "9449293135",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1104,
+      "name": "Merchant Bank",
+      "phone": "9844070649",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1105,
+      "name": "Cash Collection",
+      "phone": "7259316656",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1106,
+      "name": "Kantaraju Gold Smith CB",
+      "phone": "9886450016",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1107,
+      "name": "Lokanna CN",
+      "phone": "9880636423",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1108,
+      "name": "Naganna GO CN",
+      "phone": "9448892332",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1109,
+      "name": "Raju anni",
+      "phone": "9844254897",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1110,
+      "name": "Sadananda Roa RS",
+      "phone": "9844031193",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1111,
+      "name": "Dilipa",
+      "phone": "9743323205",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1112,
+      "name": "Manoj jewellers AJ",
+      "phone": "8088028242",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1113,
+      "name": "Gokul Anand Bekary",
+      "phone": "9964163142",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1114,
+      "name": "Ramesh BA",
+      "phone": "9742635951",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1115,
+      "name": "Zafar Pasha",
+      "phone": "9164014253",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1116,
+      "name": "Somasundar",
+      "phone": "9845087548",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1117,
+      "name": "Kamadenu lodge BH",
+      "phone": "9731284680",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1118,
+      "name": "Manjunatha jewelers CB",
+      "phone": "8217330089",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1119,
+      "name": "Gopi CG",
+      "phone": "9448101910",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1120,
+      "name": "Santosh",
+      "phone": "7829888895",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1121,
+      "name": "Pandith GO CN",
+      "phone": "7676969697",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1122,
+      "name": "Chandramma",
+      "phone": "9663200624",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1123,
+      "name": "Suguna GO CN",
+      "phone": "9380685145",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1124,
+      "name": "Kiran DP",
+      "phone": "8892955600",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1125,
+      "name": "Lakshmamma",
+      "phone": "9742447652",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1126,
+      "name": "Krishnamurthy",
+      "phone": "8660928758",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1127,
+      "name": "Darshan HO",
+      "phone": "9448326944",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1128,
+      "name": "Basavaraju Shastri",
+      "phone": "9972748312",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1129,
+      "name": "Ravikumar",
+      "phone": "9743743346",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1130,
+      "name": "Nagaraju likith GO MC",
+      "phone": "7760195695",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1131,
+      "name": "Shantanna",
+      "phone": "8748989080",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1132,
+      "name": "Sree Photo Shudio",
+      "phone": "9448014499",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1133,
+      "name": "Nagaraj shetty",
+      "phone": "8105556199",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1134,
+      "name": "Harimohanmeena",
+      "phone": "6362818744",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1135,
+      "name": "Bhilal",
+      "phone": "9999999999",
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 1136,
+      "name": "Toufiq",
+      "phone": "9663344676",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1137,
+      "name": "Subramanya",
+      "phone": "9343081741",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1138,
+      "name": "Naveen PT",
+      "phone": "9964593878",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1139,
+      "name": "Shashi lab",
+      "phone": "9448747165",
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 1140,
+      "name": "SS Jewellers SK",
+      "phone": "9986149008",
+      "status": "yes",
+      "detail": "compose_ready"
+    }
+  ]
+}

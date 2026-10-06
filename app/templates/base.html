@@ -1,93 +1,167 @@
 <!DOCTYPE html>
-<html lang="en"{% if nav and (nav.jobs_otp or nav.jobs_iptv_pending or nav.jobs_running) %} data-poll-jobs="1"{% endif %}>
+<html lang="en"{% if nav and nav.jobs_otp %} data-poll-jobs="1"{% endif %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}VK Platform{% endblock %}</title>
-  <link rel="stylesheet" href="/static/app.css">
-  <link rel="icon" href="/static/favicon.svg">
+  <meta name="theme-color" content="{% if field_duty_on %}#14532d{% else %}#0a0a0a{% endif %}">
+  <title>{% block title %}VK Digital{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css?v=nav36">
+  <link rel="icon" href="/static/favicon.png?v=1">
 </head>
-<body>
+<body{% if request.cookies.get('vk_ui') == 'v2' or field_duty_on %} class="{% if request.cookies.get('vk_ui') == 'v2' %}ui-v2{% endif %}{% if field_duty_on %} field-on-duty{% endif %}"{% endif %}
+      {% if needs_field_duty %} data-field-duty="{{ 'on' if field_duty_on else 'off' }}"{% endif %}>
+{% from "_search_field.html" import search_field %}
 <header class="topbar">
-  <button class="menu-toggle" onclick="document.body.classList.toggle('nav-open')" aria-label="Menu">☰</button>
+  {% if request.cookies.get('vk_ui') == 'v2' %}
+  <a class="menu-toggle" href="/v2/menu" aria-label="Menu">☰</a>
+  {% else %}
+  <button class="menu-toggle" type="button" aria-label="Menu">☰</button>
+  {% endif %}
+  {% if is_demo_instance is defined and is_demo_instance() %}
+  <a class="brand brand-demo" href="/" aria-label="Demo site">Demo</a>
+  {% else %}
   <a class="brand" href="/" aria-label="VK Digital">
-    <img src="/static/logo.svg" alt="VK Digital" width="36" height="36">
+    <img src="/static/logo-wordmark.png?v=2" alt="VK Digital" class="brand-logo">
   </a>
+  {% endif %}
   <form class="topbar-search" action="/customers" method="get">
-    <input type="search" name="q" placeholder="Search name, phone, STB, Railtel id, IPTV…" value="{{ q|default('') }}">
+    {{ search_field('q', q|default(''), 'Name, phone, STB' ~ ('' if fixed_provider == 'hathway' else ', Railtel id') ~ ' — press /', 'topbar-search-field') }}
   </form>
   <div class="topbar-right">
     {% if current_agent %}
-      <span class="subtle">{{ current_agent.name }}</span>
+    <div class="topbar-user">
+      <span class="topbar-who" title="{{ current_agent.username }}">{{ current_agent.name }}</span>
+      {% include "_field_duty_toggle.html" %}
+    </div>
     {% endif %}
-    {% if settings.upstream_mode != 'live' %}
+    {% if is_demo_instance is defined and is_demo_instance() %}
+      <span class="pill pill-warn" title="Demo data only — port {{ demo_port|default('8801') }}">DEMO</span>
+    {% elif settings.upstream_mode != 'live' %}
       <span class="pill pill-warn" title="Provider portals are not contacted in simulate mode">SIMULATE</span>
-    {% else %}
-      <span class="pill pill-live" title="Actions run on the real provider portals">LIVE</span>
     {% endif %}
-    <a class="btn btn-small btn-primary" href="/v2/switch" title="Try the new mobile card layout">Mobile UI</a>
-    <a class="btn btn-small" href="/logout">Sign out</a>
+    {% if running_jobs and can('portal_actions') %}
+    {% set rj = running_jobs[0] %}
+    <a class="portal-lock-dot" href="/jobs/{{ rj.id }}"
+       title="Renewer locked — job #{{ rj.id }} {{ action_labels.get(rj.action, rj.action) }}{% if rj.upstream_id %} {{ rj.upstream_id }}{% elif rj.customer_name %} {{ rj.customer_name }}{% endif %}">🔴</a>
+    {% endif %}
+    <a class="btn btn-small btn-primary topbar-mobile-link" href="/v2/switch" title="Switch to mobile card layout">Mobile</a>
+    <a class="btn btn-small topbar-signout" href="/logout">Sign out</a>
   </div>
 </header>
 
 <div class="shell">
   <nav class="sidebar">
-    <a href="/" class="{% if active == 'dashboard' %}on{% endif %}">Dashboard</a>
+    <div class="sidebar-scroll">
+    <div class="nav-group">
+      <div class="nav-group-label">Overview</div>
+      <a href="/" class="{% if active == 'dashboard' %}on{% endif %}">Dashboard</a>
+      {% if can('activity') %}
+      <a href="/activity" class="{% if active == 'activity' %}on{% endif %}">Activity</a>
+      {% endif %}
+    </div>
     {% if can('customers_view') or can('payments') %}
-    <a href="/customers" class="{% if active == 'customers' %}on{% endif %}">Customers</a>
-    <a href="/stbs" class="{% if active == 'stbs' %}on{% endif %}">Hathway STBs</a>
-    <a href="/iptv" class="{% if active == 'iptv' %}on{% endif %}">ANT IPTV</a>
-    <a href="/ott" class="{% if active == 'ott' %}on{% endif %}">SmartPlay OTT</a>
+    <div class="nav-group">
+      <div class="nav-group-label">Customers</div>
+      <a href="/customers" class="{% if active == 'customers' %}on{% endif %}">Customers</a>
+      {% if not fixed_provider or fixed_provider == 'hathway' %}
+      <a href="/stbs" class="{% if active == 'stbs' %}on{% endif %}">Hathway STBs</a>
+      {% endif %}
+      {% if not fixed_provider %}
+      <a href="/iptv" class="{% if active == 'iptv' %}on{% endif %}">ANT IPTV</a>
+      <a href="/ott" class="{% if active == 'ott' %}on{% endif %}">SmartPlay OTT</a>
+      {% endif %}
+      {% if can('packages') %}
+      <a href="/packages" class="{% if active == 'packages' %}on{% endif %}">Plans</a>
+      {% endif %}
+    </div>
+    {% elif can('packages') %}
+    <div class="nav-group">
+      <div class="nav-group-label">Customers</div>
+      <a href="/packages" class="{% if active == 'packages' %}on{% endif %}">Plans</a>
+    </div>
     {% endif %}
-    {% if can('portal_actions') %}
-    <a href="/jobs" class="{% if active == 'jobs' %}on{% endif %}">
-      Provider jobs
-      {% if nav.jobs_running %}<span class="badge badge-warn">{{ nav.jobs_running }} live</span>{% endif %}
-      {% if nav.jobs_otp %}<span class="badge badge-warn">OTP {{ nav.jobs_otp }}</span>{% endif %}
-      {% if nav.jobs_awaiting %}<span class="badge badge-warn">{{ nav.jobs_awaiting }}</span>{% endif %}
-      {% if nav.jobs_failed %}<span class="badge badge-bad">{{ nav.jobs_failed }}</span>{% endif %}
-    </a>
+    {% if can('bills') or can('payments') %}
+    <div class="nav-group">
+      <div class="nav-group-label">Money</div>
+      {% if can('bills') %}
+      <a href="/bills" class="{% if active == 'bills' %}on{% endif %}">Bills</a>
+      {% endif %}
+      {% if can('payments') %}
+      <a href="/payments" class="{% if active == 'payments' %}on{% endif %}">
+        Payments
+        {% if nav.followups %}<span class="badge badge-warn">{{ nav.followups }}</span>{% endif %}
+      </a>
+      <a href="/pay/admin" class="{% if active == 'pay_portal' %}on{% endif %}">
+        Customer QR pay
+        {% if nav.pay_portal_open %}<span class="badge badge-warn">{{ nav.pay_portal_open }}</span>{% endif %}
+      </a>
+      {% endif %}
+    </div>
     {% endif %}
-    {% if can('providers') %}
-    <a href="/providers" class="{% if active == 'providers' %}on{% endif %}">Providers</a>
-    {% endif %}
-    {% if can('bills') %}
-    <a href="/bills" class="{% if active == 'bills' %}on{% endif %}">Bills</a>
-    {% endif %}
-    {% if can('payments') %}
-    <a href="/payments" class="{% if active == 'payments' %}on{% endif %}">
-      Payments
-      {% if nav.followups %}<span class="badge badge-warn">{{ nav.followups }}</span>{% endif %}
-    </a>
-    {% endif %}
-    {% if can('payments') or can('complaints') or can('agents') %}
-    <a href="/field" class="{% if active == 'field' %}on{% endif %}">Field agents</a>
-    {% endif %}
-    {% if can('complaints') %}
-    <a href="/complaints" class="{% if active == 'complaints' %}on{% endif %}">
-      Complaints
-      {% if nav.complaints_open %}<span class="badge badge-warn">{{ nav.complaints_open }}</span>{% endif %}
-    </a>
-    {% endif %}
-    {% if can('packages') %}
-    <a href="/packages" class="{% if active == 'packages' %}on{% endif %}">Plans</a>
-    {% endif %}
-    {% if can('activity') %}
-    <a href="/activity" class="{% if active == 'activity' %}on{% endif %}">Activity</a>
+    {% if can('portal_actions') or can('providers') or can('payments') or can('complaints') or can('agents') or can('inventory') %}
+    <div class="nav-group">
+      <div class="nav-group-label">Operations</div>
+      {% if can('portal_actions') %}
+      <a href="/jobs" class="{% if active == 'jobs' %}on{% endif %}">
+        Provider jobs
+        {% if nav.jobs_running %}<span class="badge">{{ nav.jobs_running }} live</span>{% endif %}
+        {% if nav.jobs_otp %}<span class="badge badge-warn">OTP {{ nav.jobs_otp }}</span>{% endif %}
+        {% if nav.jobs_awaiting %}<span class="badge badge-warn">{{ nav.jobs_awaiting }}</span>{% endif %}
+        {% if nav.jobs_failed %}<span class="badge badge-bad">{{ nav.jobs_failed }}</span>{% endif %}
+      </a>
+      {% endif %}
+      {% if can('providers') and fixed_provider != 'hathway' %}
+      <a href="/providers" class="{% if active == 'providers' %}on{% endif %}">Providers</a>
+      {% endif %}
+      {% if can('payments') or can('complaints') or can('agents') or can('customers_view') %}
+      <a href="/field" class="{% if active == 'field' %}on{% endif %}">Field agents</a>
+      <a href="/settlements" class="{% if active == 'settlements' %}on{% endif %}">Settlements</a>
+      {% endif %}
+      {% if can('inventory') %}
+      <a href="/inventory" class="{% if active == 'inventory' %}on{% endif %}">Inventory</a>
+      {% endif %}
+      {% if can('complaints') %}
+      <a href="/complaints" class="{% if active == 'complaints' %}on{% endif %}">
+        Complaints
+        {% if nav.complaints_open %}<span class="badge badge-warn">{{ nav.complaints_open }}</span>{% endif %}
+      </a>
+      {% endif %}
+    </div>
     {% endif %}
     {% if can('agents') or can('bix_sync') %}
-    <a href="/settings" class="{% if active == 'settings' %}on{% endif %}">Settings</a>
+    <div class="nav-group">
+      <div class="nav-group-label">Settings</div>
+      <a href="/settings" class="{% if active == 'settings' %}on{% endif %}">Settings</a>
+    </div>
     {% endif %}
     <div class="sidebar-foot">
       {% if can('customers_edit') %}
       <a class="btn btn-primary btn-block" href="/customers/new">+ New customer</a>
       {% endif %}
     </div>
+    </div>
   </nav>
+  <div class="nav-scrim" aria-hidden="true"></div>
 
   <main class="content">
     {% if flash %}
-      <div class="flash flash-{{ flash_level }}">{{ flash }}</div>
+      <div class="flash flash-{{ flash_level }}">
+        <div>{{ flash }}</div>
+        {% if whatsapp_open_url %}
+        <div class="flash-wa-row">
+          {% from "_whatsapp_link.html" import whatsapp_link %}
+          {{ whatsapp_link(whatsapp_open_url, "Open WhatsApp", small=true) }}
+        </div>
+        {% endif %}
+      </div>
+    {% elif whatsapp_open_url %}
+      <div class="flash flash-ok">
+        <div>WhatsApp is ready.</div>
+        <div class="flash-wa-row">
+          {% from "_whatsapp_link.html" import whatsapp_link %}
+          {{ whatsapp_link(whatsapp_open_url, "Open WhatsApp", small=true) }}
+        </div>
+      </div>
     {% endif %}
     {% if iptv_progress and can('portal_actions') %}
     <div class="flash flash-warn">
@@ -96,6 +170,7 @@
         ANT {{ action_labels.get(j.action, j.action) }} job #{{ j.id }}
         is {{ j.status }}{% if j.customer_name %} · {{ j.customer_name }}{% endif %}.
         {% if j.error %}<div class="subtle">{{ j.error }}</div>{% endif %}
+        <a href="/jobs/{{ j.id }}">Open job</a>
       </div>
       {% endfor %}
     </div>
@@ -125,36 +200,81 @@
       {% endfor %}
     </div>
     {% endif %}
-    {% if running_jobs and can('portal_actions') %}
-    <div class="flash flash-warn">
-      <strong>Portal busy</strong> —
-      {% for j in running_jobs %}
-        job #{{ j.id }}: {{ action_labels.get(j.action, j.action) }}
-        {% if j.upstream_id %}<span class="mono">{{ j.upstream_id }}</span>{% elif j.customer_name %}{{ j.customer_name }}{% endif %}
-        {% if not loop.last %} · {% endif %}
-      {% endfor %}
-      {% if nav.jobs_queued %}
-        · {{ nav.jobs_queued }} more queued (run one at a time).
-      {% else %}
-        · only one portal login runs at a time.
-      {% endif %}
-      Browsing customers is fine; new jobs wait in the queue.
-      <a href="/jobs">View jobs</a>
-    </div>
-    {% endif %}
     {% block content %}{% endblock %}
   </main>
 </div>
-<script src="/static/field.js"></script>
+{% if request.cookies.get('vk_ui') == 'v2' %}
+{% include "v2/_nav.html" %}
+{% endif %}
+<script src="/static/field.js?v=wa7"></script>
+{% block extra_js %}{% endblock %}
 <script>
 (function () {
-  var poll = document.documentElement.getAttribute("data-poll-jobs") === "1";
   var box = document.querySelector(".otp-banner input[name=otp]");
-  if (!poll && !box) return;
+  var path = location.pathname || "";
+  var onJobs = path.indexOf("/jobs") === 0;
+  var onCustomer = /^\/customers\/\d+/.test(path);
+  var poll = document.documentElement.getAttribute("data-poll-jobs") === "1";
+  if (!box && !(poll && (onJobs || onCustomer))) return;
   setTimeout(function () {
     if (box && (document.activeElement === box || (box.value || "").length)) return;
     location.reload();
-  }, box ? 8000 : 4000);
+  }, box ? 8000 : 12000);
+})();
+(function () {
+  var bar = document.querySelector(".topbar");
+  var nav = document.querySelector(".sidebar");
+  function placeNav() {
+    if (!bar) return;
+    var top = Math.round(bar.getBoundingClientRect().height);
+    document.documentElement.style.setProperty("--topbar-h", top + "px");
+    if (!nav) return;
+    var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    nav.style.top = top + "px";
+    nav.style.height = Math.max(160, Math.round(vh - top)) + "px";
+    nav.style.maxHeight = nav.style.height;
+    nav.style.bottom = "auto";
+  }
+  function setOpen(open) {
+    document.body.classList.toggle("nav-open", open);
+    document.documentElement.classList.toggle("nav-open", open);
+    if (open) placeNav();
+  }
+  function closeNav() { setOpen(false); }
+  document.addEventListener("pointerdown", function (e) {
+    if (!document.body.classList.contains("nav-open")) return;
+    if (e.target.closest(".sidebar") || e.target.closest(".menu-toggle")) return;
+    closeNav();
+  }, true);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeNav();
+  });
+  var toggle = document.querySelector(".menu-toggle");
+  var v2 = document.body.classList.contains("ui-v2");
+  if (toggle && !v2) {
+    toggle.addEventListener("click", function (e) {
+      e.preventDefault();
+      setOpen(!document.body.classList.contains("nav-open"));
+    });
+  }
+  placeNav();
+  window.addEventListener("resize", placeNav);
+  window.addEventListener("orientationchange", placeNav);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", placeNav);
+  }
+})();
+(function () {
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
+    var tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target && e.target.isContentEditable)) return;
+    var field = document.querySelector(".topbar-search input");
+    if (!field) return;
+    e.preventDefault();
+    field.focus();
+    field.select();
+  });
 })();
 </script>
 </body>

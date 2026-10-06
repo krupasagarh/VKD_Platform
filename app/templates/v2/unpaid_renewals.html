@@ -1,0 +1,74 @@
+{% extends "v2/base.html" %}
+{% from "v2/_unpaid_renewal_card.html" import unpaid_renewal_card %}
+{% set active = "unpaid" %}
+{% block title %}Unpaid renewals · VK Digital{% endblock %}
+
+{% block header %}
+<header class="v2-header">
+  <div class="v2-header-top">
+    <a class="v2-back" href="/v2/" aria-label="Back">←</a>
+    <div class="v2-header-main">
+      <div class="v2-route">Unpaid renewals</div>
+      <div class="v2-subline">
+        {{ stats.customers }} customer{{ "s" if stats.customers != 1 else "" }}
+        · ₹{{ stats.due_paise|rupees }} to collect
+      </div>
+    </div>
+  </div>
+  <div class="v2-header-actions">
+    {% if can('payments') %}
+    <a class="v2-pill-btn" href="/payments/follow-up?kind=renew&period={{ period }}">Desktop table</a>
+    {% endif %}
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<p class="v2-page-note">
+  Portal renewals done but payment not recorded yet.
+  {% if can('payments') %}
+  Use <strong>Mark collected</strong> when you already took the money.
+  {% endif %}
+</p>
+
+<div class="v2-chips">
+  <a href="/v2/unpaid-renewals?period=month{% if provider %}&provider={{ provider }}{% endif %}"
+     class="v2-chip {% if period == 'month' %}on{% endif %}">This month</a>
+  <a href="/v2/unpaid-renewals?period=last{% if provider %}&provider={{ provider }}{% endif %}"
+     class="v2-chip {% if period == 'last' %}on{% endif %}">Last month</a>
+  <a href="/v2/unpaid-renewals?period=all{% if provider %}&provider={{ provider }}{% endif %}"
+     class="v2-chip {% if period == 'all' %}on{% endif %}">All open</a>
+</div>
+
+<form class="v2-filters" method="get" action="/v2/unpaid-renewals">
+  <input type="hidden" name="period" value="{{ period }}">
+  <label class="v2-filter-field">
+    <span>Provider</span>
+    {% if fixed_provider %}
+    <input type="hidden" name="provider" value="{{ fixed_provider }}">
+    <span class="v2-filter-note">{{ provider_labels.get(fixed_provider, fixed_provider)|capitalize }} only</span>
+    {% else %}
+    <select name="provider" onchange="this.form.submit()">
+      <option value="">Any provider</option>
+      {% for p in providers %}
+      <option value="{{ p }}" {% if provider == p %}selected{% endif %}>{{ provider_labels.get(p, p) }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+  </label>
+</form>
+
+{% if grouped %}
+<div class="v2-feed">
+  {% for entry in grouped %}
+    {{ unpaid_renewal_card(entry, provider_labels, can, areas, list_next, payment_modes, fixed_provider) }}
+  {% endfor %}
+</div>
+{% else %}
+<div class="v2-empty">
+  <h2>All caught up</h2>
+  <p>No unpaid portal renewals for this period.</p>
+  <a class="v2-cta" href="/v2/unpaid-renewals?period=all" style="display:inline-flex;margin-top:16px">Show all open</a>
+</div>
+{% endif %}
+{% endblock %}

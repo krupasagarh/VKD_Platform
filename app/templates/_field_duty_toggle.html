@@ -1,0 +1,12 @@
+{% if needs_field_duty %}
+<form class="js-geo field-duty-form" method="post" action="/field/duty">
+  <input type="hidden" name="on" value="{{ 0 if field_duty_on else 1 }}">
+  <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+  <button class="field-duty-switch {% if field_duty_on %}is-on{% endif %}" type="submit"
+          aria-pressed="{{ 'true' if field_duty_on else 'false' }}"
+          title="Field login">
+    <span class="field-duty-knob"></span>
+    <span class="field-duty-label">{{ "On" if field_duty_on else "Off" }}</span>
+  </button>
+</form>
+{% endif %}

@@ -1,0 +1,9 @@
+{% from "_whatsapp_link.html" import whatsapp_link %}
+{% macro whatsapp_expiring_tonight(name, phone, provider, providers_csv=None, compact=false) %}
+{% set url = whatsapp_expiring_tonight_url(name, phone, provider, providers_csv) %}
+{% if url %}
+{{ whatsapp_link(url, "Expiring tonight", small=compact, title="Send WhatsApp — expiring tonight") }}
+{% else %}
+<span class="v2-muted">—</span>
+{% endif %}
+{% endmacro %}

@@ -1,0 +1,9 @@
+{% from "_wa_icon.html" import wa_icon %}
+{% macro whatsapp_link(url, label, small=false, title="") %}
+{% if url %}
+<a class="wa-btn{% if small %} wa-btn--small wa-btn--icon{% endif %}"
+   href="{{ url }}" target="_blank" rel="noopener"
+   {% if title %}title="{{ title }}"{% else %}title="{{ label }}"{% endif %}
+   {% if small %}aria-label="{{ label }}"{% endif %}>{{ wa_icon(14 if small else 16) }}{% if not small %} {{ label }}{% endif %}</a>
+{% endif %}
+{% endmacro %}

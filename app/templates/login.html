@@ -3,22 +3,39 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sign in · VK Platform</title>
-  <link rel="stylesheet" href="/static/app.css">
-  <link rel="icon" href="/static/favicon.svg">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>Sign in · VK Digital</title>
+  <link rel="stylesheet" href="/static/app.css?v=brand16">
+  <link rel="icon" href="/static/favicon.png?v=1">
 </head>
-<body>
+<body class="login-page">
 <div class="login-wrap">
   <form class="login-card" method="post" action="/login">
-    <h1><img src="/static/logo.svg" alt="VK Digital" width="48" height="48" style="border-radius:10px; display:block; margin:0 auto 8px"></h1>
+    <div class="login-brand">
+      {% if is_demo_instance is defined and is_demo_instance() %}
+      <div class="login-demo-title">Platform demo</div>
+      {% else %}
+      <img src="/static/logo-wordmark.png?v=2" alt="VK Digital" class="login-logo">
+      <p class="login-tagline">Operations platform · Tiptur</p>
+      <p class="login-subtitle">Sign in to manage customers, payments and provider jobs.</p>
+      {% endif %}
+    </div>
+    {% if is_demo_instance is defined and is_demo_instance() %}
+    <div class="flash flash-ok" style="margin-bottom:12px">
+      <strong>Demo site</strong> (port {{ demo_port|default('8801') }}) · sign in with <span class="mono">demo</span> / <span class="mono">demo123</span>
+    </div>
+    {% endif %}
     {% if error %}<div class="flash flash-err">{{ error }}</div>{% endif %}
     <div class="field">
       <label for="username">Username</label>
-      <input id="username" type="text" name="username" value="admin" autocomplete="username">
+      <input id="username" type="text" name="username" value="" autocomplete="username" autocapitalize="none" spellcheck="false">
     </div>
     <div class="field">
       <label for="password">Password</label>
-      <input id="password" type="password" name="password" autofocus required autocomplete="current-password">
+      <div class="password-field">
+        <input id="password" type="password" name="password" autofocus required autocomplete="current-password">
+        <button type="button" class="password-toggle" id="password-toggle" aria-label="Show password" aria-pressed="false">Show</button>
+      </div>
     </div>
     <input type="hidden" name="next" value="{{ next }}">
     <button class="btn btn-primary btn-block" type="submit">Sign in</button>
@@ -27,8 +44,23 @@
       Sign in to open the <strong>mobile UI</strong>. You will land on the new card layout.
     </div>
     {% endif %}
-    <div class="subtle" style="margin-top:10px">Owner login is <span class="mono">admin</span> with the platform password.</div>
+    <p class="login-forgot">Forgot password? Contact the administrator.</p>
   </form>
+  <p class="login-foot">{{ settings.operator if settings is defined else 'VK Digital' }} · Tiptur</p>
 </div>
+<script>
+(function () {
+  var input = document.getElementById("password");
+  var btn = document.getElementById("password-toggle");
+  if (!input || !btn) return;
+  btn.addEventListener("click", function () {
+    var show = input.type === "password";
+    input.type = show ? "text" : "password";
+    btn.textContent = show ? "Hide" : "Show";
+    btn.setAttribute("aria-pressed", show ? "true" : "false");
+    btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
+  });
+})();
+</script>
 </body>
 </html>

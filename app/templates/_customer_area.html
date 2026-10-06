@@ -1,0 +1,53 @@
+{% macro customer_area_cell(item, areas, can, next_url="") %}
+{% set cid = item.customer_id or item.id %}
+{% set name = item.customer_name or item.name %}
+{% set locality = item.sub_area or "" %}
+{% set town = item.area or "Tiptur" %}
+{% set has_pin = item.lat and item.lng %}
+{% set maps_q = maps_search_url(name=name, sub_area=locality, area=town) %}
+<div class="area-cell">
+  {% if locality %}
+  <div class="area-name">{{ locality }}</div>
+  {% else %}
+  <div class="area-name area-missing">No area set</div>
+  {% endif %}
+
+  <div class="area-map-actions">
+    {% if has_pin %}
+    <a class="area-map-link" href="{{ maps_nav_url(item.lat, item.lng) }}"
+       target="_blank" rel="noopener" title="Navigate to saved pin">Maps</a>
+    {% else %}
+    <a class="area-map-link area-map-tag" href="{{ maps_q }}"
+       target="_blank" rel="noopener" title="Find on Google Maps to tag the house">Tag on map</a>
+    {% if can('customers_edit') or can('customers_view') %}
+    <button type="button" class="area-gps-btn vk-gps-btn"
+            data-customer-id="{{ cid }}"
+            {% if next_url %}data-next="{{ next_url }}"{% endif %}
+            title="Save GPS pin at the house">Pin GPS</button>
+    {% endif %}
+    {% endif %}
+  </div>
+
+  {% if not locality and can('customers_edit') %}
+  <details class="area-setter">
+    <summary>Set area</summary>
+    <form class="area-setter-form" method="post" action="/customers/{{ cid }}/area">
+      {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+      <label class="area-setter-label">Pick existing</label>
+      <select name="sub_area">
+        <option value="">— choose —</option>
+        {% for a in areas %}
+        <option value="{{ a }}">{{ a }}</option>
+        {% endfor %}
+      </select>
+      <label class="area-setter-label">Or type new</label>
+      <input type="text" name="sub_area_new" placeholder="e.g. CN Road, BH Road" list="area-suggestions-{{ cid }}">
+      <datalist id="area-suggestions-{{ cid }}">
+        {% for a in areas %}<option value="{{ a }}">{% endfor %}
+      </datalist>
+      <button class="area-save-btn" type="submit">Save area</button>
+    </form>
+  </details>
+  {% endif %}
+</div>
+{% endmacro %}

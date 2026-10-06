@@ -27,7 +27,7 @@
   <a href="/payments/bix">Bix history</a>
 </div>
 
-<form class="filters" method="get" action="/payments">
+<form class="filters filters-bar" method="get" action="/payments">
   <div class="field">
     <label>From</label>
     <input type="date" name="from" value="{{ date_from }}">
@@ -37,7 +37,7 @@
     <input type="date" name="to" value="{{ date_to }}">
   </div>
   <button class="btn" type="submit">Show</button>
-  {% if date_from or date_to %}<a class="btn" href="/payments">Clear</a>{% endif %}
+  {% if date_from or date_to %}<a class="btn" href="/payments">Clear filters</a>{% endif %}
   <a class="btn" href="/payments?from={{ stats.today }}&to={{ stats.today }}">Today</a>
   <a class="btn" href="/payments?from={{ stats.month_start }}&to={{ stats.today }}">This month</a>
 </form>
@@ -45,7 +45,7 @@
 <div class="card">
 {% if rows %}
 {{ table_tools(export_href, range_count) }}
-<div class="table-wrap">
+<div class="table-wrap table-wrap-sticky">
 <table>
   <thead>
     <tr><th>Receipt</th><th>Customer</th><th>When</th><th>Mode</th><th>By</th><th>Reference</th>
@@ -57,7 +57,7 @@
       <td class="mono">{{ p.receipt_no }}</td>
       <td><a href="/customers/{{ p.customer_id }}">{{ p.customer_name }}</a>
         {% if p.customer_code %}<div class="subtle">{{ p.customer_code }}</div>{% endif %}</td>
-      <td class="subtle">{{ p.paid_at }}</td>
+      <td class="subtle date">{{ p.paid_at|nice_datetime }}</td>
       <td>{{ p.mode }}</td>
       <td class="subtle">{{ p.collected_by or "—" }}</td>
       <td class="mono subtle">{{ p.reference or "—" }}</td>

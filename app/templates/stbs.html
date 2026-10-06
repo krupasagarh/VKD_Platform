@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_list_tools.html" import table_tools %}
+{% from "_hathway_pack.html" import hathway_pack_line %}
 {% set active = "stbs" %}
 {% block title %}Hathway STBs · VK Platform{% endblock %}
 
@@ -67,9 +68,10 @@
   <a href="/stbs?view=unmapped{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if view == 'unmapped' %}on{% endif %}">
     Unmapped ({{ mapping.unmapped }})
   </a>
+  <a href="/stbs/expiry-report">Expiry report</a>
 </div>
 
-<form class="filters" method="get" action="/stbs">
+<form class="filters filters-bar" method="get" action="/stbs">
   <input type="hidden" name="view" value="{{ view }}">
   <div class="field" style="min-width:260px">
     <label>Search</label>
@@ -104,7 +106,7 @@
 <div class="card">
 {% if result.rows %}
 {{ table_tools(export_href, result.total) }}
-<div class="table-wrap">
+<div class="table-wrap table-wrap-sticky">
 <table>
   <thead>
     <tr>
@@ -131,13 +133,16 @@
         <div class="subtle">{{ r.phone or "" }}</div>
       </td>
       <td>{{ r.sub_area or "—" }}</td>
-      <td>{{ r.package_name or r.upstream_plan_name or "—" }}</td>
+      <td>
+        {{ r.package_name or "—" }}
+        {{ hathway_pack_line(r) }}
+      </td>
       <td>
         {% if r.status == 'active' %}<span class="badge badge-ok">{{ r.status }}</span>
         {% elif r.status == 'terminated' %}<span class="badge badge-bad">{{ r.status }}</span>
         {% else %}<span class="badge badge-warn">{{ r.status }}</span>{% endif %}
       </td>
-      <td>{{ r.expiry_date|nice_date }}</td>
+      <td class="date">{{ r.expiry_date|nice_date }}</td>
     </tr>
   {% endfor %}
   </tbody>

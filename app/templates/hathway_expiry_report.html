@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% set active = "stbs" %}
+{% block title %}Hathway expiry report · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Hathway expiry report</h1>
+    <div class="subtle">
+      From the PlanExpiry sheet dates on each STB.
+      Upload a fresh sheet under Settings → Hathway expiry.
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/providers">Overview</a>
+  <a href="/stbs" class="{% if not on_day %}on{% endif %}">Hathway STBs</a>
+  <a href="/stbs/expiry-report" class="on">Expiry report</a>
+</div>
+
+<form class="filters filters-bar exp-report-filters" method="get" action="/stbs/expiry-report">
+  <div class="field">
+    <label>From date</label>
+    <input type="date" name="from" value="{{ date_from }}">
+  </div>
+  <div class="field">
+    <label>End date</label>
+    <input type="date" name="to" value="{{ date_to }}">
+  </div>
+  <button class="btn btn-primary" type="submit">Get report</button>
+  <button class="btn" type="button" onclick="window.print()">Print report</button>
+</form>
+
+{% if on_day %}
+<div class="card exp-report-day">
+  <div class="card-head">
+    <h2>{{ on_day|nice_date }} · {{ day_rows|length }} STB{{ "s" if day_rows|length != 1 else "" }}</h2>
+    <div class="spacer"></div>
+    <a class="btn btn-small" href="/stbs/expiry-report?from={{ date_from }}&to={{ date_to }}">← All dates</a>
+  </div>
+  {% if day_rows %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>STB</th>
+          <th>VC</th>
+          <th>Pack</th>
+          <th>Area</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for row in day_rows %}
+        <tr>
+          <td>
+            <a href="/customers/{{ row.customer_id }}">{{ row.customer_name }}</a>
+            {% if row.phone %}<div class="subtle">{{ row.phone }}</div>{% endif %}
+          </td>
+          <td class="mono">{{ row.upstream_id }}</td>
+          <td class="mono">{{ row.card_number or "—" }}</td>
+          <td>{{ row.hathway_pack_name or "—" }}</td>
+          <td>{{ row.area or "—" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">No Hathway STBs expire on this date.</div>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-head">
+    <h2>By end date</h2>
+    <span class="subtle">{{ buckets|length }} day{{ "s" if buckets|length != 1 else "" }}</span>
+  </div>
+  {% if buckets %}
+  <div class="table-wrap">
+    <table class="exp-report-table">
+      <thead>
+        <tr>
+          <th class="num">Count</th>
+          <th>End date</th>
+          <th class="num">Days away</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for b in buckets %}
+        <tr class="{% if on_day == b.end_date %}is-on{% endif %} {% if b.days_away is not none and b.days_away < 0 %}is-late{% elif b.days_away == 0 %}is-today{% endif %}">
+          <td class="num"><strong>{{ b.stb_count }}</strong></td>
+          <td>{{ b.end_date }}</td>
+          <td class="num">{{ b.days_away if b.days_away is not none else "—" }}</td>
+          <td>
+            <a class="exp-eye" href="/stbs/expiry-report?from={{ date_from }}&to={{ date_to }}&on={{ b.end_date }}"
+               title="Show {{ b.stb_count }} STB{{ 's' if b.stb_count != 1 else '' }}">
+              <span aria-hidden="true">◎</span>
+              <span class="visually-hidden">View {{ b.end_date }}</span>
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">No expiry dates in this range. Upload a PlanExpiry sheet first.</div>
+  {% endif %}
+</div>
+{% endblock %}

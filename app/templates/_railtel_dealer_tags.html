@@ -1,0 +1,15 @@
+{% macro railtel_dealer_tags(dealers_raw, compact=false) %}
+{% if dealers_raw %}
+{% set dealers = dealers_raw.split(',') %}
+<div class="railtel-dealer-tags{% if compact %} railtel-dealer-tags-compact{% endif %}">
+  {% for dealer in dealers %}
+    {% set key = dealer.strip() %}
+    {% if key %}
+    <span class="railtel-dealer-tag railtel-dealer-tag--{{ key|replace('.', '-') }}" title="{{ railtel_dealer_labels.get(key, key) }}">
+      {{ railtel_dealer_short.get(key, key) }}
+    </span>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}

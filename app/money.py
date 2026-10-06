@@ -12,6 +12,7 @@ from decimal import Decimal, ROUND_HALF_UP
 _MONEY_CLEAN = re.compile(r"[^0-9.\-]")
 
 DATE_FMT = "%Y-%m-%d"
+DATE_DISPLAY_FMT = "%d-%m-%y"
 _DATE_FORMATS = (
     "%Y-%m-%d",
     "%Y-%m-%d %H:%M:%S",
@@ -65,11 +66,22 @@ def from_paise(paise: int | None) -> Decimal:
     return (Decimal(int(paise or 0)) / 100).quantize(Decimal("0.01"))
 
 
+def round_up_rupee(paise: int | None) -> int:
+    """Paise rounded up to the next whole rupee: 58882 -> 58900 (₹588.82 -> ₹589)."""
+    value = int(paise or 0)
+    return -((-value) // 100) * 100
+
+
+def whole_rupees(paise: int | None) -> int:
+    """Rupees as a whole number, rounded up the same way bills are."""
+    return round_up_rupee(paise) // 100
+
+
 def fmt_rupees(paise: int | None) -> str:
-    """Indian-grouped rupee string without the symbol, e.g. 1,23,456.00."""
-    amount = from_paise(paise)
+    """Indian-grouped whole-rupee string without the symbol, e.g. 1,23,456."""
+    amount = whole_rupees(paise)
     negative = amount < 0
-    whole, _, frac = f"{abs(amount):.2f}".partition(".")
+    whole = str(abs(amount))
     if len(whole) > 3:
         head, tail = whole[:-3], whole[-3:]
         groups = []
@@ -79,7 +91,7 @@ def fmt_rupees(paise: int | None) -> str:
         if head:
             groups.insert(0, head)
         whole = ",".join(groups + [tail])
-    return f"{'-' if negative else ''}{whole}.{frac}"
+    return f"{'-' if negative else ''}{whole}"
 
 
 def gst_split(total_paise: int, gst_percentage: float) -> tuple[int, int]:
@@ -208,12 +220,85 @@ def fmt_datetime(value) -> str:
     return parsed.strftime("%Y-%m-%d %H:%M:%S") if parsed else ""
 
 
+_ONES = (
+    "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+    "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen",
+    "Eighteen", "Nineteen",
+)
+_TENS = ("", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety")
+
+
+def _words_below_1000(n: int) -> str:
+    parts = []
+    if n >= 100:
+        parts.append(f"{_ONES[n // 100]} Hundred")
+        n %= 100
+    if n >= 20:
+        parts.append(_TENS[n // 10] + (f" {_ONES[n % 10]}" if n % 10 else ""))
+    elif n:
+        parts.append(_ONES[n])
+    return " ".join(parts)
+
+
+def rupees_in_words(paise) -> str:
+    """Whole rupees in Indian-system words: "Rupees Twelve Thousand Five Hundred Only"."""
+    n = whole_rupees(paise)
+    if n <= 0:
+        return "Rupees Zero Only"
+    parts = []
+    for size, label in ((10_000_000, "Crore"), (100_000, "Lakh"), (1_000, "Thousand")):
+        if n >= size:
+            parts.append(f"{_words_below_1000(n // size) if n // size < 1000 else rupees_in_words((n // size) * 100)[7:-5]} {label}")
+            n %= size
+    if n:
+        parts.append(_words_below_1000(n))
+    return f"Rupees {' '.join(parts)} Only"
+
+
+def fmt_receipt_datetime(value) -> str:
+    """A timestamp as "04 Oct 2026, 2:08 PM" for printed documents."""
+    parsed = parse_datetime(value)
+    if not parsed:
+        return str(value or "")
+    return parsed.strftime("%d %b %Y, ") + parsed.strftime("%I:%M %p").lstrip("0")
+
+
 def fmt_datetime_human(value) -> str:
-    """A timestamp as "09 Sep 2026, 12:10 pm" for display, or ""."""
+    """A timestamp as "29 Sep, 12:03" (year added when not this year)."""
     parsed = parse_datetime(value)
     if not parsed:
         return ""
-    return parsed.strftime("%d %b %Y, %I:%M %p").replace(" 0", " ", 1).replace("AM", "am").replace("PM", "pm")
+    clock = parsed.strftime("%H:%M")
+    if parsed.year == date.today().year:
+        return f"{parsed.day} {parsed.strftime('%b')}, {clock}"
+    return f"{parsed.day} {parsed.strftime('%b %Y')}, {clock}"
+
+
+def fmt_relative(value) -> str:
+    """Relative time such as 'just now', '12 min ago', '3 days ago'."""
+    parsed = parse_datetime(value)
+    if not parsed:
+        return ""
+    secs = int((datetime.now() - parsed).total_seconds())
+    future = secs < 0
+    secs = abs(secs)
+    if secs < 45:
+        return "in a moment" if future else "just now"
+    if secs < 3600:
+        n = max(1, secs // 60)
+        unit = "min"
+        text = f"{n} {unit}"
+    elif secs < 86400:
+        n = secs // 3600
+        unit = "hour" if n == 1 else "hours"
+        text = f"{n} {unit}"
+    else:
+        n = secs // 86400
+        if n >= 30:
+            return fmt_datetime_human(parsed)
+        unit = "day" if n == 1 else "days"
+        text = f"{n} {unit}"
+    return f"in {text}" if future else f"{text} ago"
 
 
 def fmt_date(value: date | str | None) -> str:
@@ -222,8 +307,28 @@ def fmt_date(value: date | str | None) -> str:
 
 
 def fmt_date_display(value: date | str | None) -> str:
+    """User-facing calendar date: 9 Apr 2025."""
     parsed = parse_date(value) if not isinstance(value, date) else value
-    return parsed.strftime("%d %b %Y") if parsed else "—"
+    if not parsed:
+        return "—"
+    return f"{parsed.day} {parsed.strftime('%b %Y')}"
+
+
+def fmt_date_input(value: date | str | None) -> str:
+    """Value for expiry/date text fields (empty when unknown)."""
+    parsed = parse_date(value) if not isinstance(value, date) else value
+    return parsed.strftime(DATE_DISPLAY_FMT) if parsed else ""
+
+
+def normalise_expiry_input(value: str) -> tuple[str, str | None]:
+    """Parse a form expiry field; store ISO in DB. Returns (stored, error)."""
+    raw = (value or "").strip()
+    if not raw:
+        return "", None
+    parsed = parse_date(raw)
+    if not parsed:
+        return raw, f"Expiry must be DD-MM-YY (you entered {raw!r})."
+    return fmt_date(parsed), None
 
 
 def today() -> date:

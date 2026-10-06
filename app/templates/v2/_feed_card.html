@@ -1,95 +1,90 @@
-{% from "v2/_icons.html" import icon_walk, icon_car %}
-{% macro feed_card(item, provider_labels, can) %}
+{% from "_provider_tags.html" import provider_connection_tags %}
+{% from "_customer_area.html" import customer_area_cell %}
+{% from "_whatsapp_menu.html" import whatsapp_menu %}
+{% from "_customer_feed_actions.html" import customer_feed_actions %}
+{% from "_phone_cell.html" import phone_cell %}
+{% from "_railtel_dealer_tags.html" import railtel_dealer_tags %}
+{% macro feed_card(item, provider_labels, can, areas=[], next_url="", only_provider=none) %}
 {% set due = (item.total_paise or 0) - (item.paid_paise or 0) if item.total_paise is defined and item.paid_paise is defined else (item.outstanding_paise or item.package_price_paise or item.amount_paise or 0) %}
 {% if due < 0 %}{% set due = item.outstanding_paise or item.package_price_paise or item.amount_paise or 0 %}{% endif %}
 {% set name = item.customer_name or item.name %}
 {% set initials = (name or "?")[:1]|upper %}
-{% set area = item.sub_area or item.area or "No area" %}
 {% set provider = item.provider or (item.providers or "").split(",")[0]|trim %}
-{% set expiry = item.next_expiry or item.expiry_date %}
+{% set expiry = item.effective_expiry or item.next_expiry %}
 {% set left = expiry|days_until if expiry else none %}
+{% set has_terminated_stb = item.hathway_conns and ':terminated' in (item.hathway_conns|lower) %}
 {% set cid = item.customer_id or item.id %}
-<article class="v2-card">
+{% set phone = item.phone or "" %}
+{% set card_tone = '' %}
+{% if has_terminated_stb %}
+  {% set card_tone = 'v2-card-terminated' %}
+{% elif left is not none and left < 0 %}
+  {% set card_tone = 'v2-card-expired' %}
+{% elif left is not none and left <= 7 %}
+  {% set card_tone = 'v2-card-expiring' %}
+{% elif due > 0 %}
+  {% set card_tone = 'v2-card-due' %}
+{% endif %}
+<article class="v2-card v2-card-customer{% if card_tone %} {{ card_tone }}{% endif %}">
   <div class="v2-card-top">
-    <div class="v2-avatar" aria-hidden="true">{{ initials }}</div>
+    <div class="v2-avatar{% if has_terminated_stb %} v2-avatar-bad{% elif left is not none and left < 0 %} v2-avatar-warn{% elif left is not none and left <= 7 %} v2-avatar-amber{% endif %}" aria-hidden="true">{{ initials }}</div>
     <div class="v2-card-info">
-      <h3 class="v2-card-name">{{ name }}</h3>
-      <div class="v2-card-meta">
-        <span class="v2-verified">
-          {{ area }}
-          {% if item.active_count or item.followup_kind or provider %}
-          <span class="check" title="Active">✓</span>
-          {% endif %}
-        </span>
-        {% if provider %}
-        <span>· {{ provider_labels.get(provider, provider) }}</span>
-        {% elif item.providers %}
-        <span>· {{ provider_labels.get(item.providers.split(',')[0]|trim, item.providers.split(',')[0]|trim) }}</span>
-        {% endif %}
-      </div>
+      <h3 class="v2-card-name"><a href="/customers/{{ cid }}">{{ name }}</a></h3>
+      {% if not only_provider or only_provider == 'railtel' %}
+      {{ railtel_dealer_tags(item.railtel_dealers, compact=true) }}
+      {% endif %}
     </div>
-    <div class="v2-card-timing">
+    <div class="v2-card-timing{% if has_terminated_stb %} v2-card-timing-bad{% elif left is not none and left < 0 %} v2-card-timing-warn{% elif left is not none and left <= 7 %} v2-card-timing-amber{% endif %}">
       {% if item.followup_kind == 'manual' %}
-      <div>Added for <strong>follow-up</strong></div>
+      <div class="v2-timing-pill v2-timing-pill-warn">Follow-up</div>
+      {% elif has_terminated_stb %}
+      <div class="v2-timing-pill v2-timing-pill-bad">STB terminated</div>
       {% elif left is not none and left < 0 %}
-      <div><strong>{{ -left }}d late</strong></div>
-      <div>Expired {{ expiry|nice_date }}</div>
+      <div class="v2-timing-pill v2-timing-pill-warn">{{ -left }} day{{ 's' if -left != 1 else '' }} late</div>
+      <div>{{ expiry|nice_date }}</div>
+      {% elif left is not none and left == 0 %}
+      <div class="v2-timing-pill v2-timing-pill-amber">today</div>
+      <div>{{ expiry|nice_date }}</div>
+      {% elif left is not none and left == 1 %}
+      <div class="v2-timing-pill v2-timing-pill-amber">in 1 day</div>
+      <div>{{ expiry|nice_date }}</div>
       {% elif left is not none %}
-      <div>Due in <strong>{{ left }}d</strong></div>
+      <div class="v2-timing-pill{% if left <= 7 %} v2-timing-pill-amber{% endif %}">in {{ left }} days</div>
       <div>{{ expiry|nice_date }}</div>
       {% else %}
-      <div>Collect <strong>today</strong></div>
+      <div class="v2-timing-pill v2-timing-pill-amber">Due today</div>
       {% endif %}
     </div>
   </div>
 
-  <div class="v2-journey">
-    <div class="v2-leg">
-      <div class="v2-leg-dist">Office</div>
-      <div class="v2-leg-icon">{{ icon_walk() }}</div>
-      <div class="v2-leg-label">Start</div>
+  <div class="v2-facts">
+    <div class="v2-fact">
+      <div class="v2-fact-label">Phone</div>
+      <div class="v2-fact-value">
+        {{ phone_cell(phone, item.whatsapp_status, compact=true) }}
+      </div>
     </div>
-    <div class="v2-dash"></div>
-    <div class="v2-leg">
-      <div class="v2-leg-dist">Drive</div>
-      <div class="v2-leg-icon">{{ icon_car() }}</div>
-      <div class="v2-leg-label">{{ area|truncate(12, True) }}</div>
+    <div class="v2-fact">
+      <div class="v2-fact-label">Area</div>
+      <div class="v2-fact-value">
+        {{ customer_area_cell(item, areas, can, next_url) }}
+      </div>
     </div>
-    <div class="v2-dash"></div>
-    <div class="v2-leg">
-      <div class="v2-leg-dist">House</div>
-      <div class="v2-leg-icon">{{ icon_walk() }}</div>
-      <div class="v2-leg-label">
-        {% if item.lat and item.lng %}On map{% else %}No pin{% endif %}
+    <div class="v2-fact">
+      <div class="v2-fact-label">Connections</div>
+      <div class="v2-fact-value">
+        {{ provider_connection_tags(item, provider_labels, compact=true, next_url=next_url, allow_check=can('portal_actions'), only_provider=only_provider) }}
       </div>
     </div>
   </div>
 
-  <div class="v2-card-foot">
-    <div class="v2-price">
-      {% if item.package_price_paise and due > 0 and item.package_price_paise < due %}
-      <span class="v2-price-old">₹{{ item.package_price_paise|rupees }}</span>
-      <span class="v2-price-trend">↗</span>
-      {% endif %}
-      <span class="v2-price-new">₹{{ due|rupees }}</span>
-      <a class="v2-info-btn" href="/customers/{{ cid }}" title="Customer details">i</a>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      {% if item.followup_kind and item.followup_kind != 'manual' %}
-        {% set wa = whatsapp_renew_followup_url(name, item.phone, provider, item.providers) %}
-        {% if wa %}
-        <a class="v2-cta wa" href="{{ wa }}" target="_blank" rel="noopener">WhatsApp</a>
-        {% endif %}
-      {% elif left is not none and left < 0 %}
-        {% set wa = whatsapp_expired_url(name, item.phone, provider or item.providers) %}
-        {% if wa %}
-        <a class="v2-cta wa" href="{{ wa }}" target="_blank" rel="noopener">WhatsApp</a>
-        {% endif %}
-      {% endif %}
-      {% if can('payments') %}
-      <a class="v2-cta" href="/customers/{{ cid }}#collect">Collect</a>
-      {% else %}
-      <a class="v2-cta" href="/customers/{{ cid }}">Open</a>
+  <div class="v2-card-foot{% if can('payments') or can('portal_actions') %} v2-card-foot--actions{% endif %}">
+    <div class="v2-action-bar">
+      <span class="v2-action v2-action-amt{% if due > 0 %} is-due{% endif %}"{% if item.package_price_paise and due > 0 and item.package_price_paise < due %} title="Package ₹{{ item.package_price_paise|rupees }}"{% endif %}>₹{{ due|rupees }}</span>
+      <a class="v2-action v2-action-icon" href="/customers/{{ cid }}" title="Customer details" aria-label="Customer details">i</a>
+      {{ customer_feed_actions(item, cid, can, next_url, only_provider) }}
+      {% if can('customer_whatsapp') %}
+      {{ whatsapp_menu(name, item.phone, provider, item.providers, compact=true, customer_id=cid) }}
       {% endif %}
     </div>
   </div>

@@ -9,7 +9,7 @@
     <div class="subtle">{{ provider_labels.get(job.provider, job.provider) }} ·
       {% if job.customer_id %}
         <a href="/customers/{{ job.customer_id }}">{{ job.customer_name }}</a>
-      {% else %}dealer account (not tied to a customer){% endif %}</div>
+      {% else %}<span class="badge">Dealer account</span> (not tied to a customer){% endif %}</div>
   </div>
   <div class="spacer"></div>
   <a class="btn btn-small" href="/jobs">← All jobs</a>
@@ -34,13 +34,25 @@
     <dt>Provider id</dt><dd class="mono">{{ job.upstream_id or "—" }}</dd>
     <dt>Attempts</dt><dd>{{ job.attempts }} of {{ job.max_attempts }}</dd>
     <dt>Requested by</dt><dd>{{ job.requested_by or "—" }}</dd>
-    <dt>Created</dt><dd>{{ job.created_at }}</dd>
-    <dt>Scheduled for</dt><dd>{{ job.scheduled_for or "—" }}</dd>
-    <dt>Started</dt><dd>{{ job.started_at or "—" }}</dd>
-    <dt>Finished</dt><dd>{{ job.completed_at or "—" }}</dd>
+    <dt>Created</dt><dd>{{ job.created_at|nice_datetime }}</dd>
+    <dt>Scheduled for</dt><dd>{{ job.scheduled_for|nice_datetime or "—" }}</dd>
+    <dt>Started</dt><dd>{{ job.started_at|nice_datetime or "—" }}</dd>
+    <dt>Finished</dt><dd>{{ job.completed_at|nice_datetime or "—" }}</dd>
     {% if job.bill_id %}<dt>Bill</dt><dd><a href="/bills">bill #{{ job.bill_id }}</a></dd>{% endif %}
     {% if job.payment_id %}<dt>Payment</dt><dd>payment #{{ job.payment_id }}</dd>{% endif %}
-    {% if job.error %}<dt>Error</dt><dd style="color:var(--bad)">{{ job.error }}</dd>{% endif %}
+    {% if job.error %}<dt>Error</dt><dd style="color:var(--bad)" title="{{ job.error }}">{{ job.error|plain_error }}</dd>{% endif %}
+    {% set portal_msg = job.result_json|job_result_message %}
+    {% if portal_msg %}
+    <dt>Portal reply</dt>
+    <dd>
+      {% if job.action == 'status' and 'active' in portal_msg|lower %}
+        <span class="badge badge-ok">Online</span>
+      {% elif job.action == 'status' and 'down' in portal_msg|lower %}
+        <span class="badge badge-bad">Offline</span>
+      {% endif %}
+      {{ portal_msg }}
+    </dd>
+    {% endif %}
   </dl>
 
   <div class="form-row" style="margin-top:16px">

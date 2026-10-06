@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% set active = "settlements" %}
+{% set r = report %}
+{% set c = r.collection if r.collection else none %}
+{% block title %}Settlement #{{ r.id }} · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ r.agent_name }}
+      <span class="badge">{{ r.agent_username }}</span>
+    </h1>
+    <div class="subtle">
+      {{ r.period_from|nice_date }} – {{ r.period_to|nice_date }}
+      · settled {{ r.settled_on|nice_date }}
+      {% if r.owner_upi_vpa %} · UPI {{ r.owner_upi_vpa }}{% endif %}
+    </div>
+  </div>
+  <div class="spacer"></div>
+  {% if can_edit %}
+  <a class="btn" href="/settlements/{{ r.id }}/edit">Edit</a>
+  <form class="inline-form" method="post" action="/settlements/{{ r.id }}/delete"
+        onsubmit="return confirm('Delete this settlement report? All its lines and photos are removed.');">
+    <button class="btn btn-danger" type="submit">Delete</button>
+  </form>
+  {% endif %}
+  <a class="btn" href="/settlements">← All settlements</a>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">Cable</div>
+    <div class="value">₹{{ (c.cable.total_paise if c else r.cable_cash_paise)|rupees }}</div>
+    <div class="hint">Agent holds ₹{{ (c.cable.agent_paise if c else r.cable_cash_paise)|rupees }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">Internet</div>
+    <div class="value">₹{{ (c.internet.total_paise if c else r.internet_paise)|rupees }}</div>
+    <div class="hint">Agent holds ₹{{ (c.internet.agent_paise if c else r.internet_paise)|rupees }}</div>
+  </div>
+  <div class="stat good">
+    <div class="label">{% if viewer_is_owner %}Already with you{% else %}Already with {{ owner_name }}{% endif %}</div>
+    <div class="value">₹{{ (c.owner_held_paise if c else r.settled_paise)|rupees }}</div>
+    <div class="hint">{% if viewer_is_owner %}Your UPI ₹{{ (c.owner_upi_paise if c else r.owner_upi_paise)|rupees }} · scanner ₹{{ (c.owner_scanner_paise if c else r.owner_scanner_paise)|rupees }}{% else %}UPI to {{ owner_name }} ₹{{ (c.owner_upi_paise if c else r.owner_upi_paise)|rupees }} · scanner ₹{{ (c.owner_scanner_paise if c else r.owner_scanner_paise)|rupees }}{% endif %}</div>
+  </div>
+  <div class="stat {% if r.balance_paise > 0 %}warn{% elif r.balance_paise < 0 %}good{% endif %}">
+    <div class="label">{% if r.balance_paise < 0 %}{% if viewer_is_owner %}You owe this agent{% else %}{{ owner_name }} owes you{% endif %}{% else %}{% if viewer_is_owner %}They should settle with you{% else %}You should settle with {{ owner_name }}{% endif %}{% endif %}</div>
+    <div class="value">₹{{ r.balance_paise|abs|rupees }}</div>
+    <div class="hint">Held by agent ₹{{ r.agent_held_paise|rupees }} − expenses ₹{{ r.expenses_paise|rupees }} − handed over ₹{{ (r.handed_paise or 0)|rupees }}</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><h2>Collections</h2></div>
+    {% if c and c.payments %}
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>When</th><th>Customer</th><th>Mode</th><th class="num">Amount</th><th>Held by</th></tr></thead>
+      <tbody>
+      {% for p in c.payments %}
+        <tr>
+          <td>{{ p.paid_at }}</td>
+          <td><a href="/customers/{{ p.customer_id }}">{{ p.customer_name }}</a></td>
+          <td>{{ payment_mode_labels.get(p.mode, p.mode) }}</td>
+          <td class="num">₹{{ p.amount_paise|rupees }}</td>
+          <td>{% if p.owner_held %}{% if viewer_is_owner %}You{% else %}{{ owner_name }}{% endif %}{% else %}{% if viewer_is_owner %}Agent{% else %}You{% endif %}{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="subtle">No recorded collections for this period.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Expenses</h2></div>
+    {% if r.expense_lines %}
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Type</th><th>Date</th><th>Comments</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+      {% for line in r.expense_lines %}
+        <tr>
+          <td>{{ expense_labels.get(line.kind, line.kind) }}</td>
+          <td>{{ line.line_date|nice_date }}</td>
+          <td>{{ line.comment or "—" }}</td>
+          <td class="num">₹{{ line.amount_paise|rupees }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="subtle">No expenses on this report.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if r.customer_cash_lines %}
+<div class="card">
+  <div class="card-head"><h2>Cash collected from customers</h2>
+    <span class="badge">₹{{ (r.customer_cash_paise or 0)|rupees }}</span>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Date</th><th>Customer</th><th>Area</th><th>Provider</th><th class="num">Cash</th></tr></thead>
+    <tbody>
+    {% for line in r.customer_cash_lines %}
+      <tr>
+        <td>{{ (line.line_date or r.settled_on)|nice_date }}</td>
+        <td>{{ line.customer_name }}</td>
+        <td>{{ line.area or "—" }}</td>
+        <td>{{ line.provider_label or line.provider or "—" }}</td>
+        <td class="num">₹{{ line.amount_paise|rupees }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+{% if r.handover_lines %}
+<div class="card">
+  <div class="card-head"><h2>Handovers</h2></div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Date</th><th>Type</th><th>Handed to</th><th class="num">Amount</th></tr></thead>
+    <tbody>
+    {% for line in r.handover_lines %}
+      <tr>
+        <td>{{ (line.line_date or r.settled_on)|nice_date }}</td>
+        <td>{% if line.is_upi %}UPI{% else %}Cash{% endif %}</td>
+        <td>
+          {{ line.handed_to or "—" }}
+          {% if line.vpa %}<div class="subtle">{{ line.vpa }}</div>{% endif %}
+        </td>
+        <td class="num">₹{{ line.amount_paise|rupees }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3">Total handed over</td>
+        <td class="num">₹{{ (r.handed_paise or 0)|rupees }}</td>
+      </tr>
+    </tfoot>
+  </table>
+  </div>
+  {% set upi_shots = (r.proofs | selectattr('kind', 'equalto', 'upi_handover') | list) if r.proofs else [] %}
+  {% if upi_shots %}
+  <div class="settle-proofs" style="margin-top:12px">
+    {% for p in upi_shots %}
+    <div class="settle-proof">
+      <a href="/settlements/{{ r.id }}/proofs/{{ p.id }}" target="_blank" rel="noopener">
+        <img src="/settlements/{{ r.id }}/proofs/{{ p.id }}" alt="{{ p.caption or p.original_name }}">
+      </a>
+      <div class="settle-proof-cap">
+        <strong>UPI handover</strong>
+        {% if p.caption %}<div>{{ p.caption }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if r.notes %}
+<div class="card">
+  <div class="card-head"><h2>Notes</h2></div>
+  <p style="white-space:pre-wrap;margin:0">{{ r.notes }}</p>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-head"><h2>Proof photos</h2>
+    {% if r.proofs %}<span class="badge">{{ r.proofs|length }}</span>{% endif %}
+  </div>
+  {% if r.proofs %}
+  <div class="settle-proofs">
+    {% for p in r.proofs %}
+    <div class="settle-proof">
+      <a href="/settlements/{{ r.id }}/proofs/{{ p.id }}" target="_blank" rel="noopener">
+        <img src="/settlements/{{ r.id }}/proofs/{{ p.id }}" alt="{{ p.caption or p.original_name }}">
+      </a>
+      <div class="settle-proof-cap">
+        <strong>{{ proof_labels.get(p.kind, p.kind) }}</strong>
+        {% if p.caption %}<div>{{ p.caption }}</div>{% endif %}
+        <div class="subtle">{{ p.created_at }}</div>
+      </div>
+      {% if can_edit %}
+      <form method="post" action="/settlements/{{ r.id }}/proofs/{{ p.id }}/delete"
+            onsubmit="return confirm('Remove this proof photo?');">
+        <button class="btn btn-small btn-danger" type="submit">Remove</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="subtle">No proof photos yet. Attach a UPI handover screenshot above, or other pictures below.</p>
+  {% endif %}
+  {% if can_edit %}
+  <form method="post" action="/settlements/{{ r.id }}/proofs" enctype="multipart/form-data" style="margin-top:14px">
+    <div class="settle-line settle-line-proof">
+      <div class="field">
+        <label>What this shows</label>
+        <select name="proof_kind">
+          {% for key, label in proof_kinds %}
+          <option value="{{ key }}" {% if key == 'upi_handover' %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Caption</label>
+        <input type="text" name="proof_caption" placeholder="e.g. 20 Sep PhonePe">
+      </div>
+      <div class="field">
+        <label>Photo</label>
+        <label class="settle-file">
+          <input type="file" name="proof_file" accept="image/*" multiple>
+          <span class="settle-file-btn">Choose photo</span>
+          <span class="settle-file-name" data-empty="No photo selected">No photo selected</span>
+        </label>
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Attach photos</button>
+  </form>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  document.querySelectorAll(".settle-file input[type=file]").forEach(function (input) {
+    input.addEventListener("change", function () {
+      var box = input.closest(".settle-file");
+      var name = box && box.querySelector(".settle-file-name");
+      if (!name) return;
+      var files = input.files;
+      if (!files || !files.length) name.textContent = name.getAttribute("data-empty") || "No photo selected";
+      else if (files.length === 1) name.textContent = files[0].name;
+      else name.textContent = files.length + " photos";
+    });
+  });
+})();
+</script>
+{% endblock %}

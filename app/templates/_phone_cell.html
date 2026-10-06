@@ -1,0 +1,22 @@
+{% macro phone_cell(phone, whatsapp_status='', compact=false) %}
+{% set digits = (phone or "")|replace(" ","")|replace("-","")|replace("(", "")|replace(")", "") %}
+{% set tel_href = "tel:+" ~ digits if digits.startswith("91") and digits|length == 12 else ("tel:+91" ~ digits if digits|length == 10 else ("tel:" ~ digits if digits else "")) %}
+{% set wa = (whatsapp_status or "")|lower %}
+{% if phone and tel_href %}
+<span class="phone-cell{% if compact %} phone-cell-compact{% endif %}">
+  <a class="v2-tel{% if wa == 'no' %} v2-tel-no-wa{% elif wa == 'yes' %} v2-tel-wa{% endif %}" href="{{ tel_href }}">{{ phone }}</a>
+  {% if wa == 'no' %}
+  <span class="wa-phone-badge wa-phone-badge-no" title="Checked — not registered on WhatsApp">No WA</span>
+  {% elif wa == 'yes' %}
+  <span class="wa-phone-badge wa-phone-badge-yes" title="Checked — on WhatsApp">WA</span>
+  {% endif %}
+</span>
+{% elif phone %}
+<span class="phone-cell{% if compact %} phone-cell-compact{% endif %}">
+  <span class="v2-muted">{{ phone }}</span>
+  {% if wa == 'no' %}<span class="wa-phone-badge wa-phone-badge-no">No WA</span>{% endif %}
+</span>
+{% else %}
+<span class="v2-muted">—</span>
+{% endif %}
+{% endmacro %}

@@ -7,9 +7,14 @@
 
 {% macro late_badge(left, base_path, list_qs) %}
   {% if left is not none and left < 0 %}
-    <a href="{{ base_path }}{% if list_qs %}?{{ list_qs }}&{% else %}?{% endif %}sort=late&late_days={{ -left }}"
-       class="badge badge-bad badge-link" title="Show all {{ -left }}d late on top">{{ -left }}d late</a>
+    {% set late = -left %}
+    <a href="{{ base_path }}{% if list_qs %}?{{ list_qs }}&{% else %}?{% endif %}sort=late&late_days={{ late }}"
+       class="badge badge-bad badge-link" title="Show all {{ late }} day{{ 's' if late != 1 else '' }} late on top">{{ late }} day{{ 's' if late != 1 else '' }} late</a>
+  {% elif left is not none and left == 0 %}
+    <span class="badge badge-warn">today</span>
+  {% elif left is not none and left == 1 %}
+    <span class="badge badge-warn">in 1 day</span>
   {% elif left is not none and left <= 7 %}
-    <span class="badge badge-warn">in {{ left }}d</span>
+    <span class="badge badge-warn">in {{ left }} days</span>
   {% endif %}
 {% endmacro %}

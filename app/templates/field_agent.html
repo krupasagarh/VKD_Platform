@@ -11,16 +11,21 @@
       {% if a.role == 'admin' %}<span class="badge">admin</span>
       {% else %}<span class="badge">collector</span>{% endif %}
     </h1>
+    {% if everyone %}
     <div class="subtle">
-      {% if a.last_at %}Last seen {{ a.last_at }}
+      {% if a.field_duty_on %}Field login {{ a.field_duty_at }}
+      {% elif a.last_at %}Last seen {{ a.last_at }}
         {% if a.last_source %} · {{ source_labels.get(a.last_source, a.last_source) }}{% endif %}
-      {% else %}No location yet{% endif %}
+      {% else %}No field login yet today{% endif %}
     </div>
+    {% endif %}
   </div>
   <div class="spacer"></div>
-  {% if a.maps_dir %}
+  {% if everyone and a.maps_dir %}
   <a class="btn btn-primary" href="{{ a.maps_dir }}" target="_blank" rel="noopener">Open in Google Maps</a>
   {% endif %}
+  <a class="btn" href="/settlements/new?agent_id={{ a.id }}">+ Settlement</a>
+  <a class="btn" href="/settlements?agent_id={{ a.id }}&from={{ day }}&to={{ day }}">Settlements</a>
   <a class="btn" href="/field?day={{ day }}">← All agents</a>
 </div>
 
@@ -43,6 +48,11 @@
     <div class="value">₹{{ a.month_paise|rupees }}</div>
     <div class="hint">{{ a.month_count }} payment{{ "s" if a.month_count != 1 else "" }}</div>
   </div>
+  <div class="stat {% if a.followup_count %}warn{% endif %}">
+    <div class="label">Follow-up</div>
+    <div class="value">{{ a.followup_count }}</div>
+    <div class="hint">₹{{ a.followup_due_paise|rupees }} due · collect later</div>
+  </div>
   <div class="stat">
     <div class="label">Complaints fixed</div>
     <div class="value">{{ a.complaints_fixed }}</div>
@@ -51,26 +61,11 @@
 </div>
 
 {% if is_self %}
-<div class="card">
-  <div class="card-head"><h2>Share my location</h2></div>
-  <p class="subtle" style="margin-top:0">
-    Allow GPS on this phone, or paste a pin if the browser blocks location on http.
-  </p>
-  <form id="share-geo" method="post" action="/field/{{ a.id }}/location">
-    <input type="hidden" name="lat" value="">
-    <input type="hidden" name="lng" value="">
-    <input type="hidden" name="accuracy" value="">
-    <div class="form-grid">
-      <div class="field" style="min-width:260px">
-        <label>Or paste coordinates / Maps link</label>
-        <input type="text" name="paste" placeholder="13.2612, 76.4784 or a Google Maps link">
-      </div>
-    </div>
-    <div class="form-row">
-      <button class="btn btn-primary" type="button" onclick="vkShareGps('share-geo')">Use current GPS</button>
-      <button class="btn" type="submit">Save pasted location</button>
-    </div>
-  </form>
+<div class="card field-duty-card {% if field_duty_on %}is-on{% endif %}">
+  <div class="field-duty-row">
+    <h2 style="margin:0">Field login</h2>
+    {% include "_field_duty_toggle.html" %}
+  </div>
 </div>
 {% endif %}
 
@@ -93,7 +88,7 @@
         <td>{{ p.mode }}</td>
         <td class="num">₹{{ p.amount_paise|rupees }}</td>
         <td>
-          {% if p.customer_lat and p.customer_lng %}
+          {% if everyone and p.customer_lat and p.customer_lng %}
           <a class="btn btn-small" target="_blank" rel="noopener"
              href="https://www.google.com/maps/dir/?api=1&destination={{ p.customer_lat }},{{ p.customer_lng }}">House</a>
           {% endif %}
@@ -140,6 +135,7 @@
   {% endif %}
 </div>
 
+{% if everyone %}
 <div class="card">
   <div class="card-head"><h2>Location trail</h2></div>
   {% if detail.trail %}
@@ -164,7 +160,8 @@
   </table>
   </div>
   {% else %}
-  <div class="empty">No GPS points yet. Collect, fix a complaint, or share a location.</div>
+  <div class="empty">No GPS points yet. Collect or fix a complaint after Field login.</div>
   {% endif %}
 </div>
+{% endif %}
 {% endblock %}

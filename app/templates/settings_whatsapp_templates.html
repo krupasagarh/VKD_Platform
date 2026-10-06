@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% set active = "settings" %}
+{% block title %}WhatsApp templates · VK Platform{% endblock %}
+
+{% block content %}
+<style>
+  .wat-intro { margin-bottom: 14px; }
+  .wat-group-title { margin: 22px 0 10px; font-size: 15px; font-weight: 700; }
+  .wat-card { margin-bottom: 14px; scroll-margin-top: 80px; }
+  .wat-head { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .wat-head h2 { margin: 0; font-size: 15px; }
+  .wat-used { font-size: 12.5px; margin-top: 2px; }
+  .wat-badge {
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    background: #fff4e5; color: #b45309; border: 1px solid #f5d0a0; white-space: nowrap; margin-left: auto;
+  }
+  .wat-badge.default { background: #eef6ee; color: #2f7a35; border-color: #cfe6d0; }
+  .wat-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 12px; }
+  .wat-body textarea {
+    width: 100%; min-height: 150px; font: 13px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace;
+    resize: vertical;
+  }
+  .wat-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .wat-chip {
+    font: 12px ui-monospace, Consolas, monospace; padding: 3px 8px; border-radius: 6px;
+    border: 1px solid var(--border, #d6d9de); background: var(--panel-2, #f6f7f9); cursor: pointer; color: inherit;
+  }
+  .wat-chip:hover { border-color: #25d366; }
+  .wat-preview-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .7; margin-bottom: 6px; }
+  .wat-bubble {
+    background: #dcf8c6; color: #111; border-radius: 10px 10px 2px 10px; padding: 10px 12px;
+    white-space: pre-wrap; font-size: 13.5px; line-height: 1.45; box-shadow: 0 1px 1px rgba(0,0,0,.12);
+    word-break: break-word;
+  }
+  .wat-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+  .wat-legend { font-size: 12px; margin-top: 8px; }
+  .wat-legend code { font-size: 11.5px; }
+  .wat-savebar {
+    position: sticky; bottom: 0; z-index: 5; display: flex; gap: 10px; align-items: center;
+    padding: 12px 14px; margin-top: 8px; border-radius: 10px;
+    background: var(--panel, #fff); border: 1px solid var(--border, #d6d9de); box-shadow: 0 -2px 12px rgba(0,0,0,.08);
+  }
+  @media (max-width: 820px) { .wat-body { grid-template-columns: 1fr; } }
+</style>
+
+<div class="page-head">
+  <div>
+    <h1>WhatsApp templates</h1>
+    <div class="subtle">
+      The wording of every WhatsApp message the platform sends — office auto-send and the
+      “Edit in WhatsApp first” links use the same text.
+    </div>
+  </div>
+</div>
+
+{% include "_settings_tabs.html" %}
+
+<div class="card wat-intro">
+  <div class="subtle">
+    Words in curly brackets such as <code>{name}</code> are filled in for each customer — click a
+    chip under the box to insert one. If a line's placeholder has nothing to show for that message
+    (for example <code>{renew_line}</code> when no renewal was queued), the whole line is left out.
+    Clear a box or press “Restore default” to go back to the original wording.
+  </div>
+</div>
+
+<form method="post" action="/settings/whatsapp-templates" id="wat-form">
+  {% for group in groups %}
+  <div class="wat-group-title">{{ group.label }}</div>
+  {% for t in group.templates %}
+  <div class="card wat-card" id="tpl-{{ t.key }}">
+    <div class="wat-head">
+      <div>
+        <h2>{{ t.label }}</h2>
+        <div class="subtle wat-used">{{ t.used_for }}</div>
+      </div>
+      <div class="spacer"></div>
+      {% if t.customised %}
+      <span class="wat-badge">Edited</span>
+      {% else %}
+      <span class="wat-badge default">Default</span>
+      {% endif %}
+    </div>
+
+    <div class="wat-body">
+      <div>
+        <textarea name="tpl__{{ t.key }}" data-key="{{ t.key }}"
+                  rows="{{ [t.text.count('\n') + 2, 6]|max }}" spellcheck="true">{{ t.text }}</textarea>
+        <div class="wat-chips">
+          {% for ph in t.placeholders %}
+          <button type="button" class="wat-chip" data-insert="{{ '{' ~ ph ~ '}' }}"
+                  title="{{ t.placeholders[ph] }}">{{ '{' ~ ph ~ '}' }}</button>
+          {% endfor %}
+        </div>
+        <div class="subtle wat-legend">
+          {% for ph, desc in t.placeholders.items() %}
+          <div><code>{{ '{' ~ ph ~ '}' }}</code> — {{ desc }}</div>
+          {% endfor %}
+        </div>
+      </div>
+      <div>
+        <div class="wat-preview-label">Preview (sample customer)</div>
+        <div class="wat-bubble" data-preview="{{ t.key }}">{{ t.preview }}</div>
+        <div class="wat-actions">
+          {% if t.customised %}
+          <button class="btn btn-sm" type="submit" name="action" value="reset:{{ t.key }}"
+                  onclick="return confirm('Restore “{{ t.label }}” to the default text? Unsaved edits on this page will be lost.')">
+            Restore default
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% endfor %}
+
+  <div class="wat-savebar">
+    <button class="btn btn-primary" type="submit" name="action" value="save">Save templates</button>
+    <span class="subtle" id="wat-dirty" hidden>Unsaved changes</span>
+  </div>
+</form>
+
+<script>
+(function () {
+  const SAMPLE = {{ sample_values|tojson }};
+  const PH = /\{([a-z_]+)\}/g;
+
+  function render(text, allowed) {
+    const out = [];
+    for (const line of text.replace(/\r\n/g, "\n").split("\n")) {
+      const used = [...line.matchAll(PH)].map(m => m[1]).filter(p => allowed.includes(p));
+      if (used.some(p => !(SAMPLE[p] || "").trim())) continue;
+      out.push(line.replace(PH, (m, p) => allowed.includes(p) ? (SAMPLE[p] || "") : m));
+    }
+    const cleaned = [];
+    for (const line of out) {
+      if (!line.trim() && cleaned.length && !cleaned[cleaned.length - 1].trim()) continue;
+      cleaned.push(line);
+    }
+    return cleaned.join("\n").trim();
+  }
+
+  const dirty = document.getElementById("wat-dirty");
+  document.querySelectorAll("textarea[data-key]").forEach((ta) => {
+    const card = ta.closest(".wat-card");
+    const allowed = [...card.querySelectorAll(".wat-chip")].map(c => c.dataset.insert.slice(1, -1));
+    const bubble = card.querySelector("[data-preview]");
+    const update = () => { bubble.textContent = render(ta.value, allowed); };
+    ta.addEventListener("input", () => { update(); dirty.hidden = false; });
+    card.querySelectorAll(".wat-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const ins = chip.dataset.insert;
+        const s = ta.selectionStart ?? ta.value.length;
+        const e = ta.selectionEnd ?? ta.value.length;
+        ta.value = ta.value.slice(0, s) + ins + ta.value.slice(e);
+        ta.focus();
+        ta.selectionStart = ta.selectionEnd = s + ins.length;
+        update();
+        dirty.hidden = false;
+      });
+    });
+  });
+  document.getElementById("wat-form").addEventListener("submit", () => { window.onbeforeunload = null; });
+  window.onbeforeunload = () => (dirty.hidden ? undefined : "You have unsaved template changes.");
+})();
+</script>
+{% endblock %}

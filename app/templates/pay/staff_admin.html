@@ -1,0 +1,90 @@
+{% extends "pay/base.html" %}
+{% block title %}Customer pay QR · {{ operator }}{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js" defer></script>
+<script src="/static/pay.js?v=4" defer></script>
+{% endblock %}
+
+{% block content %}
+<section class="pay-staff-bar">
+  <a href="/v2/">← App home</a>
+  <a href="/">Dashboard</a>
+</section>
+
+<section class="pay-card pay-card-hero pay-entry-hero">
+  <div class="pay-hero-icon" aria-hidden="true">📋</div>
+  <h1>Customer pay QR</h1>
+  <p class="pay-lead">Shop sticker link and confirm customer payments.</p>
+</section>
+
+<section class="pay-card pay-pay-center">
+  <div class="pay-label" style="text-align:center;margin-bottom:12px">SHOP QR — PRINT OR SHOW</div>
+  <div class="pay-qr-frame">
+    <canvas id="shop-qr-canvas" aria-label="Shop pay link QR"></canvas>
+    <img id="shop-qr-fallback" class="pay-qr" src="{{ public_qr_url }}" alt="Shop QR" width="280" height="280" hidden>
+  </div>
+  <p class="pay-small pay-muted" style="word-break:break-all"><code>{{ public_url }}</code></p>
+  <div class="pay-copy-row">
+    <button type="button" class="pay-btn pay-btn-ghost" data-copy="{{ public_url }}">Copy link</button>
+    <a class="pay-btn pay-btn-ghost" href="{{ public_url }}" target="_blank" rel="noopener">Preview</a>
+  </div>
+  <p class="pay-hint" style="margin-top:12px">Customers scan → mobile or STB lookup → UPI / QR pay.</p>
+  {% if can('agents') %}
+  <p class="pay-hint"><a href="/settings/upi">UPI ID &amp; portal toggle</a> — Settings → Customer pay</p>
+  {% elif vpa %}
+  <p class="pay-small pay-muted">UPI: {{ vpa }}</p>
+  {% endif %}
+</section>
+
+<section class="pay-card">
+  <h2 class="pay-h2">Pending UPI confirm{% if intents %} ({{ intents|length }}){% endif %}</h2>
+  {% if not intents %}
+  <p class="pay-lead">No customer payments waiting.</p>
+  {% else %}
+  <ul class="pay-staff-intents">
+    {% for row in intents %}
+    <li class="pay-staff-intent">
+      <div class="pay-staff-intent-main">
+        <div class="pay-staff-intent-name">{{ row.customer_name }}</div>
+        <div class="pay-staff-intent-meta">
+          ₹{{ row.amount_paise|rupees }} · <code>{{ row.reference }}</code>
+        </div>
+        {% if row.connection_upstream_id %}
+        <div class="pay-small pay-muted">{{ row.connection_provider }} {{ row.connection_upstream_id }}</div>
+        {% endif %}
+        {% if row.status == 'customer_marked' %}
+        <span class="pay-badge-warn">Customer tapped I paid — check bank</span>
+        {% endif %}
+      </div>
+      <div class="pay-staff-intent-actions">
+        <form method="post" action="/pay/admin/intents/{{ row.id }}/confirm">
+          <input type="hidden" name="queue_renew" value="0">
+          <input type="hidden" name="next" value="/pay/admin">
+          <button type="submit" class="pay-btn pay-btn-secondary pay-btn-wide"
+                  onclick="return confirm('Record payment only if this UPI is in your bank. No renew.')">Record payment</button>
+        </form>
+        <form method="post" action="/pay/admin/intents/{{ row.id }}/confirm">
+          <input type="hidden" name="queue_renew" value="1">
+          <input type="hidden" name="next" value="/pay/admin">
+          <button type="submit" class="pay-btn pay-btn-primary pay-btn-wide"
+                  onclick="return confirm('Only if money is in your UPI. This records the payment and activates / renews.')">Record &amp; renew</button>
+        </form>
+        <form method="post" action="/pay/admin/intents/{{ row.id }}/cancel">
+          <input type="hidden" name="next" value="/pay/admin">
+          <button type="submit" class="pay-btn pay-btn-secondary pay-btn-wide">Dismiss</button>
+        </form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+
+<div id="shop-qr-root" hidden data-canvas="shop-qr-canvas" data-uri="{{ public_url }}" data-fallback="shop-qr-fallback"></div>
+{% endblock %}
+
+{% block footer %}
+<a href="/v2/pay-qr">Open in app menu view</a>
+ · <a href="/pay/admin?desktop=1">Desktop table</a>
+{% endblock %}

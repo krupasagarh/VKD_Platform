@@ -12,6 +12,8 @@
     </div>
   </div>
   <div class="spacer"></div>
+  <a class="btn btn-primary" href="/settlements/new">+ Settlement</a>
+  <a class="btn" href="/settlements{% if day %}?from={{ day }}&to={{ day }}{% endif %}">Settlements</a>
   <form class="filters" method="get" action="/field" style="margin:0">
     <div class="field">
       <label>Day</label>
@@ -23,7 +25,7 @@
 
 <div class="stats">
   <div class="stat good">
-    <div class="label">Collected this day</div>
+    <div class="label">{% if everyone %}Collected this day{% else %}Your collection today{% endif %}</div>
     <div class="value">₹{{ office.collected_paise|rupees }}</div>
     <div class="hint">{{ office.payments }} payment{{ "s" if office.payments != 1 else "" }}</div>
   </div>
@@ -33,34 +35,60 @@
     <div class="hint">{{ office.complaints_open }} still assigned</div>
   </div>
   <div class="stat {% if office.seen %}good{% endif %}">
-    <div class="label">Agents with a pin today</div>
+    <div class="label">Agents seen today</div>
     <div class="value">{{ office.seen }}</div>
     <div class="hint">GPS, house pin, collection or visit</div>
   </div>
 </div>
 
+{% if not everyone %}
+<div class="card field-duty-card {% if field_duty_on %}is-on{% endif %}">
+  <div class="field-duty-row">
+    <h2 style="margin:0">Field login</h2>
+    {% include "_field_duty_toggle.html" %}
+  </div>
+</div>
+{% else %}
 <p class="subtle">
-  On a phone, allow location so the office can see where the collector last was.
-  If GPS is blocked on this Wi‑Fi (plain http), save a house pin or paste a Maps link
-  on the agent page. Collections and complaint fixes still count even without GPS.
+  Collectors turn on Field login each day. You see login time, the live map, and
+  a trail of collection and complaint visits. They do not see that trail.
 </p>
+{% endif %}
+
+{% if everyone %}
+<div class="card field-map-card">
+  <div class="card-head">
+    <h2>Live map</h2>
+    <span class="subtle">Last GPS from each login</span>
+  </div>
+  {% if map_pins %}
+  <div id="field-map" class="field-map" data-pins="{{ map_pins|tojson|e }}"></div>
+  {% else %}
+  <div class="empty">No GPS pins yet today. Collectors must allow location in the browser after login.</div>
+  {% endif %}
+</div>
+{% endif %}
 
 {% if rows %}
   {% for a in rows %}
   <div class="card">
-    <div class="card-head">
+    <div class="card-head field-agent-head">
+      <div class="field-agent-title">
       <h2><a href="/field/{{ a.id }}?day={{ day }}">{{ a.name }}</a>
         <span class="badge">{{ a.username }}</span></h2>
       {% if a.role == 'admin' %}<span class="badge">admin</span>
       {% else %}<span class="badge">collector</span>{% endif %}
-      {% if a.seen_today %}<span class="badge badge-ok">seen today</span>
-      {% elif a.last_at %}<span class="badge badge-warn">last {{ a.last_at }}</span>
-      {% else %}<span class="badge">no GPS yet</span>{% endif %}
-      <div class="spacer"></div>
-      {% if a.maps_dir %}
-      <a class="btn btn-small btn-primary" href="{{ a.maps_dir }}" target="_blank" rel="noopener">Open in Maps</a>
+      {% if everyone and a.field_duty_on %}<span class="badge badge-ok">field login</span>
+      {% elif everyone and a.seen_today %}<span class="badge badge-ok">seen today</span>
+      {% elif everyone and a.last_at %}<span class="badge badge-warn">last {{ a.last_at }}</span>
+      {% endif %}
+      </div>
+      <div class="field-agent-actions">
+      {% if everyone and a.maps_view %}
+      <a class="btn btn-small" href="{{ a.maps_view }}" target="_blank" rel="noopener">Open in Maps</a>
       {% endif %}
       <a class="btn btn-small" href="/field/{{ a.id }}?day={{ day }}">Day sheet</a>
+      </div>
     </div>
     <div class="stats">
       <div class="stat good">
@@ -68,11 +96,17 @@
         <div class="value">₹{{ a.collected_paise|rupees }}</div>
         <div class="hint">{{ a.payment_count }} today · ₹{{ a.month_paise|rupees }} this month</div>
       </div>
+      <div class="stat {% if a.followup_count %}warn{% endif %}">
+        <div class="label">Follow-up</div>
+        <div class="value">{{ a.followup_count }}</div>
+        <div class="hint">₹{{ a.followup_due_paise|rupees }} due · collect later</div>
+      </div>
       <div class="stat">
         <div class="label">Complaints</div>
         <div class="value">{{ a.complaints_fixed }}</div>
         <div class="hint">fixed today · {{ a.complaints_open }} still with them</div>
       </div>
+      {% if everyone %}
       <div class="stat">
         <div class="label">Last location</div>
         <div class="value" style="font-size:16px">
@@ -80,15 +114,55 @@
           {% else %}—{% endif %}
         </div>
         <div class="hint">
-          {% if a.last_at %}{{ a.last_at }}{% endif %}
+          {% if a.field_duty_at %}Login {{ a.field_duty_at }}{% endif %}
+          {% if a.last_at %}<br>{{ a.last_at }}{% endif %}
           {% if a.last_source %} · {{ a.last_source }}{% endif %}
           {% if a.accuracy %} · ±{{ a.accuracy|int }} m{% endif %}
         </div>
       </div>
+      {% endif %}
     </div>
   </div>
   {% endfor %}
 {% else %}
 <div class="card"><div class="empty">No agents to show.</div></div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if everyone and map_pins %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  var el = document.getElementById("field-map");
+  if (!el || !window.L) return;
+  var pins = [];
+  try { pins = JSON.parse(el.getAttribute("data-pins") || "[]"); } catch (e) { pins = []; }
+  if (!pins.length) return;
+  var map = L.map(el);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
+  var bounds = [];
+  pins.forEach(function (p) {
+    var lat = Number(p.lat), lng = Number(p.lng);
+    if (!isFinite(lat) || !isFinite(lng)) return;
+    var color = p.in_app ? "#15803d" : "#ca8a04";
+    var marker = L.circleMarker([lat, lng], {
+      radius: 9, color: "#fff", weight: 2, fillColor: color, fillOpacity: 0.95
+    }).addTo(map);
+    marker.bindPopup(
+      "<strong>" + (p.name || "Agent") + "</strong><br>" +
+      (p.in_app ? "In app now" : (p.last_at || "Last GPS")) +
+      (p.maps_view ? "<br><a href=\"" + p.maps_view + "\" target=\"_blank\" rel=\"noopener\">Open in Maps</a>" : "")
+    );
+    bounds.push([lat, lng]);
+  });
+  if (bounds.length === 1) map.setView(bounds[0], 15);
+  else if (bounds.length) map.fitBounds(bounds, { padding: [28, 28], maxZoom: 15 });
+})();
+</script>
 {% endif %}
 {% endblock %}

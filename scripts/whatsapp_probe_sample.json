@@ -1,0 +1,101 @@
+{
+  "summary": {
+    "total": 10,
+    "yes": 9,
+    "no": 1,
+    "unknown": 0,
+    "error": 0
+  },
+  "results": [
+    {
+      "customer_id": 1,
+      "name": "Yogeesh Pipe",
+      "phone": "9844361090",
+      "wa_phone": "919844361090",
+      "on_whatsapp": true,
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 2,
+      "name": "Sateeshachar AJ",
+      "phone": "8095548876",
+      "wa_phone": "918095548876",
+      "on_whatsapp": true,
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 3,
+      "name": "Rajashekar Manager AJ",
+      "phone": "9663298434",
+      "wa_phone": "919663298434",
+      "on_whatsapp": false,
+      "status": "no",
+      "detail": "isn't on whatsapp"
+    },
+    {
+      "customer_id": 4,
+      "name": "Manoj AJ",
+      "phone": "9379416846",
+      "wa_phone": "919379416846",
+      "on_whatsapp": true,
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 5,
+      "name": "Ramesh Jingade AJ",
+      "phone": "9886757300",
+      "wa_phone": "919886757300",
+      "on_whatsapp": true,
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 6,
+      "name": "Hemanth Watch",
+      "phone": "9880361801",
+      "wa_phone": "919880361801",
+      "on_whatsapp": true,
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 7,
+      "name": "Kumar Hotel",
+      "phone": "9538064581",
+      "wa_phone": "919538064581",
+      "on_whatsapp": true,
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 8,
+      "name": "Yateesh",
+      "phone": "9019220559",
+      "wa_phone": "919019220559",
+      "on_whatsapp": true,
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 9,
+      "name": "Kanchi Provision Stores",
+      "phone": "9448432878",
+      "wa_phone": "919448432878",
+      "on_whatsapp": true,
+      "status": "yes",
+      "detail": "compose_ready"
+    },
+    {
+      "customer_id": 10,
+      "name": "Satyanarayan",
+      "phone": "8453509505",
+      "wa_phone": "918453509505",
+      "on_whatsapp": true,
+      "status": "yes",
+      "detail": "compose_ready"
+    }
+  ]
+}

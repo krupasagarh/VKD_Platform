@@ -1,0 +1,15 @@
+{% macro wa_send_now_item(customer_id, kind, label, connection_id=None) %}
+<form class="wa-send-now" method="post" action="/customers/{{ customer_id }}/whatsapp/send"
+      onsubmit="this.next.value = location.pathname + location.search; this.querySelector('button').disabled = true;">
+  <input type="hidden" name="kind" value="{{ kind }}">
+  {% if connection_id %}<input type="hidden" name="connection_id" value="{{ connection_id }}">{% endif %}
+  <input type="hidden" name="next" value="">
+  <button type="submit" class="wa-menu-item wa-menu-send" title="Sends straight from the office WhatsApp — no editing">
+    <span class="wa-menu-item-label">Send now · {{ label }}</span>
+  </button>
+</form>
+{% endmacro %}
+
+{% macro wa_menu_divider(text) %}
+<div class="wa-menu-divider">{{ text }}</div>
+{% endmacro %}

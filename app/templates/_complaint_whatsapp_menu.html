@@ -1,0 +1,21 @@
+{% from "_wa_icon.html" import wa_icon %}
+{% macro complaint_whatsapp_menu(complaint_id, assigned_agent_id=None, compact=false) %}
+{% set links = complaint_whatsapp_links(complaint_id, assigned_agent_id) %}
+{% if links %}
+<details class="wa-menu wa-menu-alert{% if compact %} wa-menu-compact{% endif %}">
+  <summary class="wa-menu-toggle" title="Send complaint alert on WhatsApp">
+    {{ wa_icon(16) }} WhatsApp alert
+  </summary>
+  <div class="wa-menu-list">
+    {% for link in links %}
+    <a class="wa-menu-item" href="{{ link.url }}" target="_blank" rel="noopener" title="{{ link.hint }}">
+      <span class="wa-menu-item-label">{{ link.label }}</span>
+      {% if link.hint %}<span class="wa-menu-item-hint">{{ link.hint }}</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+</details>
+{% else %}
+<span class="wa-empty">Assign agent and save phone numbers to enable WhatsApp.</span>
+{% endif %}
+{% endmacro %}

@@ -1,0 +1,42 @@
+{% from "_wa_icon.html" import wa_icon %}
+{% from "_wa_send_now.html" import wa_send_now_item, wa_menu_divider %}
+{% macro whatsapp_menu(name, phone, provider=None, providers_csv=None, compact=false, label="WhatsApp", customer_id=None) %}
+{% set prov = provider or ((providers_csv or "").split(",")[0]|trim if providers_csv else "") %}
+{% set csv = providers_csv %}
+{% set wa_payment = whatsapp_renew_followup_url(name, phone, prov, csv) %}
+{% set wa_renewal = whatsapp_expired_url(name, phone, prov, csv) %}
+{% set wa_confirm = payment_received_whatsapp_url(name, phone, prov, csv) %}
+{% set send_now = wa_auto_send and customer_id and (wa_payment or wa_renewal or wa_confirm) %}
+{% if wa_payment or wa_renewal or wa_confirm %}
+<details class="wa-menu{% if compact %} wa-menu-compact wa-menu-icon{% endif %}">
+  <summary class="wa-menu-toggle" title="WhatsApp this customer"{% if compact %} aria-label="WhatsApp"{% endif %}>
+    {{ wa_icon(16) }}{% if not compact %} {{ label }}{% endif %}
+  </summary>
+  <div class="wa-menu-list">
+    {% if send_now %}
+    {{ wa_send_now_item(customer_id, "reminder", "Payment reminder") }}
+    {{ wa_send_now_item(customer_id, "expired", "Renewal reminder") }}
+    {{ wa_send_now_item(customer_id, "payment", "Payment confirmation") }}
+    {{ wa_menu_divider("Edit in WhatsApp first") }}
+    {% endif %}
+    {% if wa_payment %}
+    <a class="wa-menu-item" href="{{ wa_payment }}" target="_blank" rel="noopener">
+      <span class="wa-menu-item-label">Payment reminder</span>
+    </a>
+    {% endif %}
+    {% if wa_renewal %}
+    <a class="wa-menu-item" href="{{ wa_renewal }}" target="_blank" rel="noopener">
+      <span class="wa-menu-item-label">Renewal reminder</span>
+    </a>
+    {% endif %}
+    {% if wa_confirm %}
+    <a class="wa-menu-item" href="{{ wa_confirm }}" target="_blank" rel="noopener">
+      <span class="wa-menu-item-label">Payment confirmation</span>
+    </a>
+    {% endif %}
+  </div>
+</details>
+{% else %}
+<span class="subtle">—</span>
+{% endif %}
+{% endmacro %}

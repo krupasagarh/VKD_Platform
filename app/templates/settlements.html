@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+{% set active = "settlements" %}
+{% block title %}Settlements · VK Platform{% endblock %}
+
+{% macro delete_btn(sid, who, day) -%}
+<form class="inline-form" method="post" action="/settlements/{{ sid }}/delete"
+      onsubmit="return confirm('Delete settlement #{{ sid }} by {{ who }} ({{ day|nice_date }})? All its lines and photos are removed.');">
+  <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+  <button class="btn btn-small btn-danger" type="submit">Delete</button>
+</form>
+{%- endmacro %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{% if everyone %}Agent settlements{% else %}My settlements{% endif %}</h1>
+    <div class="subtle">
+      Cable (Hathway) and internet (Railtel) collections for the dates you pick.
+      {% if everyone %}
+      You are the owner ({{ owner_name }}). Money collected on your login is already in the shop — field agents do not hand that over.
+      Scanner and your UPI are already with you. Cash and agent UPI stay with the field agent until they settle with you.
+      {% else %}
+      Scanner and UPI to {{ owner_name }} are already in the shop. Cash and other modes stay with you until you settle with {{ owner_name }}.
+      {% endif %}
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn btn-primary" href="/settlements/new?from={{ day_from }}&amp;to={{ day_to }}">+ Expense / proof</a>
+  {% if everyone %}
+  <a class="btn" href="/field">Field agents</a>
+  {% endif %}
+</div>
+
+<form class="filters" method="get" action="/settlements">
+  <div class="field">
+    <label>From</label>
+    <input type="date" name="from" value="{{ day_from }}">
+  </div>
+  <div class="field">
+    <label>To</label>
+    <input type="date" name="to" value="{{ day_to }}">
+  </div>
+  {% if everyone %}
+  <div class="field">
+    <label>Agent</label>
+    <select name="agent_id">
+      <option value="">All agents</option>
+      {% for a in agents %}
+      <option value="{{ a.id }}" {% if selected_agent_id == a.id %}selected{% endif %}>{{ a.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <button class="btn" type="submit">Show collections</button>
+</form>
+
+{% set ho = handovers if handovers is defined else none %}
+{% if ho %}
+<div class="card">
+  <div class="card-head">
+    <h2>Handover statement</h2>
+    <span class="badge">{{ day_from|nice_date }} – {{ day_to|nice_date }}</span>
+  </div>
+  <div class="stats">
+    <div class="stat">
+      <div class="label">UPI handed over</div>
+      <div class="value">₹{{ ho.upi_paise|rupees }}</div>
+      <div class="hint">To {{ owner_name }}</div>
+    </div>
+    <div class="stat">
+      <div class="label">Cash handed over</div>
+      <div class="value">₹{{ ho.cash_paise|rupees }}</div>
+      <div class="hint">To {{ owner_name }}, family, others</div>
+    </div>
+    <div class="stat good">
+      <div class="label">All handovers</div>
+      <div class="value">₹{{ ho.total_paise|rupees }}</div>
+      <div class="hint">{{ ho.rows|length }} line{{ "s" if ho.rows|length != 1 else "" }}</div>
+    </div>
+  </div>
+  {% if ho.recipients %}
+  <p class="subtle" style="margin:8px 0 10px">By who received it:
+    {% for rec in ho.recipients %}
+      <strong>{{ rec.name }}</strong> ₹{{ rec.amount_paise|rupees }}{% if not loop.last %} · {% endif %}
+    {% endfor %}
+  </p>
+  {% endif %}
+  {% if ho.rows %}
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        {% if everyone %}<th>Agent</th>{% endif %}
+        <th>Type</th>
+        <th>Handed to</th>
+        <th class="num">Amount</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for line in ho.rows %}
+      <tr>
+        <td>{{ line.settled_on|nice_date }}</td>
+        {% if everyone %}<td>{{ line.agent_name }}</td>{% endif %}
+        <td>{% if line.is_upi %}UPI{% else %}Cash{% endif %}</td>
+        <td>
+          {{ line.handed_to or "—" }}
+          {% if line.vpa %}<div class="subtle">{{ line.vpa }}</div>{% endif %}
+        </td>
+        <td class="num">₹{{ line.amount_paise|rupees }}</td>
+        <td class="settle-row-actions">
+          <a class="btn btn-small" href="/settlements/{{ line.settlement_id }}">Open</a>
+          {% if everyone %}{{ delete_btn(line.settlement_id, line.agent_name, line.settled_on) }}{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="subtle" style="margin:0">No UPI or cash handovers recorded in this date range.</p>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">Cable</div>
+    <div class="value">₹{{ office.cable.total_paise|rupees }}</div>
+    <div class="hint">Hathway · agents hold ₹{{ office.cable.agent_paise|rupees }} · shop ₹{{ office.cable.owner_paise|rupees }}</div>
+  </div>
+  {% if not fixed_provider or fixed_provider == 'railtel' %}
+  <div class="stat">
+    <div class="label">Internet</div>
+    <div class="value">₹{{ office.internet.total_paise|rupees }}</div>
+    <div class="hint">Railtel · agents hold ₹{{ office.internet.agent_paise|rupees }} · shop ₹{{ office.internet.owner_paise|rupees }}</div>
+  </div>
+  {% endif %}
+  <div class="stat good">
+    <div class="label">{% if everyone %}Already with you{% else %}Already with {{ owner_name }}{% endif %}</div>
+    <div class="value">₹{{ office.owner_held_paise|rupees }}</div>
+    <div class="hint">{% if everyone %}Your UPI ₹{{ office.owner_upi_paise|rupees }} · scanner ₹{{ office.owner_scanner_paise|rupees }}{% else %}UPI to {{ owner_name }} ₹{{ office.owner_upi_paise|rupees }} · scanner ₹{{ office.owner_scanner_paise|rupees }}{% endif %}</div>
+  </div>
+  <div class="stat {% if office.balance_paise > 0 %}warn{% elif office.balance_paise < 0 %}good{% endif %}">
+    <div class="label">{% if office.balance_paise < 0 %}{% if everyone %}You owe agents{% else %}{{ owner_name }} owes you{% endif %}{% else %}{% if everyone %}Agents should settle with you{% else %}You should settle with {{ owner_name }}{% endif %}{% endif %}</div>
+    <div class="value">₹{{ office.balance_paise|abs|rupees }}</div>
+    <div class="hint">Held by agents ₹{{ office.agent_held_paise|rupees }} minus expenses ₹{{ office.expenses_paise|rupees }}</div>
+  </div>
+</div>
+
+{% if rows %}
+  {% for a in rows %}
+  <div class="card">
+    <div class="card-head">
+    <h2>
+      {% if a.is_owner %}{{ owner_name }} <span class="badge">Owner</span>
+      {% else %}{{ a.name }} {% if a.username %}<span class="badge">{{ a.username }}</span>{% endif %}
+      {% endif %}
+    </h2>
+      <div class="spacer"></div>
+      {% if a.id %}
+      <a class="btn btn-small" href="/settlements/new?agent_id={{ a.id }}&amp;from={{ day_from }}&amp;to={{ day_to }}">+ Expense / proof</a>
+      {% endif %}
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="label">Cable</div>
+        <div class="value">₹{{ a.cable.total_paise|rupees }}</div>
+        <div class="hint">{{ a.cable.payment_count }} payment{{ "s" if a.cable.payment_count != 1 else "" }}{% if not a.is_owner %} · they hold ₹{{ a.cable.agent_paise|rupees }}{% endif %}</div>
+      </div>
+      {% if not fixed_provider or fixed_provider == 'railtel' %}
+      <div class="stat">
+        <div class="label">Internet</div>
+        <div class="value">₹{{ a.internet.total_paise|rupees }}</div>
+        <div class="hint">{{ a.internet.payment_count }} payment{{ "s" if a.internet.payment_count != 1 else "" }}{% if not a.is_owner %} · they hold ₹{{ a.internet.agent_paise|rupees }}{% endif %}</div>
+      </div>
+      {% endif %}
+      <div class="stat good">
+        <div class="label">{% if everyone %}Already with you{% else %}Already with {{ owner_name }}{% endif %}</div>
+        <div class="value">₹{{ a.owner_held_paise|rupees }}</div>
+        <div class="hint">{% if a.is_owner %}Already in the shop — no handover{% else %}Scanner / your UPI — not due from the agent{% endif %}</div>
+      </div>
+      <div class="stat {% if a.is_owner %}{% elif a.balance_paise > 0 %}warn{% elif a.balance_paise < 0 %}good{% endif %}">
+        <div class="label">{% if a.is_owner %}No handover{% elif a.balance_paise < 0 %}{% if everyone %}You owe them{% else %}{{ owner_name }} owes you{% endif %}{% else %}{% if everyone %}They should settle with you{% else %}You should settle with {{ owner_name }}{% endif %}{% endif %}</div>
+        <div class="value">₹{{ 0 if a.is_owner else a.balance_paise|abs|rupees }}</div>
+        <div class="hint">{% if a.is_owner %}Cash collected on your login stays with you{% else %}Cash / agent UPI / other ₹{{ a.agent_held_paise|rupees }} − expenses ₹{{ a.expenses_paise|rupees }} − handed ₹{{ (a.handed_paise or 0)|rupees }}{% endif %}</div>
+      </div>
+    </div>
+    {% if a.other.total_paise %}
+    <p class="subtle">Other collections (not Hathway / Railtel): ₹{{ a.other.total_paise|rupees }} · agent holds ₹{{ a.other.agent_paise|rupees }}</p>
+    {% endif %}
+    {% if a.payments %}
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Customer</th>
+          <th>Service</th>
+          <th>Mode</th>
+          <th class="num">Amount</th>
+          <th>Held by</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for p in a.payments %}
+        <tr>
+          <td>{{ p.paid_at }}</td>
+          <td><a href="/customers/{{ p.customer_id }}">{{ p.customer_name }}</a></td>
+          <td>{% if p.group == 'cable' %}Cable{% elif p.group == 'internet' %}Internet{% else %}Other{% endif %}</td>
+          <td>{{ payment_mode_labels.get(p.mode, p.mode) }}</td>
+          <td class="num">₹{{ p.amount_paise|rupees }}</td>
+          <td>{% if p.owner_held %}<span class="badge">{% if everyone %}You{% else %}{{ owner_name }}{% endif %}</span>{% else %}<span class="badge badge-warn">{% if everyone %}Agent{% else %}You{% endif %}</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if a.payment_count > a.payments|length %}
+    <p class="subtle">Showing latest {{ a.payments|length }} of {{ a.payment_count }} collections.</p>
+    {% endif %}
+    {% endif %}
+    {% if a.customer_cash_lines %}
+    <h3 class="settle-sub">Cash collected from customers</h3>
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Customer</th>
+          <th>Area</th>
+          <th>Provider</th>
+          <th class="num">Cash</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for line in a.customer_cash_lines %}
+        <tr>
+          <td>{{ line.line_date|nice_date }}</td>
+          <td>{{ line.customer_name }}</td>
+          <td>{{ line.area or "—" }}</td>
+          <td>{{ line.provider_label or line.provider or "—" }}</td>
+          <td class="num">₹{{ line.amount_paise|rupees }}</td>
+          <td class="settle-row-actions">
+            {% if line.settlement_id %}
+            <a class="btn btn-small" href="/settlements/{{ line.settlement_id }}">Open</a>
+            {% if everyone %}{{ delete_btn(line.settlement_id, a.name, line.line_date) }}{% endif %}
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% endif %}
+    {% if a.reports %}
+    <h3 class="settle-sub">Expense / proof reports</h3>
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Period</th>
+          <th>Settled on</th>
+          <th class="num">Handed over</th>
+          <th class="num">Expenses</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in a.reports %}
+        <tr>
+          <td>{{ r.period_from|nice_date }} – {{ r.period_to|nice_date }}</td>
+          <td>{{ r.settled_on|nice_date }}</td>
+          <td class="num">₹{{ (r.handed_paise or 0)|rupees }}</td>
+          <td class="num">₹{{ r.expenses_paise|rupees }}</td>
+          <td class="settle-row-actions">
+            <a class="btn btn-small" href="/settlements/{{ r.id }}">Open</a>
+            {% if everyone %}{{ delete_btn(r.id, a.name, r.settled_on) }}{% endif %}
+            {% if r.proof_count %}<span class="badge">{{ r.proof_count }} photo{{ "s" if r.proof_count != 1 else "" }}</span>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+{% else %}
+<div class="card"><div class="empty">No collections or settlement reports in this date range.</div></div>
+{% endif %}
+{% endblock %}

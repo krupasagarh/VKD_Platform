@@ -102,9 +102,10 @@
   {% if p.provider == 'railtel' %}
     <p class="subtle">
       <strong>Sync subscribers</strong> reads
-      <span class="mono">anpcntl/mysubscribers</span> — Renewal Date and red rows are the
-      authoritative expiry for term plans. That updates expiry dates here and drives the
-      expired / 1d late / 2d late counts on the dashboard.
+      <span class="mono">anpcntl/mysubscribers</span> — Renewal Date for monthly plans.
+      For <strong>term plans</strong> (<span class="mono"> x6</span>, <span class="mono">term</span> in the name),
+      sync opens Subscriber Details and reads <strong>Subscription Expiry</strong> (the real paid-through date).
+      That drives Expiring today, expired counts, and local expiry dates.
       Wallet refresh still reads the billing dashboard KPIs separately.
     </p>
   {% endif %}

@@ -4,7 +4,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime, timedelta
 
-from .money import now_iso, today
+from .money import now_iso, parse_datetime, today
 
 SOURCE_LABELS = {
     "ping": "GPS ping",
@@ -13,6 +13,52 @@ SOURCE_LABELS = {
     "complaint": "Complaint visit",
     "manual": "Shared location",
 }
+
+
+def needs_field_duty(agent: dict | None) -> bool:
+    """Collectors must tap Field login before collecting / fixing. Admin is exempt."""
+    if not agent or not agent.get("active"):
+        return False
+    return (agent.get("role") or "") != "admin"
+
+
+def is_field_duty_on(agent: dict | None) -> bool:
+    if not agent or not agent.get("field_duty_on"):
+        return False
+    started = (agent.get("field_duty_at") or "")[:10]
+    return started == today().strftime("%Y-%m-%d")
+
+
+def expire_stale_duty(conn: sqlite3.Connection, agent: dict | None) -> dict | None:
+    """Field login is for today only — yesterday’s toggle is off."""
+    if not agent or not agent.get("field_duty_on"):
+        return agent
+    if is_field_duty_on(agent):
+        return agent
+    try:
+        conn.execute(
+            "UPDATE agents SET field_duty_on = 0 WHERE id = ?",
+            (int(agent["id"]),),
+        )
+    except sqlite3.OperationalError:
+        return agent
+    agent["field_duty_on"] = False
+    return agent
+
+
+def set_field_duty(conn: sqlite3.Connection, agent_id: int, on: bool) -> str:
+    stamp = now_iso()
+    if on:
+        conn.execute(
+            "UPDATE agents SET field_duty_on = 1, field_duty_at = ?, last_seen_at = ? WHERE id = ?",
+            (stamp, stamp, int(agent_id)),
+        )
+    else:
+        conn.execute(
+            "UPDATE agents SET field_duty_on = 0 WHERE id = ?",
+            (int(agent_id),),
+        )
+    return stamp
 
 
 def maps_dir(lat: float, lng: float) -> str:
@@ -99,6 +145,17 @@ def record_location(
         "VALUES(?, ?, ?, ?, ?, ?, ?)",
         (agent_id, customer_id, lat, lng, accuracy, source, when),
     )
+    if source not in ("ping", "house"):
+        # The action was logged a moment before its GPS fix was saved; give it the exact point.
+        since = (datetime.now() - timedelta(minutes=2)).strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            conn.execute(
+                "UPDATE activity_log SET lat = ?, lng = ?, loc_accuracy = ?, loc_at = ? "
+                "WHERE agent_id = ? AND at >= ? AND (customer_id = ? OR ? IS NULL)",
+                (lat, lng, accuracy, when, agent_id, since, customer_id, customer_id),
+            )
+        except sqlite3.OperationalError:
+            pass
     return int(cursor.lastrowid)
 
 
@@ -179,8 +236,13 @@ def _day_bounds(day: str) -> tuple[str, str]:
     return f"{day} 00:00:00", f"{day} 23:59:59"
 
 
-def office_summary(conn: sqlite3.Connection, day: str | None = None) -> dict:
-    rows = agent_summaries(conn, day=day)
+def office_summary(
+    conn: sqlite3.Connection,
+    day: str | None = None,
+    *,
+    only_agent_id: int | None = None,
+) -> dict:
+    rows = agent_summaries(conn, day=day, only_agent_id=only_agent_id)
     return {
         "day": day or today().strftime("%Y-%m-%d"),
         "agents": len(rows),
@@ -201,13 +263,23 @@ def agent_summaries(
     day = day or today().strftime("%Y-%m-%d")
     start, end = _day_bounds(day)
     month_start = f"{day[:7]}-01 00:00:00"
-    agents = conn.execute(
-        "SELECT id, name, username, role, active FROM agents "
-        "WHERE active = 1 "
-        + ("AND id = ? " if only_agent_id else "")
-        + "ORDER BY CASE role WHEN 'collector' THEN 0 ELSE 1 END, name COLLATE NOCASE",
-        (only_agent_id,) if only_agent_id else (),
-    ).fetchall()
+    try:
+        agents = conn.execute(
+            "SELECT id, name, username, role, active, last_login_at, last_seen_at, "
+            "field_duty_on, field_duty_at FROM agents "
+            "WHERE active = 1 "
+            + ("AND id = ? " if only_agent_id else "")
+            + "ORDER BY CASE role WHEN 'collector' THEN 0 ELSE 1 END, name COLLATE NOCASE",
+            (only_agent_id,) if only_agent_id else (),
+        ).fetchall()
+    except sqlite3.OperationalError:
+        agents = conn.execute(
+            "SELECT id, name, username, role, active FROM agents "
+            "WHERE active = 1 "
+            + ("AND id = ? " if only_agent_id else "")
+            + "ORDER BY CASE role WHEN 'collector' THEN 0 ELSE 1 END, name COLLATE NOCASE",
+            (only_agent_id,) if only_agent_id else (),
+        ).fetchall()
 
     out: list[dict] = []
     for agent in agents:
@@ -243,7 +315,22 @@ def agent_summaries(
             "))",
             (start, end, aid, agent["name"]),
         ).fetchone()["n"]
+        from . import repo
+
+        followup = repo.agent_followup_stats(conn, aid)
         last_at = last["recorded_at"] if last else ""
+        last_login_at = ""
+        last_seen_at = ""
+        duty_on = False
+        duty_at = ""
+        try:
+            last_login_at = (agent["last_login_at"] or "").strip()
+            last_seen_at = (agent["last_seen_at"] or "").strip()
+            duty_at = (agent["field_duty_at"] or "").strip()
+            duty_on = bool(agent["field_duty_on"]) and duty_at[:10] == day
+        except (KeyError, IndexError):
+            pass
+        in_app = duty_on and _is_recent(last_seen_at, minutes=12)
         item = {
             "id": aid,
             "name": agent["name"],
@@ -256,13 +343,24 @@ def agent_summaries(
             "last_source": last["source"] if last else "",
             "maps_dir": maps_dir(last["lat"], last["lng"]) if last else "",
             "maps_view": maps_view(last["lat"], last["lng"]) if last else "",
-            "seen_today": bool(last_at and last_at[:10] == day),
+            "last_login_at": last_login_at,
+            "last_seen_at": last_seen_at,
+            "field_duty_on": duty_on,
+            "field_duty_at": duty_at,
+            "in_app": in_app,
+            "seen_today": bool(
+                (last_at and last_at[:10] == day)
+                or (last_seen_at and last_seen_at[:10] == day)
+                or (last_login_at and last_login_at[:10] == day)
+            ),
             "collected_paise": int(pay["paise"] or 0),
             "payment_count": int(pay["n"] or 0),
             "month_paise": int(month["paise"] or 0),
             "month_count": int(month["n"] or 0),
             "complaints_open": int(open_n or 0),
             "complaints_fixed": int(fixed_n or 0),
+            "followup_count": int(followup["count"] or 0),
+            "followup_due_paise": int(followup["due_paise"] or 0),
         }
         out.append(item)
 
@@ -330,6 +428,13 @@ def agent_day(
         "complaints": complaints,
         "trail": trail_out,
     }
+
+
+def _is_recent(stamp: str, minutes: int = 12) -> bool:
+    parsed = parse_datetime((stamp or "").strip())
+    if parsed is None:
+        return False
+    return datetime.now() - parsed <= timedelta(minutes=minutes)
 
 
 def stale_cutoff_hours(hours: int = 12) -> str:

@@ -1,0 +1,17 @@
+{% macro vk_wordmark(href='/', height='', class='') %}
+{% if is_demo_instance is defined and is_demo_instance() %}
+<span class="vk-wordmark vk-wordmark-demo {{ class }}" aria-hidden="true">Demo</span>
+{% else %}
+<a class="vk-wordmark {{ class }}" href="{{ href }}" aria-label="VK Digital">
+  <img src="/static/logo-wordmark.png?v=2" alt="VK Digital" class="vk-wordmark-img"{% if height %} style="height:{{ height }}px"{% endif %}>
+</a>
+{% endif %}
+{% endmacro %}
+
+{% macro vk_mark(size=36, class='') %}
+{% if is_demo_instance is defined and is_demo_instance() %}
+<span class="vk-mark vk-mark-demo {{ class }}" aria-hidden="true"></span>
+{% else %}
+<img src="/static/logo-icon.png?v=1" alt="" class="vk-mark {{ class }}" width="{{ size }}" height="{{ size }}" aria-hidden="true">
+{% endif %}
+{% endmacro %}

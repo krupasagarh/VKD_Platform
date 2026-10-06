@@ -1,0 +1,333 @@
+VK DIGITAL OPERATIONS PLATFORM
+Summary, Productization Plan and Modularization Plan
+Prepared: 4 Oct 2026
+======================================================================
+
+SHORT ANSWER
+------------
+The platform runs VK Digital's whole operation well, but it is built for
+one company. Selling it to other companies needs work in three stages:
+  1. Harden and test the current code.
+  2. Offer one separate copy per company (pilot customers).
+  3. Build a true shared multi-company platform.
+Modules (Hathway only, Railtel only, any combination) should be designed
+in from stage 2 onward.
+
+
+======================================================================
+PART 1. PLATFORM SUMMARY
+======================================================================
+
+WHAT IT IS
+An operations platform for a cable TV and broadband operator.
+VK Digital's current numbers:
+  - 1,343 customers
+  - 454 Railtel broadband connections
+  - 797 Hathway cable boxes
+  - 21 ANT IPTV connections
+  - 13 SmartPlay OTT connections
+  - 3 users (1 admin, 2 collectors)
+
+WHAT IT DOES
+
+  Customers and connections
+    Several services per customer, areas, free/owner tags, custom plans,
+    customer statements.
+
+  Billing
+    Bills, ledger, GST, whole-rupee rounding, receipts (print / PDF),
+    bill checker, due-amount corrections.
+
+  Collections
+    Mobile field app, follow-ups, unpaid renewals, expiring tonight,
+    expired lists, area-based territories for each agent.
+
+  Provider automation
+    Robots log in to the Railtel, Hathway, ANT and SmartPlay dealer
+    portals to: renew, check status, sync subscribers, read the wallet,
+    list who is online, download invoices. Runs through a job queue
+    with retries.
+
+  WhatsApp
+    Office WhatsApp Web auto-send, "edit in WhatsApp first" links,
+    editable message templates (Settings > WhatsApp templates),
+    complaint alerts to technicians.
+
+  Field team
+    On-duty status, location tracking (admin only), activity log,
+    cash settlements with proof photos, inventory.
+
+  Customer self-pay
+    Shop QR code that leads to a UPI payment; staff then confirm it.
+
+  Legacy integration
+    Bix import, sync of dues from Bix, Bix history.
+
+  Access control
+    16 permissions, Railtel / Hathway scope per agent, area assignment.
+
+HOW IT IS BUILT
+  - Python FastAPI with server-rendered pages.
+  - About 26,000 lines of Python, 151 routes, 85 page templates.
+  - One SQLite database file: 33 tables, schema version 40.
+  - Background job worker, schedulers and WhatsApp all run as threads
+    inside the web server process.
+  - Portal robots use Playwright browser automation, kept in the
+    sibling folder railtel_debugger/vk_agent.
+  - Settings and credentials are stored in two .env files.
+  - Hosted on one Windows PC, published at
+    https://vkdigital.tipturbroadband.in
+
+STRENGTHS
+  - Fits the business closely: real workflows and real edge cases
+    (term plans, Bix mismatches, territories).
+  - Already used daily.
+  - The connection model is already generic: one "provider" column on
+    every connection.
+
+WEAKNESSES
+  - No automated tests (only about 50 one-off scripts).
+  - Very large files (pages.py alone is 4,300 lines).
+  - VK-specific details are hard-coded: "VK DIGITAL", Tiptur, operator
+    name, Bix paths, test phone number.
+  - Depends on a single PC: WhatsApp Web session, captcha solving and
+    browser robots all assume one machine.
+  - Portal scraping is fragile: when a portal changes its layout, the
+    robots break.
+
+
+======================================================================
+PART 2. PRODUCTIZATION: IS IT READY FOR MANY COMPANIES?
+======================================================================
+
+No. It assumes one company everywhere. Gaps, most important first.
+
+MUST-HAVES
+
+1. Separating each company's data
+   - No table has a company column, settings are global, and there is
+     a single database file.
+   - Two options:
+       a) Shared database with a company column on every table
+          (Postgres with row-level security).
+       b) A separate database per company.
+   - Recommendation: shared Postgres long term, but start with one
+     copy per company (see roadmap).
+   - Either way, add automated tests proving company A can never see
+     company B's data.
+
+2. Users and login
+   - Users belong to a company.
+   - Roles: platform owner (you), company admin, agents.
+   - Password reset or OTP login for agents.
+   - Two-factor login for admins.
+   - Limits on repeated login attempts.
+   - Ability to sign out a lost phone.
+   - Remove the built-in fallback password ("vkdigital") and fallback
+     session secret.
+
+3. Provider credentials per company
+   - Railtel, Hathway, ANT and SmartPlay dealer logins stored
+     encrypted in the database for each company, not in .env.
+
+4. Automation as a separate service
+   - Move the robots out of the web server into dedicated worker
+     machines with a proper queue.
+   - Limits on how many jobs each company can run at once.
+   - A separate portal session per company.
+   - Captcha handling on servers.
+   - Screenshots stored per company.
+   - Rate limiting so dealer accounts don't get blocked.
+   - ESSENTIAL: portal health monitoring. When Railtel changes its
+     pages, every company breaks at once. Needs automatic checks,
+     alerts and versioned robots.
+
+5. WhatsApp
+   - WhatsApp Web automation is against WhatsApp's terms and needs one
+     logged-in browser per company, so it will not scale.
+   - Move to the official WhatsApp Business Cloud API, directly with
+     Meta or through a provider (Gupshup, Interakt, WATI, etc.).
+   - Each company registers its own number and gets its templates
+     approved. The template editor already built maps onto this.
+   - Keep the free "edit in WhatsApp first" links as a fallback.
+
+6. Hosting and operations
+   - Cloud hosting instead of the office PC.
+   - Packaged builds (Docker); separate web and worker processes;
+     a test (staging) copy.
+   - Automatic backups with restore to a point in time.
+   - Error tracking and uptime alerts.
+   - Proper database migration tool (Alembic) instead of the
+     hand-rolled schema version.
+   - File storage (S3-style) split by company: invoices, proofs,
+     screenshots.
+
+7. Removing the hard-coding (move into Settings per company)
+   - Branding: logo, name, address, GSTIN, receipt header, sign-off.
+   - Business settings: receipt number prefix, GST %, due days,
+     UPI ID, timezone, language.
+   - Bix becomes one optional importer.
+
+8. Tests and code structure
+   - Automated tests for: billing and ledger maths, rounding,
+     territory scoping, permissions, company isolation.
+   - Split pages.py and repo.py into feature modules.
+   - Automatic checks on every change (CI).
+
+BUSINESS AND LEGAL
+
+  Onboarding
+    - Generic Excel/CSV importer for customers, connections and plans.
+    - Setup wizard.
+    - First portal sync to pull in existing subscribers.
+
+  Charging the companies (SaaS billing)
+    - Subscription plans with per-module pricing.
+    - Usage limits: agents, customers, portal jobs, WhatsApp messages.
+    - Trials and suspension.
+
+  Platform owner console
+    - Company list and health.
+    - Failed jobs across all companies.
+    - Portal status.
+    - Logged "view as company" for support.
+
+  Compliance
+    - India's data protection law (DPDP Act 2023) covers customer
+      personal data.
+    - Agent location tracking needs clear consent and disclosure in a
+      product. The current "don't tell agents" approach would not be
+      acceptable for other companies.
+    - Data export and deletion per company.
+    - GST-compliant receipts for registered companies.
+    - Terms of use in which each company accepts that the robots use
+      its own dealer credentials. Automating provider portals carries
+      some risk under those providers' terms.
+
+
+======================================================================
+PART 3. MODULARIZATION PLAN
+======================================================================
+
+IDEA
+A fixed core, plus provider modules and feature add-ons that can be
+switched on per company.
+
+CORE (always on)
+  - Companies and users
+  - Permissions
+  - Customers and areas
+  - Billing, ledger, payments and receipts
+  - Activity log
+  - Settings and WhatsApp templates
+  - Reports
+
+PROVIDER MODULES (one per provider)
+  Railtel, Hathway, ANT IPTV, SmartPlay OTT.
+  Room for more later: Mobicable, GTPL, Den, ACT, etc.
+
+  Each module declares:
+    - Name and service label (used in messages)
+    - Connection ID format and validation
+    - Plan catalogue and how it is imported
+    - Supported actions (renew, status, sync, wallet, online list,
+      invoices, clear session)
+    - Its portal robot
+    - Expiry rules (e.g. Railtel term plans read the portal's
+      Subscription Expiry row)
+    - Settings it needs (dealer credentials)
+    - Scheduled jobs
+    - Its screens and connection-card pieces
+    - Its permissions
+    - Default WhatsApp templates
+
+FEATURE ADD-ONS
+  WhatsApp auto-send, customer self-pay (UPI), field agents and
+  location, settlements, inventory, complaints, importers (Bix is one),
+  GST invoicing.
+
+HOW SWITCHING WORKS
+  - A per-company table records the enabled modules, each module's
+    settings and its pricing plan.
+  - One check applies everywhere:
+      * Menu and dashboard cards
+      * Routes (a disabled module returns "not enabled")
+      * Workers and schedulers (only run for companies that have the
+        module)
+      * Permission list
+      * WhatsApp templates
+      * Importers
+  - The agent scope "Railtel / Hathway / both" becomes "any subset of
+    the company's enabled providers".
+
+REFACTORING NEEDED
+  - Provider lists are fixed in code today (PROVIDERS, action lists,
+    scope options).
+  - "if provider == railtel" checks are scattered through the job
+    worker, database queries (e.g. term-plan logic) and page templates.
+  - All of these move behind the module interface.
+  - Railtel-only columns (subscription_expiry, portal_account_id,
+    link_state) and the Hathway pack name move into per-module storage.
+  - Provider-specific tables (Railtel invoices and snapshots, Hathway
+    expiry batches) get a company column and belong to their module.
+
+EXAMPLE COMBINATIONS
+  - Hathway-only cable operator: core + Hathway + WhatsApp + field agents
+  - Railtel-only ISP:            core + Railtel + self-pay + complaints
+  - Full operator (VK Digital):  everything
+  Automated tests run against each combination.
+
+
+======================================================================
+ROADMAP (rough estimates, one developer plus AI help)
+======================================================================
+
+PHASE 0 - HARDEN                                         2-3 weeks
+  Goal: make VK Digital's copy safe to copy.
+  - Tests for money, billing and permissions.
+  - Branding and business settings in a Settings page.
+  - Remove fallback secrets.
+  - Backups.
+  - Split large files.
+
+PHASE 1 - ONE COPY PER COMPANY                           4-6 weeks
+  Goal: sell to 2-5 pilot operators quickly.
+  - Docker builds of web, worker and browser on a cloud server.
+  - Module on/off flags (single company per copy).
+  - Encrypted provider credentials.
+  - Generic importer and setup wizard.
+  - Monitoring.
+
+PHASE 2 - TRUE MULTI-COMPANY                             8-12 weeks
+  Goal: one platform, many companies.
+  - Postgres with company isolation and migrations.
+  - File storage per company.
+  - Queue-based workers with per-company portal sessions.
+  - Platform owner console.
+  - Company onboarding.
+  - Charging companies (SaaS billing).
+
+PHASE 3 - SCALE                                          Ongoing
+  - WhatsApp Cloud API.
+  - More provider modules.
+  - Offline-capable mobile app.
+  - Analytics.
+  - Compliance documents.
+
+Phase 1 delivers modularization early: each copy gets its own module
+switches, and Phase 2 keeps the same switches when the copies merge
+into one shared platform.
+
+
+======================================================================
+DECISIONS NEEDED BEFORE PHASE 1
+======================================================================
+
+1. Pilot companies on separate copies first, or straight to
+   multi-company?
+2. WhatsApp: keep the office WhatsApp Web robot for pilots, or budget
+   for the official Cloud API now?
+3. Which providers do the first outside customers need? This decides
+   which module boundaries to build first.
+4. Is Bix (or something like it) used by other operators, or is it
+   VK-only?

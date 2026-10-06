@@ -1,0 +1,52 @@
+{% from "_wa_icon.html" import wa_icon %}
+{% from "_wa_send_now.html" import wa_send_now_item, wa_menu_divider %}
+{% macro expiry_followup_actions(item, name, phone, provider, providers_csv, can, next_url, when="tonight") %}
+{% set prov = provider or ((providers_csv or "").split(",")[0]|trim if providers_csv else "") %}
+{% set is_tonight = when == 'tonight' %}
+{% set wa_expired = whatsapp_expired_url(name, phone, prov, providers_csv) %}
+{% set wa_tonight = whatsapp_expiring_tonight_url(name, phone, prov, providers_csv) %}
+{% set wa_paid = payment_received_whatsapp_url(name, phone, prov, providers_csv) %}
+<div class="v2-card-foot-actions v2-expiry-actions v2-customer-actions">
+  {% if can('payments') %}
+  <a class="v2-cta v2-cta-compact v2-cta-collect" href="/customers/{{ item.customer_id }}?connection_id={{ item.id }}#collect" title="Collect payment and renew">Collect</a>
+  {% endif %}
+  {% if can('portal_actions') %}
+  <form class="v2-inline-form" method="post" action="/connections/{{ item.id }}/collect-later">
+    <input type="hidden" name="next" value="{{ next_url }}">
+    <button class="v2-cta v2-cta-compact v2-cta-later" type="submit" title="Renew on portal and collect payment later">Later</button>
+  </form>
+  {% endif %}
+  {% if can('customer_whatsapp') and (wa_expired or wa_tonight or wa_paid) %}
+  <details class="wa-menu wa-menu-compact wa-menu-icon">
+    <summary class="wa-menu-toggle" title="WhatsApp this customer" aria-label="WhatsApp">{{ wa_icon(16) }}</summary>
+    <div class="wa-menu-list">
+      {% if wa_auto_send %}
+      {% if is_tonight and wa_tonight %}
+      {{ wa_send_now_item(item.customer_id, "tonight", "Expiring tonight", item.id) }}
+      {% elif not is_tonight and wa_expired %}
+      {{ wa_send_now_item(item.customer_id, "expired", "Expired reminder", item.id) }}
+      {% endif %}
+      {% if wa_paid %}
+      {{ wa_send_now_item(item.customer_id, "payment", "Payment received", item.id) }}
+      {% endif %}
+      {{ wa_menu_divider("Edit in WhatsApp first") }}
+      {% endif %}
+      {% if is_tonight and wa_tonight %}
+      <a class="wa-menu-item" href="{{ wa_tonight }}" target="_blank" rel="noopener">
+        <span class="wa-menu-item-label">Expiring tonight</span>
+      </a>
+      {% elif not is_tonight and wa_expired %}
+      <a class="wa-menu-item" href="{{ wa_expired }}" target="_blank" rel="noopener">
+        <span class="wa-menu-item-label">Expired renewal reminder</span>
+      </a>
+      {% endif %}
+      {% if wa_paid %}
+      <a class="wa-menu-item" href="{{ wa_paid }}" target="_blank" rel="noopener">
+        <span class="wa-menu-item-label">Payment received</span>
+      </a>
+      {% endif %}
+    </div>
+  </details>
+  {% endif %}
+</div>
+{% endmacro %}

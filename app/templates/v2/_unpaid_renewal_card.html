@@ -1,0 +1,99 @@
+{% from "_provider_tags.html" import provider_connection_tags %}
+{% from "_customer_area.html" import customer_area_cell %}
+{% from "_whatsapp_menu.html" import whatsapp_menu %}
+{% from "_check_status_btn.html" import check_status_btn %}
+{% macro unpaid_renewal_card(entry, provider_labels, can, areas, list_next, payment_modes, only_provider=none) %}
+{% set name = entry.customer_name %}
+{% set initials = (name or "?")[:1]|upper %}
+{% set phone = entry.phone or "" %}
+{% set digits = phone|replace(" ","")|replace("-","")|replace("(", "")|replace(")", "") %}
+{% set tel_href = "tel:+" ~ digits if digits.startswith("91") and digits|length == 12 else ("tel:+91" ~ digits if digits|length == 10 else ("tel:" ~ digits if digits else "")) %}
+<article class="v2-card v2-card-unpaid">
+  <div class="v2-card-top">
+    <div class="v2-avatar" aria-hidden="true">{{ initials }}</div>
+    <div class="v2-card-info">
+      <h3 class="v2-card-name"><a href="/customers/{{ entry.customer_id }}">{{ name }}</a></h3>
+      <div class="v2-muted" style="font-size:12px;margin-top:2px">
+        Renewed {{ entry.renewed_at|nice_date }}
+        {% if entry.bills|length > 1 %} · {{ entry.bills|length }} connections{% endif %}
+      </div>
+    </div>
+    <div class="v2-card-timing">
+      <div><strong>₹{{ entry.due_paise|rupees }}</strong></div>
+      <div>still due</div>
+    </div>
+  </div>
+
+  <div class="v2-facts">
+    <div class="v2-fact">
+      <div class="v2-fact-label">Phone</div>
+      <div class="v2-fact-value">
+        {% if phone and tel_href %}
+        <a class="v2-tel" href="{{ tel_href }}">{{ phone }}</a>
+        {% else %}<span class="v2-muted">—</span>{% endif %}
+      </div>
+    </div>
+    <div class="v2-fact">
+      <div class="v2-fact-label">Area</div>
+      <div class="v2-fact-value">
+        {{ customer_area_cell(entry, areas, can, list_next) }}
+      </div>
+    </div>
+    <div class="v2-fact">
+      <div class="v2-fact-label">Connections</div>
+      <div class="v2-fact-value">
+        {{ provider_connection_tags(entry, provider_labels, compact=true, next_url=list_next, allow_check=can('portal_actions'), only_provider=only_provider) }}
+      </div>
+    </div>
+  </div>
+
+  {% for b in entry.bills %}
+  {% if not only_provider or b.provider == only_provider %}
+  <div class="v2-unpaid-bill">
+    <div class="v2-unpaid-bill-head">
+      <span>{{ provider_labels.get(b.provider, b.provider or "Household") }}</span>
+      {% if b.upstream_id %}<span class="mono">{{ b.upstream_id }}</span>{% endif %}
+      {% if b.connection_id %}{{ check_status_btn(b.connection_id, list_next, compact=true, allow=can('portal_actions')) }}{% endif %}
+      <strong>₹{{ (b.total_paise - b.paid_paise)|rupees }}</strong>
+    </div>
+    {% if b.package_name %}<div class="v2-muted" style="font-size:12px">{{ b.package_name }}</div>{% endif %}
+    {% if can('payments') %}
+    <form class="v2-quick-collect js-geo" method="post" action="/customers/{{ entry.customer_id }}/collect"
+          onsubmit="return confirm('Record ₹' + this.amount.value + ' as received from this customer? Use this only when money was actually collected.')">
+      <input type="hidden" name="next" value="{{ list_next }}">
+      <input type="hidden" name="connection_id" value="{{ b.connection_id or '' }}">
+      <input type="hidden" name="notes" value="Collected from unpaid renewals list">
+          <input class="v2-quick-collect-amt" type="text" name="amount" inputmode="numeric"
+             value="{{ (b.total_paise - b.paid_paise)|rupees }}" required>
+      {% if can('payment_date') %}
+      <input type="date" name="paid_at" value="{{ today_iso() }}" max="{{ today_iso() }}" title="Payment date">
+      {% endif %}
+      <select name="mode">
+        {% set mode_labels = {"cash": "Cash", "upi": "UPI to agent", "scanner": "Scanner", "owner_upi": "Owner UPI", "bank": "Bank"} %}
+        {% for m in payment_modes %}<option value="{{ m }}">{{ mode_labels.get(m, m) }}</option>{% endfor %}
+      </select>
+      <button class="v2-quick-collect-btn" type="submit">Mark collected</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endfor %}
+
+  <div class="v2-card-foot">
+    {% if can('payments') %}
+    <div class="v2-muted" style="font-size:12px">Already took cash? Tap mark collected — no need to open the customer page.</div>
+    {% endif %}
+    <div class="v2-card-foot-actions">
+      {% if can('customer_whatsapp') %}
+      {{ whatsapp_menu(name, phone, none, entry.providers, compact=true, customer_id=entry.customer_id) }}
+      {% endif %}
+      {% if can('change_due') %}
+      <a class="v2-cta v2-cta-compact v2-cta-secondary" href="/customers/{{ entry.customer_id }}#change-due">Change due</a>
+      {% endif %}
+      {% if can('payments') %}
+      <a class="v2-cta v2-cta-compact v2-cta-collect" href="/customers/{{ entry.customer_id }}#collect">Collect</a>
+      {% endif %}
+    </div>
+  </div>
+</article>
+{% endmacro %}

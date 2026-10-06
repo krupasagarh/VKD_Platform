@@ -1,0 +1,65 @@
+{% extends "pay/base.html" %}
+{% block title %}Pay ₹{{ intent.amount_paise|rupees }}{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js" defer></script>
+<script src="/static/pay.js?v=4" defer></script>
+{% endblock %}
+
+{% block content %}
+<section class="pay-card pay-amount-hero">
+  <div class="pay-label">Amount to pay</div>
+  <div class="pay-amount">₹{{ intent.amount_paise|rupees }}</div>
+  {% if account %}
+  <p class="pay-lead">{{ account.name_masked }}{% if account.renew_single %} · {{ account.renew_label }}{% endif %}</p>
+  {% if account.custom_plan_name %}
+  <p class="pay-household-plan" style="margin:4px 0 0">{{ account.custom_plan_name }}</p>
+  {% endif %}
+  {% endif %}
+  <span class="pay-ref-pill">Ref {{ intent.reference }}</span>
+  <p class="pay-small pay-muted">Keep this reference in the UPI note if your app asks.</p>
+</section>
+
+<div class="pay-methods pay-methods--split">
+  <section class="pay-method-block">
+    <div class="pay-method-head">Option 1 · UPI app</div>
+    <div class="pay-method-body">
+      <p class="pay-small pay-muted" style="margin-top:0">Best on this phone</p>
+      <a class="pay-btn pay-btn-upi pay-btn-wide" href="{{ upi.upi_uri }}">Pay with PhonePe / GPay</a>
+      <p class="pay-upi-id">{{ upi.vpa }}</p>
+      <div class="pay-copy-row">
+        <button type="button" class="pay-btn pay-btn-ghost" data-copy="{{ upi.vpa }}">Copy UPI ID</button>
+        <button type="button" class="pay-btn pay-btn-ghost" data-copy="{{ intent.reference }}">Copy ref</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="pay-method-block">
+    <div class="pay-method-head">Option 2 · Scan QR</div>
+    <div class="pay-method-body">
+      <p class="pay-small pay-muted" style="margin-top:0">Scan from any UPI app</p>
+      <div class="pay-qr-frame">
+        <canvas id="pay-qr-canvas" aria-label="UPI QR code"></canvas>
+        <img id="pay-qr-fallback" class="pay-qr" src="{{ qr_url }}" alt="UPI QR code" width="240" height="240" hidden>
+      </div>
+      <div id="pay-qr-root" hidden
+           data-canvas="pay-qr-canvas"
+           data-uri="{{ upi.upi_uri }}"
+           data-fallback="pay-qr-fallback"></div>
+      <p class="pay-small pay-muted">Amount ₹{{ intent.amount_paise|rupees }} is encoded in this QR.</p>
+    </div>
+  </section>
+</div>
+
+<section class="pay-card">
+  <h2 class="pay-h2">After you pay</h2>
+  <ol class="pay-steps">
+    <li>Complete payment in your UPI app until it says successful.</li>
+    <li>If the bank says declined or asks you to retry, do not tap below — no money was taken.</li>
+    <li>Only then tap below so the office can check and renew.</li>
+  </ol>
+  <form method="post" action="/pay/i/{{ intent.token }}/done">
+    <button type="submit" class="pay-btn pay-btn-secondary pay-btn-wide">I’ve completed payment</button>
+  </form>
+</section>
+{% endblock %}

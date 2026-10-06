@@ -178,40 +178,113 @@ def unmatched_customers(conn: sqlite3.Connection, limit: int = 40) -> list:
 
 
 def rematch(conn: sqlite3.Connection) -> dict:
-    """Link archive customers to platform customers by unique 10-digit phone."""
+    """Link archive customers to platform households.
+
+    Prefer Bix customer id / household code so last Bix due is the same person
+    as the Customer Export align. Unique phone is only a fallback, and never
+    overrides a code match (shared mobiles used to attach the wrong statement).
+    """
     from . import bix_sync
 
-    phone_to_platform: dict[str, list[int]] = {}
-    for row in conn.execute("SELECT id, phone, alt_phone FROM customers"):
+    code_to_platform: dict[str, list[int]] = {}
+    primary_to_platform: dict[str, list[int]] = {}
+    alt_to_platform: dict[str, list[int]] = {}
+    for row in conn.execute("SELECT id, code, phone, alt_phone FROM customers"):
         if not bix_sync._hathway_ok(conn, int(row["id"])):
             continue
-        for raw in (row["phone"], row["alt_phone"]):
-            phone = norm_phone(raw or "")
-            if phone:
-                phone_to_platform.setdefault(phone, [])
-                if int(row["id"]) not in phone_to_platform[phone]:
-                    phone_to_platform[phone].append(int(row["id"]))
+        cid = int(row["id"])
+        code = (row["code"] or "").strip().upper()
+        if code:
+            code_to_platform.setdefault(code, []).append(cid)
+        primary = norm_phone(row["phone"] or "")
+        alt = norm_phone(row["alt_phone"] or "")
+        if primary:
+            primary_to_platform.setdefault(primary, [])
+            if cid not in primary_to_platform[primary]:
+                primary_to_platform[primary].append(cid)
+        if alt and alt != primary:
+            alt_to_platform.setdefault(alt, [])
+            if cid not in alt_to_platform[alt]:
+                alt_to_platform[alt].append(cid)
 
-    phone_to_bix: dict[str, list[str]] = {}
-    for row in conn.execute("SELECT bix_customer_id, phone FROM bix_history_customers"):
-        phone = norm_phone(row["phone"] or "")
-        if phone:
-            phone_to_bix.setdefault(phone, []).append(row["bix_customer_id"])
+    history_rows = conn.execute(
+        "SELECT bix_customer_id, name, phone FROM bix_history_customers"
+    ).fetchall()
 
     matched = 0
     ambiguous = 0
+    taken_platform: set[int] = set()
+    taken_bix: set[str] = set()
+
+    def _claim(bix_id: str, platform_id: int, method: str) -> bool:
+        nonlocal matched
+        if bix_id in taken_bix or platform_id in taken_platform:
+            return False
+        conn.execute(
+            "UPDATE bix_history_customers SET platform_customer_id = ?, match_method = ? "
+            "WHERE bix_customer_id = ?",
+            (platform_id, method, bix_id),
+        )
+        taken_bix.add(bix_id)
+        taken_platform.add(platform_id)
+        matched += 1
+        return True
+
+    def _unique_platform(code: str) -> int | None:
+        ids = code_to_platform.get((code or "").strip().upper()) or []
+        if len(ids) == 1:
+            return ids[0]
+        return None
+
     conn.execute("UPDATE bix_history_customers SET platform_customer_id = NULL, match_method = ''")
+
+    for row in history_rows:
+        bix_id = str(row["bix_customer_id"] or "").strip()
+        if not bix_id:
+            continue
+        hit = _unique_platform(bix_id)
+        if hit is not None:
+            _claim(bix_id, hit, "id")
+
+    for row in history_rows:
+        bix_id = str(row["bix_customer_id"] or "").strip()
+        if not bix_id or bix_id in taken_bix:
+            continue
+        codes = bix_sync._extract_codes(row["name"] or "")
+        for code in codes:
+            if code.upper() == bix_id.upper():
+                continue
+            hit = _unique_platform(code)
+            if hit is None:
+                continue
+            if _claim(bix_id, hit, "code"):
+                break
+
+    phone_to_bix: dict[str, list[str]] = {}
+    for row in history_rows:
+        bix_id = str(row["bix_customer_id"] or "").strip()
+        if not bix_id or bix_id in taken_bix:
+            continue
+        phone = norm_phone(row["phone"] or "")
+        if phone:
+            phone_to_bix.setdefault(phone, []).append(bix_id)
+
     for phone, bix_ids in phone_to_bix.items():
-        platform_ids = phone_to_platform.get(phone) or []
-        if len(bix_ids) != 1 or len(platform_ids) != 1:
+        unused = [bid for bid in bix_ids if bid not in taken_bix]
+        if len(unused) != 1:
+            if unused:
+                ambiguous += 1
+            continue
+        platform_ids = [cid for cid in (primary_to_platform.get(phone) or []) if cid not in taken_platform]
+        method = "phone"
+        if len(platform_ids) != 1:
+            platform_ids = [cid for cid in (alt_to_platform.get(phone) or []) if cid not in taken_platform]
+            method = "alt_phone"
+        if len(platform_ids) != 1:
             ambiguous += 1
             continue
-        conn.execute(
-            "UPDATE bix_history_customers SET platform_customer_id = ?, match_method = 'phone' "
-            "WHERE bix_customer_id = ?",
-            (platform_ids[0], bix_ids[0]),
-        )
-        matched += 1
+        _claim(unused[0], platform_ids[0], method)
+
     return {"matched": matched, "ambiguous": ambiguous}
 
 
@@ -259,6 +332,12 @@ def import_archive(conn: sqlite3.Connection, path: Path, *, actor: str = "") -> 
             unmatched,
         ),
     )
+    try:
+        from .db import set_setting
+
+        set_setting(conn, "bix_history_last_archive_mtime", str(path.stat().st_mtime))
+    except OSError:
+        pass
     return {
         "customers_seen": customers_seen,
         "txns_seen": txns_seen,

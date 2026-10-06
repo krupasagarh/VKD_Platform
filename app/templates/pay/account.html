@@ -1,0 +1,94 @@
+{% extends "pay/base.html" %}
+{% block title %}Your account{% endblock %}
+
+{% block content %}
+{% if account.renew_single %}
+<section class="pay-card pay-card-focus">
+  <div class="pay-focus-label">Renewing this connection only</div>
+  <div class="pay-focus-id">{{ account.renew_label }}</div>
+  <p class="pay-small pay-muted" style="margin:8px 0 0">Payment applies to this STB / Railtel line — not other TVs on the same bill unless you pay separately.</p>
+</section>
+{% endif %}
+
+<section class="pay-card">
+  <h1 style="margin:0 0 6px;font-size:1.35rem">{{ account.name_masked }}</h1>
+  <p class="pay-lead">Mobile {{ account.phone_masked }}</p>
+  {% if account.custom_plan_name %}
+  <div class="pay-household-plan">{{ account.custom_plan_name }}</div>
+  {% endif %}
+
+  <div class="pay-stat-row">
+    {% if not account.renew_single and account.net_due_paise > 0 %}
+    <div class="pay-stat pay-stat-bad">
+      <div class="pay-stat-label">Household due</div>
+      <div class="pay-stat-value">₹{{ account.net_due_paise|rupees }}</div>
+    </div>
+    {% endif %}
+    <div class="pay-stat {% if account.pay_paise > 0 %}pay-stat-accent{% endif %}">
+      <div class="pay-stat-label">{% if account.renew_single %}Pay for this TV{% else %}To pay now{% endif %}</div>
+      <div class="pay-stat-value">₹{{ account.pay_paise|rupees }}</div>
+    </div>
+  </div>
+</section>
+
+{% if account.connections %}
+<section class="pay-card">
+  <h2 class="pay-h2">{% if account.renew_single %}Service details{% else %}Your services{% endif %}</h2>
+  <ul class="pay-conn-list">
+    {% for cn in account.connections %}
+    <li class="pay-conn">
+      <div class="pay-conn-top">
+        <span class="pay-conn-prov">{{ cn.provider_label }}</span>
+        {% if cn.status and cn.status != 'active' %}
+        <span class="pay-badge-warn">{{ cn.status }}</span>
+        {% endif %}
+      </div>
+      <div class="pay-conn-id">{{ cn.display_id }}</div>
+      {% if account.custom_plan_name %}
+      <div class="pay-conn-plan">{{ account.custom_plan_name }}</div>
+      {% elif cn.package_name %}
+      <div class="pay-conn-plan">{{ cn.package_name }}</div>
+      {% endif %}
+      {% if cn.expiry_date %}<div class="pay-conn-exp">Valid till {{ cn.expiry_date|nice_date }}</div>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if error %}
+<section class="pay-card pay-alert">{{ error }}</section>
+{% endif %}
+
+{% if account.pay_paise > 0 and upi_ok %}
+<section class="pay-card">
+  <h2 class="pay-h2">Continue to payment</h2>
+  <form method="post" action="/pay/account/{{ account.customer_id }}/start" class="pay-form">
+    {% if account.focus_connection_id %}
+    <input type="hidden" name="connection_id" value="{{ account.focus_connection_id }}">
+    {% elif account.connections|length > 1 %}
+    <label class="pay-label" for="connection_id">Renew which service after payment?</label>
+    <select class="pay-input" id="connection_id" name="connection_id" required>
+      <option value="">Select service</option>
+      {% for cn in account.connections %}
+      <option value="{{ cn.id }}">{{ cn.provider_label }} · {{ cn.display_id }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+    <label class="pay-label" for="amount">Amount (₹)</label>
+    <input class="pay-input" id="amount" name="amount" type="number" step="1" min="1"
+           inputmode="numeric" value="{{ account.pay_paise|rupees_plain }}">
+    <button type="submit" class="pay-btn pay-btn-primary pay-btn-wide">Continue to UPI / QR</button>
+  </form>
+  <p class="pay-small pay-muted">Next step: PhonePe / GPay button and scannable QR on one screen.</p>
+</section>
+{% elif account.pay_paise <= 0 %}
+<section class="pay-card pay-muted-box">
+  <p style="margin:0">No payment is due for this {% if account.renew_single %}connection{% else %}account{% endif %}. Contact {{ operator }} if service is off.</p>
+</section>
+{% elif not upi_ok %}
+<section class="pay-card pay-warn">Online pay is not configured yet. Please pay at the office or call {{ operator }}.</section>
+{% endif %}
+
+<p style="text-align:center;margin-top:8px"><a class="pay-link-back" href="/pay">← Search again</a></p>
+{% endblock %}

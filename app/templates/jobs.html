@@ -8,7 +8,13 @@
   <div>
     <h1>Provider jobs</h1>
     <div class="subtle">
+      {% if fixed_provider == 'hathway' %}
+      Hathway portal jobs for this login, one at a time.
+      {% elif fixed_provider == 'railtel' %}
+      Railtel portal jobs for this login, one at a time.
+      {% else %}
       Everything that touches Railtel, Hathway, ANT IPTV, or SmartPlay OTT runs here, one at a time.
+      {% endif %}
     </div>
     {% if settings.upstream_mode != 'live' %}
     <div class="flash flash-warn" style="margin-top:10px">
@@ -37,7 +43,7 @@
 <div class="card">
 {% if rows %}
 {{ table_tools(export_href, rows|length) }}
-<div class="table-wrap">
+<div class="table-wrap table-wrap-sticky">
 <table>
   <thead>
     <tr><th>Job</th><th>Customer</th><th>Provider</th><th>Action</th><th>Provider id</th>
@@ -74,7 +80,12 @@
       </td>
       <td>{% if j.bill_no %}<span class="mono">{{ j.bill_no }}</span>
         <div class="subtle">₹{{ j.bill_total_paise|rupees }}</div>{% else %}—{% endif %}</td>
-      <td class="subtle" style="max-width:280px">{{ j.error or "" }}</td>
+      <td class="subtle" style="max-width:280px">
+        {% if j.error %}
+          <span title="{{ j.error }}">{{ j.error|plain_error }}</span>
+        {% elif j.result_json|job_result_message %}{{ j.result_json|job_result_message }}
+        {% endif %}
+      </td>
       <td style="white-space:nowrap">
         {% if j.status == 'awaiting_otp' %}
           {% set want_phone = '10-digit' in (j.error or '') %}

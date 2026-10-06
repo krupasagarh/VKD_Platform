@@ -1,4 +1,4 @@
-"""Send WhatsApp messages with document attachments via WhatsApp Web (Playwright).
+"""Send WhatsApp text and document messages via WhatsApp Web (Playwright).
 
 All Playwright work runs on one dedicated thread so the browser session can be
 reused safely (sync Playwright cannot be shared across threads).
@@ -81,6 +81,22 @@ def _is_thread_error(exc: BaseException) -> bool:
     return "cannot switch to a different thread" in msg or "greenlet" in msg
 
 
+def _is_browser_crash(exc: BaseException) -> bool:
+    msg = str(exc).lower()
+    return any(
+        token in msg
+        for token in (
+            "target closed",
+            "browser has been closed",
+            "exitcode=21",
+            "epipe",
+            "broken pipe",
+            "profile appears to be in use",
+            "singletonlock",
+        )
+    )
+
+
 def _discard_stale_session() -> None:
     global _session
     _session = _WaBrowser()
@@ -130,6 +146,11 @@ def _wa_worker_loop() -> None:
             if _is_thread_error(exc):
                 log.warning("WhatsApp Playwright thread mismatch - resetting session")
                 _close_whatsapp_session_impl()
+            else:
+                msg = str(exc).lower()
+                if _is_browser_crash(exc):
+                    log.warning("WhatsApp browser session crashed — resetting: %s", exc)
+                    _close_whatsapp_session_impl()
             result.error = exc
         finally:
             result.event.set()
@@ -188,6 +209,133 @@ def send_whatsapp_document(
     }
 
 
+def send_whatsapp_text(phone: str | None, text: str) -> dict:
+    """Open the chat and send a plain text message."""
+    return send_whatsapp_text_to_target(phone, text)
+
+
+def check_whatsapp_number(phone: str | None) -> dict:
+    """Probe whether a phone number is registered on WhatsApp (read-only, no message sent)."""
+    results = check_whatsapp_numbers_batch([phone])
+    return results[0] if results else {
+        "ok": False,
+        "on_whatsapp": None,
+        "status": "error",
+        "error": "Probe returned no result.",
+        "phone": "",
+    }
+
+
+def check_whatsapp_numbers_batch(
+    phones: list[str | None],
+    *,
+    on_probe=None,
+) -> list[dict]:
+    """Probe many numbers in one WhatsApp Web session.
+
+    Optional on_probe(idx, wa_phone, probe_dict) runs after each number (worker thread).
+    """
+    normalized: list[str] = []
+    index_map: list[int] = []
+    out: list[dict] = []
+    for idx, phone in enumerate(phones):
+        wa_phone = normalize_wa_phone(phone)
+        if not wa_phone:
+            out.append(
+                {
+                    "ok": False,
+                    "on_whatsapp": None,
+                    "status": "invalid_phone",
+                    "error": "No valid phone number.",
+                    "phone": "",
+                }
+            )
+            continue
+        index_map.append(idx)
+        normalized.append(wa_phone)
+        out.append({})
+
+    if not normalized:
+        return out
+
+    if not _playwright_installed():
+        err = {
+            "ok": False,
+            "on_whatsapp": None,
+            "status": "error",
+            "error": "Playwright is not installed.",
+            "phone": "",
+        }
+        for pos in index_map:
+            out[pos] = {**err, "phone": normalize_wa_phone(phones[pos]) or ""}
+        return out
+
+    settings.whatsapp_web_session_dir.mkdir(parents=True, exist_ok=True)
+    timeout = max(300.0, 120.0 + 25.0 * len(normalized))
+    try:
+        probes = _dispatch(
+            _check_whatsapp_numbers_batch_impl,
+            normalized,
+            on_probe,
+            timeout=timeout,
+        )
+    except Exception as exc:
+        log.exception("WhatsApp batch probe failed")
+        err = {
+            "ok": False,
+            "on_whatsapp": None,
+            "status": "error",
+            "error": str(exc),
+        }
+        for pos, wa_phone in zip(index_map, normalized):
+            out[pos] = {**err, "phone": wa_phone}
+        return out
+
+    for i, pos in enumerate(index_map):
+        probe = dict(probes[i])
+        probe.setdefault("phone", normalized[i])
+        out[pos] = probe
+    return out
+
+
+def send_whatsapp_text_to_target(target: str | None, text: str) -> dict:
+    """Send text to a phone number or a saved WhatsApp chat name (e.g. a group)."""
+    if not settings.whatsapp_web_auto_send:
+        return {"ok": False, "error": "WhatsApp auto-send is disabled (WHATSAPP_WEB_AUTO_SEND=0)."}
+
+    query = (target or "").strip()
+    if not query:
+        return {"ok": False, "error": "No WhatsApp target."}
+
+    body = (text or "").strip()
+    if not body:
+        return {"ok": False, "error": "Message is empty."}
+
+    if not _playwright_installed():
+        return {"ok": False, "error": "Playwright is not installed."}
+
+    settings.whatsapp_web_session_dir.mkdir(parents=True, exist_ok=True)
+    wa_phone = normalize_wa_phone(query)
+
+    try:
+        if wa_phone:
+            _dispatch(_send_whatsapp_text_impl, wa_phone, body, timeout=90.0)
+            label = wa_phone[-10:]
+        else:
+            _dispatch(_send_whatsapp_text_to_name_impl, query, body, timeout=90.0)
+            label = query[:40]
+    except Exception as exc:
+        log.exception("WhatsApp text send failed")
+        return {"ok": False, "error": str(exc)}
+
+    return {
+        "ok": True,
+        "message": f"WhatsApp sent to {label}",
+        "phone": wa_phone or "",
+        "target": query,
+    }
+
+
 def _warm_whatsapp_session_impl() -> None:
     page = _ensure_page()
     if _session.logged_in:
@@ -197,6 +345,114 @@ def _warm_whatsapp_session_impl() -> None:
     _wait_whatsapp_ready(page, full_wait=True)
     _session.logged_in = True
     print("   [whatsapp] Session ready.", flush=True)
+
+
+_INVALID_WA_PATTERNS = (
+    "phone number shared via url is invalid",
+    "phone number shared via url is not valid",
+    "isn't on whatsapp",
+    "is not on whatsapp",
+    "not on whatsapp",
+    "invalid phone number",
+    "couldn't find phone number",
+    "could not find phone number",
+)
+
+
+def _whatsapp_invalid_number_visible(page) -> str:
+    """Return matched invalid-number hint text, or empty string."""
+    try:
+        body = (page.locator("body").inner_text(timeout=5000) or "").lower()
+    except Exception:
+        return ""
+    for pattern in _INVALID_WA_PATTERNS:
+        if pattern in body:
+            return pattern
+    return ""
+
+
+def _wait_probe_outcome(page, wa_phone: str, *, timeout_sec: float = 45.0) -> dict:
+    """Poll until WhatsApp shows invalid-number text or a usable compose box."""
+    last10 = wa_phone[-10:]
+    deadline = time.monotonic() + timeout_sec
+    while time.monotonic() < deadline:
+        invalid = _whatsapp_invalid_number_visible(page)
+        if invalid:
+            return {
+                "ok": True,
+                "on_whatsapp": False,
+                "status": "no",
+                "detail": invalid,
+                "phone": wa_phone,
+            }
+        if _chat_compose_visible(page):
+            return {
+                "ok": True,
+                "on_whatsapp": True,
+                "status": "yes",
+                "detail": "compose_ready",
+                "phone": wa_phone,
+            }
+        page.wait_for_timeout(1000)
+
+    _debug_screenshot(page, f"whatsapp_probe_unknown_{last10}")
+    return {
+        "ok": True,
+        "on_whatsapp": None,
+        "status": "unknown",
+        "detail": "Timed out waiting for WhatsApp chat to load",
+        "phone": wa_phone,
+    }
+
+
+def _probe_whatsapp_number_on_page(page, wa_phone: str) -> dict:
+    """Navigate send?phone=… once and infer registration without sending."""
+    url = f"https://web.whatsapp.com/send?phone={wa_phone}"
+    print(f"   [whatsapp] Probing {wa_phone[-10:]}...", flush=True)
+    page.goto(url, wait_until="domcontentloaded", timeout=60000)
+    page.wait_for_timeout(int(os.getenv("WHATSAPP_PROBE_WAIT_MS", "2000")))
+    _dismiss_continue_to_chat(page)
+    _click_close_buttons(page)
+    return _wait_probe_outcome(page, wa_phone)
+
+
+def _check_whatsapp_numbers_batch_impl(
+    wa_phones: list[str],
+    on_probe=None,
+) -> list[dict]:
+    page = _ensure_page()
+    page.goto("https://web.whatsapp.com", wait_until="domcontentloaded", timeout=90000)
+    _wait_whatsapp_ready(page, full_wait=True)
+    _session.logged_in = True
+    page.wait_for_timeout(2000)
+
+    gap_ms = int(os.getenv("WHATSAPP_PROBE_GAP_MS", "1500"))
+    results: list[dict] = []
+    for idx, wa_phone in enumerate(wa_phones):
+        if idx and gap_ms > 0:
+            page.wait_for_timeout(gap_ms)
+        try:
+            probe = _probe_whatsapp_number_on_page(page, wa_phone)
+        except Exception as exc:
+            log.warning("WhatsApp probe failed for %s: %s", wa_phone[-10:], exc)
+            probe = {
+                "ok": False,
+                "on_whatsapp": None,
+                "status": "error",
+                "error": str(exc),
+                "phone": wa_phone,
+            }
+        results.append(probe)
+        if on_probe is not None:
+            try:
+                on_probe(idx, wa_phone, probe)
+            except Exception:
+                log.exception("WhatsApp on_probe callback failed for %s", wa_phone[-10:])
+    return results
+
+
+def _check_whatsapp_number_impl(wa_phone: str) -> dict:
+    return _check_whatsapp_numbers_batch_impl([wa_phone])[0]
 
 
 def _close_whatsapp_session_impl() -> None:
@@ -240,6 +496,46 @@ def _send_whatsapp_document_impl(wa_phone: str, path: Path, caption: str) -> Non
             raise
 
 
+def _send_whatsapp_text_impl(wa_phone: str, text: str) -> None:
+    for attempt in (1, 2):
+        page = _ensure_page()
+        try:
+            _send_text_on_page(page, wa_phone, text)
+            _session.logged_in = True
+            return
+        except Exception as exc:
+            if attempt == 1 and _is_thread_error(exc):
+                _close_whatsapp_session_impl()
+                continue
+            try:
+                _debug_screenshot(page, "whatsapp_text_send_error")
+            except Exception:
+                pass
+            if not _wa_reuse_browser():
+                _close_whatsapp_session_impl()
+            raise
+
+
+def _send_whatsapp_text_to_name_impl(chat_name: str, text: str) -> None:
+    for attempt in (1, 2):
+        page = _ensure_page()
+        try:
+            _send_text_on_page_by_name(page, chat_name, text)
+            _session.logged_in = True
+            return
+        except Exception as exc:
+            if attempt == 1 and _is_thread_error(exc):
+                _close_whatsapp_session_impl()
+                continue
+            try:
+                _debug_screenshot(page, "whatsapp_text_name_send_error")
+            except Exception:
+                pass
+            if not _wa_reuse_browser():
+                _close_whatsapp_session_impl()
+            raise
+
+
 def _ensure_page():
     global _session
 
@@ -275,22 +571,38 @@ def _ensure_page():
         _set_viewport(page)
         return page
 
-    if _session.playwright is None:
-        _session.playwright = sync_playwright().start()
-    _session.context = _session.playwright.chromium.launch_persistent_context(
-        user_data_dir=str(settings.whatsapp_web_session_dir),
-        headless=_wa_headless(),
-        slow_mo=int(os.getenv("WHATSAPP_WEB_SLOW_MO", "0")),
-        args=["--disable-blink-features=AutomationControlled"],
-    )
-    _session.mode = "persistent"
-    _session.page = (
-        _session.context.pages[0] if _session.context.pages else _session.context.new_page()
-    )
-    _session.worker_thread_id = threading.get_ident()
-    _trim_extra_tabs(_session.context, _session.page)
-    _set_viewport(_session.page)
-    return _session.page
+    last_exc: BaseException | None = None
+    for attempt in (1, 2):
+        try:
+            if _session.playwright is None:
+                _session.playwright = sync_playwright().start()
+            _session.context = _session.playwright.chromium.launch_persistent_context(
+                user_data_dir=str(settings.whatsapp_web_session_dir),
+                headless=_wa_headless(),
+                slow_mo=int(os.getenv("WHATSAPP_WEB_SLOW_MO", "0")),
+                args=["--disable-blink-features=AutomationControlled"],
+            )
+            _session.mode = "persistent"
+            _session.page = (
+                _session.context.pages[0]
+                if _session.context.pages
+                else _session.context.new_page()
+            )
+            _session.worker_thread_id = threading.get_ident()
+            _trim_extra_tabs(_session.context, _session.page)
+            _set_viewport(_session.page)
+            return _session.page
+        except Exception as exc:
+            last_exc = exc
+            _close_whatsapp_session_impl()
+            if attempt == 1 and _is_browser_crash(exc):
+                log.warning("WhatsApp browser launch failed — retrying: %s", exc)
+                time.sleep(3)
+                continue
+            raise
+    if last_exc is not None:
+        raise last_exc
+    raise RuntimeError("WhatsApp browser launch failed")
 
 
 def _set_viewport(page) -> None:
@@ -389,20 +701,50 @@ def _voice_calling_screen(page) -> bool:
 
 
 def _chat_compose_visible(page) -> bool:
-    """True when chat footer with attach (+) is usable — not stuck in PDF viewer."""
-    if _voice_calling_screen(page):
-        return False
+    """True when a chat is open with its message box usable — not stuck in PDF viewer."""
     return bool(
         page.evaluate(
             r"""() => {
                 if (/edit pdf/i.test(document.body.innerText || '')) return false;
+                const box = document.querySelector('#main footer [contenteditable="true"]');
+                if (box && box.getBoundingClientRect().width > 20) return true;
                 const attach = document.querySelector(
-                    '#main footer span[data-icon="ic-attach-file"], #main footer span[data-icon="plus"]'
+                    '#main footer span[data-icon="ic-attach-file"], #main footer span[data-icon="plus"], ' +
+                    '#main footer span[data-icon="plus-rounded"]'
                 );
                 return !!(attach && attach.getBoundingClientRect().width > 4);
             }"""
         )
     )
+
+
+def _wait_compose(page, seconds: float) -> bool:
+    """Poll until the chat message box shows (WhatsApp can take several seconds to open a chat)."""
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if _chat_compose_visible(page):
+            return True
+        page.wait_for_timeout(500)
+    return _chat_compose_visible(page)
+
+
+def _open_chat_by_link(page, wa_phone: str) -> bool:
+    """Open a chat with WhatsApp's own send?phone= link. Raises if the number is not on WhatsApp."""
+    page.goto(
+        f"https://web.whatsapp.com/send?phone={wa_phone}",
+        wait_until="domcontentloaded",
+        timeout=60000,
+    )
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        if _chat_compose_visible(page):
+            return True
+        invalid = _whatsapp_invalid_number_visible(page)
+        if invalid:
+            raise RuntimeError(f"{wa_phone[-10:]} is not on WhatsApp ({invalid}).")
+        _dismiss_continue_to_chat(page)
+        page.wait_for_timeout(700)
+    return _chat_compose_visible(page)
 
 
 def _attach_preview_ready(page, path: Path) -> bool:
@@ -585,15 +927,21 @@ def _open_chat_panel(page, last10: str) -> bool:
     # Enter often opens the first search hit
     try:
         page.keyboard.press("Enter")
-        page.wait_for_timeout(1200)
-        if _chat_compose_visible(page):
+        if _wait_compose(page, 4):
             return True
     except Exception:
         pass
 
+    needle = (last10 or "").strip()
+    short = needle[:20] if len(needle) > 20 else needle
+    quoted = short.replace('"', '\\"')
     for sel in (
-        f'#pane-side [data-testid="cell-frame-container"]:has-text("{last10}")',
-        f'#pane-side span[title*="{last10}"]',
+        f'#side span[title="{quoted}"]',
+        f'span[title="{quoted}"]',
+        f'#pane-side [data-testid="cell-frame-container"]:has-text("{quoted}")',
+        f'#pane-side span[title*="{quoted}"]',
+        f'#side [role="gridcell"]:has-text("{quoted}")',
+        f'#side [role="listitem"]:has-text("{quoted}")',
         f'xpath={_FIRST_CHAT_XPATH}',
         '#pane-side [data-testid="cell-frame-container"]',
         '#pane-side [role="listitem"]',
@@ -603,8 +951,7 @@ def _open_chat_panel(page, last10: str) -> bool:
             if not row.is_visible(timeout=2500):
                 continue
             row.click(timeout=8000)
-            page.wait_for_timeout(1200)
-            if _chat_compose_visible(page):
+            if _wait_compose(page, 6):
                 return True
             _click_close_buttons(page)
             page.wait_for_timeout(600)
@@ -621,7 +968,11 @@ def _open_chat_panel(page, last10: str) -> bool:
 def _open_chat_by_search(page, wa_phone: str) -> None:
     """Search sidebar for the number and open that chat."""
     last10 = wa_phone[-10:]
-    print(f"   [whatsapp] Searching chat for {last10}...", flush=True)
+    print(f"   [whatsapp] Opening chat for {last10} via send link...", flush=True)
+    if _open_chat_by_link(page, wa_phone):
+        print("   [whatsapp] Chat open (via send link).", flush=True)
+        return
+    print(f"   [whatsapp] Send link did not open — searching chat for {last10}...", flush=True)
 
     for attempt in (1, 2):
         _fresh_whatsapp_home(page)
@@ -671,6 +1022,49 @@ def _open_chat_by_search(page, wa_phone: str) -> None:
     raise RuntimeError(
         f"Could not open WhatsApp chat for {last10}. "
         "Right panel should show message box, not Calls screen."
+    )
+
+
+def _open_chat_by_name(page, chat_name: str) -> None:
+    """Search sidebar for a saved contact or group name and open that chat."""
+    name = (chat_name or "").strip()
+    if not name:
+        raise RuntimeError("WhatsApp chat name is empty.")
+    print(f"   [whatsapp] Searching chat: {name}...", flush=True)
+
+    for attempt in (1, 2):
+        _fresh_whatsapp_home(page)
+
+        search = _focus_whatsapp_search(page)
+        if search is None:
+            for sel in ('span[data-icon="search"]', '[aria-label="Search"]'):
+                try:
+                    page.locator(sel).first.click(timeout=3000)
+                    page.wait_for_timeout(400)
+                    break
+                except Exception:
+                    continue
+            search = _focus_whatsapp_search(page)
+        if search is None:
+            _debug_screenshot(page, "whatsapp_search_box_not_found")
+            raise RuntimeError("WhatsApp search box not found.")
+
+        _type_in_search(page, search, name)
+        page.wait_for_timeout(2000)
+
+        if _open_chat_panel(page, name):
+            _click_close_buttons(page)
+            page.wait_for_timeout(400)
+            if _chat_compose_visible(page):
+                print(f"   [whatsapp] Chat open ({name}).", flush=True)
+                return
+
+        print(f"   [whatsapp] Chat not open yet (attempt {attempt})...", flush=True)
+
+    _debug_screenshot(page, "whatsapp_group_not_found")
+    raise RuntimeError(
+        f"Could not open WhatsApp chat '{name}'. "
+        "Save the group/contact in WhatsApp Web and use the exact sidebar name."
     )
 
 def _send_document_on_page(page, wa_phone: str, path: Path, caption: str) -> None:
@@ -724,6 +1118,67 @@ def _send_document_on_page(page, wa_phone: str, path: Path, caption: str) -> Non
             )
 
     print(f"   [whatsapp] Sent {path.name}", flush=True)
+
+
+def _compose_input(page):
+    for sel in (
+        '#main footer [contenteditable="true"]',
+        '#main div[contenteditable="true"][data-tab]',
+        'div[aria-placeholder="Type a message"]',
+        'div[aria-label="Type a message"]',
+    ):
+        loc = page.locator(sel).last
+        try:
+            if loc.is_visible(timeout=2000):
+                return loc
+        except Exception:
+            continue
+    return None
+
+
+def _type_compose_text(page, box, text: str) -> None:
+    box.click(timeout=5000)
+    page.wait_for_timeout(200)
+    try:
+        page.keyboard.press("Control+a")
+        page.keyboard.press("Backspace")
+    except Exception:
+        pass
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if line:
+            page.keyboard.type(line, delay=12)
+        if i < len(lines) - 1:
+            page.keyboard.press("Shift+Enter")
+    page.wait_for_timeout(250)
+
+
+def _send_text_on_page(page, wa_phone: str, text: str) -> None:
+    print(f"   [whatsapp] Send text -> {wa_phone[-10:]}...", flush=True)
+    _open_chat_by_search(page, wa_phone)
+    _ensure_chat_compose_ready(page)
+    box = _compose_input(page)
+    if box is None:
+        _debug_screenshot(page, "whatsapp_text_no_compose")
+        raise RuntimeError("WhatsApp compose box not found.")
+    _type_compose_text(page, box, text)
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(800)
+    print(f"   [whatsapp] Text sent to {wa_phone[-10:]}", flush=True)
+
+
+def _send_text_on_page_by_name(page, chat_name: str, text: str) -> None:
+    print(f"   [whatsapp] Send text -> {chat_name}...", flush=True)
+    _open_chat_by_name(page, chat_name)
+    _ensure_chat_compose_ready(page)
+    box = _compose_input(page)
+    if box is None:
+        _debug_screenshot(page, "whatsapp_text_no_compose")
+        raise RuntimeError("WhatsApp compose box not found.")
+    _type_compose_text(page, box, text)
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(800)
+    print(f"   [whatsapp] Text sent to {chat_name}", flush=True)
 
 
 def _click_attach_button(page) -> None:

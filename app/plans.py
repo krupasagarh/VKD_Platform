@@ -1,12 +1,14 @@
 """Plan pricing rules.
 
-Railtel/Railwire plan catalogs list a *monthly* amount and 30-day validity even for
+Railtel plan catalogs list a *monthly* amount and 30-day validity even for
 term plans. A trailing ` xN` in the plan name means "pay N months up front", and the
 term carries promotional free days on top:
 
     x3  -> pay 3 months,  100 days validity (90 + 10 free)
     x6  -> pay 6 months,  210 days validity (180 + 30 free)
     x10 -> pay 10 months, 360 days validity (300 + 60 free)
+
+Plans in NO_FREE_DAYS_PLANS are straight terms with no bonus (PB x6 = 180 days).
 
 Hathway TV bouquets are plain 30-day monthly packs.
 
@@ -16,15 +18,22 @@ platform runs standalone.
 from __future__ import annotations
 
 import re
-from decimal import Decimal
-
-from .money import to_paise
+from .money import to_paise, whole_rupees
 
 DAYS_PER_MONTH = 30
 MONTHLY_VALIDITY_DAYS = 30
 TERM_BONUS_DAYS = {3: 10, 6: 30, 10: 60, 12: 0}
+NO_FREE_DAYS_PLANS = frozenset({
+    "pb_fup50mbps-5mbps 1tb x6",
+})
 
 _TERM_SUFFIX = re.compile(r"\sx(\d+)\s*$", re.IGNORECASE)
+
+
+def term_bonus_days(pay_months: int, plan_name: str = "") -> int:
+    if (plan_name or "").strip().lower() in NO_FREE_DAYS_PLANS:
+        return 0
+    return TERM_BONUS_DAYS.get(pay_months, 0)
 
 
 def parse_term_months(plan_name: str) -> int | None:
@@ -39,14 +48,14 @@ def parse_term_months(plan_name: str) -> int | None:
     return months if months > 1 else None
 
 
-def term_validity_days(pay_months: int) -> int:
-    return pay_months * DAYS_PER_MONTH + TERM_BONUS_DAYS.get(pay_months, 0)
+def term_validity_days(pay_months: int, plan_name: str = "") -> int:
+    return pay_months * DAYS_PER_MONTH + term_bonus_days(pay_months, plan_name)
 
 
 def validity_from_name(plan_name: str) -> int:
     """Validity implied by the plan name alone, for catalogs that already hold term totals."""
     months = parse_term_months(plan_name)
-    return term_validity_days(months) if months else MONTHLY_VALIDITY_DAYS
+    return term_validity_days(months, plan_name) if months else MONTHLY_VALIDITY_DAYS
 
 
 def billing_cycle_for(pay_months: int | None, plan_name: str = "") -> str:
@@ -83,10 +92,10 @@ def price_plan(plan_name: str, monthly_amount) -> dict:
         }
 
     total_paise = monthly_paise * pay_months
-    validity = term_validity_days(pay_months)
-    free_days = TERM_BONUS_DAYS.get(pay_months, 0)
-    monthly_rupees = (Decimal(monthly_paise) / 100).quantize(Decimal("0.01"))
-    total_rupees = (Decimal(total_paise) / 100).quantize(Decimal("0.01"))
+    validity = term_validity_days(pay_months, plan_name)
+    free_days = term_bonus_days(pay_months, plan_name)
+    monthly_rupees = whole_rupees(monthly_paise)
+    total_rupees = whole_rupees(total_paise)
     description = (
         f"Pay {pay_months} months @ Rs {monthly_rupees}/mo = Rs {total_rupees}; "
         f"{validity} days validity"

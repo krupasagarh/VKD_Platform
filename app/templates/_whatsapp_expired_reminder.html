@@ -1,0 +1,17 @@
+{% from "_whatsapp_link.html" import whatsapp_link %}
+{% macro whatsapp_expired_reminder(name, phone, provider, providers_csv=None, compact=false, customer_id=None, connection_id=None) %}
+{% set url = whatsapp_expired_url(name, phone, provider, providers_csv) %}
+{% if url and wa_auto_send and customer_id %}
+<form class="v2-inline-form" method="post" action="/customers/{{ customer_id }}/whatsapp/send"
+      onsubmit="this.next.value = location.pathname + location.search; this.querySelector('button').disabled = true;">
+  <input type="hidden" name="kind" value="expired">
+  {% if connection_id %}<input type="hidden" name="connection_id" value="{{ connection_id }}">{% endif %}
+  <input type="hidden" name="next" value="">
+  <button type="submit" class="v2-cta v2-cta-compact v2-cta-secondary" title="Send the expired reminder from the office WhatsApp">Send reminder</button>
+</form>
+{% elif url %}
+{{ whatsapp_link(url, "Expired reminder", small=compact, title="Send WhatsApp — expired reminder") }}
+{% else %}
+<span class="v2-muted">—</span>
+{% endif %}
+{% endmacro %}

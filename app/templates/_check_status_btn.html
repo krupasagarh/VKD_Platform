@@ -1,0 +1,19 @@
+{% macro check_status_btn(connection_id, next_url="", compact=false, label="Check", allow=false) %}
+{% if allow and connection_id %}
+<form class="check-status-form{% if compact %} check-status-compact{% endif %}" method="post"
+      action="/connections/{{ connection_id }}/action">
+  <input type="hidden" name="action" value="status">
+  {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+  <button class="btn-check-status" type="submit" title="Check status on provider portal">{{ label }}</button>
+</form>
+{% endif %}
+{% endmacro %}
+
+{% macro check_all_status_btn(customer_id, next_url="", label="Check all", allow=false) %}
+{% if allow and customer_id %}
+<form class="check-status-form check-status-all" method="post" action="/customers/{{ customer_id }}/check-all">
+  {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+  <button class="btn-check-status btn-check-status-all" type="submit" title="Check every connection on the portal">{{ label }}</button>
+</form>
+{% endif %}
+{% endmacro %}

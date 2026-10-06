@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% set active = "inventory" %}
+{% block title %}Inventory · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Inventory</h1>
+    <div class="subtle">
+      Rough stock for the field. Admin records an order when it arrives.
+      Agents reduce the count when they use something — new connection or a faulty replacement.
+    </div>
+  </div>
+</div>
+
+{% if can_receive %}
+<div class="card inv-receive">
+  <div class="card-head"><h2>Stock received (order)</h2></div>
+  <form method="post" action="/inventory/receive" class="inv-receive-form">
+    <div class="form-grid">
+      <div class="field">
+        <label>Item</label>
+        <select name="item_id" required>
+          <option value="">Choose…</option>
+          {% for item in items %}
+          <option value="{{ item.id }}">{{ item.name }} ({{ item.on_hand_label }} on hand)</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Quantity</label>
+        <input type="text" name="qty" inputmode="decimal" placeholder="10" required>
+      </div>
+      <div class="field">
+        <label>Amount paid (₹)</label>
+        <input type="text" name="amount" inputmode="numeric" placeholder="0">
+      </div>
+      <div class="field">
+        <label>Received on</label>
+        <input type="date" name="received_on" value="{{ today }}">
+      </div>
+      <div class="field">
+        <label>Note / vendor</label>
+        <input type="text" name="note" placeholder="Optional">
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit" style="margin-top:12px">Add to stock</button>
+  </form>
+  <form method="post" action="/inventory/receive-file" enctype="multipart/form-data" class="inv-upload" style="margin-top:16px">
+    <div class="field">
+      <label>Or upload order CSV</label>
+      <input type="file" name="file" accept=".csv,.txt,.xls" required>
+    </div>
+    <p class="subtle" style="margin:6px 0 10px">Columns: Item, Qty, Amount. Names should match the list (e.g. New STB (Hathway)).</p>
+    <button class="btn" type="submit">Upload order</button>
+  </form>
+</div>
+{% endif %}
+
+{% for category, group in groups %}
+<div class="card inv-group">
+  <div class="card-head"><h2>{{ category }}</h2></div>
+  <div class="inv-list">
+    {% for item in group %}
+    <article class="inv-item{% if item.on_hand <= 0 %} is-empty{% endif %}" id="item-{{ item.id }}">
+      <div class="inv-item-top">
+        <div>
+          <a class="inv-name" href="/inventory/items/{{ item.id }}">{{ item.name }}</a>
+          <div class="subtle">{{ item.unit }}{% if can_receive %} · received {{ item.received_label }} · used {{ item.used_label }}{% endif %}</div>
+        </div>
+        <div class="inv-qty{% if item.on_hand <= 0 %} is-bad{% endif %}">{{ item.on_hand_label }}</div>
+      </div>
+      {% if can_receive and item.paid_paise %}
+      <div class="subtle">Paid in ₹{{ item.paid_paise|rupees }}</div>
+      {% endif %}
+      <details class="inv-use">
+        <summary>Use this</summary>
+        <form method="post" action="/inventory/use" class="inv-use-form js-inv-use">
+          <input type="hidden" name="item_id" value="{{ item.id }}">
+          <div class="inv-use-grid">
+            <div class="field">
+              <label>Qty</label>
+              <input type="text" name="qty" inputmode="decimal" value="{{ '1' if item.unit not in ['km','m'] else '0.1' }}" step="{{ item.step }}" required>
+            </div>
+            <div class="field">
+              <label>Used for</label>
+              <select name="kind" class="js-inv-kind" required>
+                {% for key, label in kinds %}
+                <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="field js-inv-cust" hidden>
+            <label>Customer (faulty replacement)</label>
+            <input type="hidden" name="customer_id" value="">
+            <div class="settle-cust-type">
+              <input type="text" class="js-cust-q" placeholder="Type name or phone" autocomplete="off" spellcheck="false">
+              <div class="settle-suggest js-cust-suggest" hidden></div>
+            </div>
+            <div class="settle-cust-meta js-cust-meta is-empty"><span>Required for faulty replacement</span></div>
+          </div>
+          <div class="field">
+            <label>Note</label>
+            <input type="text" name="note" placeholder="Optional">
+          </div>
+          <button class="btn btn-primary" type="submit">Reduce stock</button>
+        </form>
+      </details>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+{% if not items %}
+<div class="card"><div class="empty">No items on this list.</div></div>
+{% endif %}
+
+{% if usage %}
+<div class="card">
+  <div class="card-head"><h2>Recently used</h2></div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>When</th><th>Item</th><th>Qty</th><th>For</th><th>Customer</th><th>By</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for u in usage %}
+      <tr>
+        <td class="subtle">{{ u.used_on|nice_date }}</td>
+        <td>{{ u.item_name }}</td>
+        <td>{{ u.qty_label }}</td>
+        <td>{{ u.kind_label }}</td>
+        <td>
+          {% if u.customer_id %}<a href="/customers/{{ u.customer_id }}">{{ u.customer_name }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ u.created_by or "—" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+{% if can_receive and receipts %}
+<div class="card">
+  <div class="card-head"><h2>Recent orders in</h2></div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>When</th><th>Item</th><th>Qty</th><th class="num">Paid</th><th>Note</th><th>By</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in receipts %}
+      <tr>
+        <td class="subtle">{{ r.received_on|nice_date }}</td>
+        <td>{{ r.item_name }}</td>
+        <td>{{ r.qty_label }}</td>
+        <td class="num">{% if r.amount_paise %}₹{{ r.amount_paise|rupees }}{% else %}—{% endif %}</td>
+        <td class="subtle">{{ r.note or "—" }}</td>
+        <td>{{ r.created_by or "—" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/inventory.js?v=1"></script>
+{% endblock %}

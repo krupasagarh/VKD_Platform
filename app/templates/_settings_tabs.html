@@ -1,9 +1,14 @@
-<div class="tabs">
-  {% if can('agents') %}
-  <a href="/settings/agents" class="{% if settings_tab == 'agents' %}on{% endif %}">Agents</a>
-  {% endif %}
-  {% if can('bix_sync') %}
-  <a href="/settings/bix" class="{% if settings_tab == 'bix' %}on{% endif %}">Bix update</a>
-  <a href="/settings/bix-history" class="{% if settings_tab == 'bix_history' %}on{% endif %}">Bix history</a>
-  {% endif %}
+<div class="settings-tabs">
+  <div class="tabs">
+    {% if can('agents') %}
+    <a href="/settings/agents" class="{% if settings_tab == 'agents' %}on{% endif %}">Agents</a>
+    <a href="/settings/upi" class="{% if settings_tab == 'upi' %}on{% endif %}">Customer pay</a>
+    <a href="/settings/whatsapp-templates" class="{% if settings_tab == 'wa_templates' %}on{% endif %}">WhatsApp templates</a>
+    <a href="/settings/hathway-expiry" class="{% if settings_tab == 'hathway_expiry' %}on{% endif %}">Hathway expiry</a>
+    {% endif %}
+    {% if can('bix_sync') %}
+    <a href="/settings/bix" class="{% if settings_tab == 'bix' %}on{% endif %}">Bix update</a>
+    <a href="/settings/bix-history" class="{% if settings_tab == 'bix_history' %}on{% endif %}">Bix history</a>
+    {% endif %}
+  </div>
 </div>

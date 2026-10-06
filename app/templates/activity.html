@@ -5,31 +5,80 @@
 
 {% block content %}
 <div class="page-head">
-  <div><h1>Activity</h1><div class="subtle">Everything the platform did, newest first.</div></div>
+  <div>
+    <h1>Activity</h1>
+    <div class="subtle">
+      {% if is_owner %}Every collection, renewal, collect-later, inventory and settlement entry — who did it, when and where.
+      {% else %}Your entries, newest first.{% endif %}
+    </div>
+  </div>
 </div>
+
+<form class="filters" method="get" action="/activity">
+  {% if is_owner %}
+  <div class="field">
+    <label>Agent</label>
+    <select name="agent_id">
+      <option value="">All agents</option>
+      {% for a in agents %}
+      <option value="{{ a.id }}" {% if agent_filter == a.id %}selected{% endif %}>{{ a.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <div class="field">
+    <label>What</label>
+    <select name="group">
+      <option value="">Everything</option>
+      {% for key, label, _ in groups %}
+      <option value="{{ key }}" {% if group == key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label>From</label>
+    <input type="date" name="from" value="{{ day_from }}">
+  </div>
+  <div class="field">
+    <label>To</label>
+    <input type="date" name="to" value="{{ day_to }}">
+  </div>
+  <button class="btn" type="submit">Show</button>
+</form>
 
 <div class="card">
 {% if rows %}
 {{ table_tools(export_href, rows|length) }}
-<div class="table-wrap">
+<div class="table-wrap table-wrap-sticky">
 <table>
-  <thead><tr><th>When</th><th>Who</th><th>Kind</th><th>What</th><th>Customer</th></tr></thead>
+  <thead><tr>
+    <th>When</th><th>Who</th><th>Kind</th><th>What</th><th>Customer</th>
+    {% if is_owner %}<th>Location</th>{% endif %}
+  </tr></thead>
   <tbody>
   {% for a in rows %}
     <tr>
       <td class="subtle" style="white-space:nowrap">{{ a.at }}</td>
-      <td class="subtle">{{ a.actor or "—" }}</td>
+      <td class="subtle">{{ a.agent_name or a.actor or "—" }}</td>
       <td><span class="badge">{{ a.kind }}</span></td>
       <td>{{ a.message }}</td>
       <td>{% if a.customer_id %}<a href="/customers/{{ a.customer_id }}">{{ a.customer_name or a.customer_id }}</a>
           {% else %}—{% endif %}</td>
+      {% if is_owner %}
+      <td style="white-space:nowrap">
+        {% if a.lat is not none and a.lng is not none %}
+          <a href="https://maps.google.com/?q={{ a.lat }},{{ a.lng }}" target="_blank" rel="noopener">📍 Map</a>
+          <div class="subtle">fix {{ (a.loc_at or "")[11:16] }}{% if a.loc_accuracy %} · ±{{ a.loc_accuracy|round|int }} m{% endif %}</div>
+        {% else %}<span class="subtle">—</span>{% endif %}
+      </td>
+      {% endif %}
     </tr>
   {% endfor %}
   </tbody>
 </table>
 </div>
 {% else %}
-  <div class="empty">Nothing yet.</div>
+  <div class="empty">Nothing in this range.</div>
 {% endif %}
 </div>
 {% endblock %}

@@ -1,97 +1,444 @@
 {% extends "base.html" %}
+{% from "_phone_cell.html" import phone_cell %}
 {% set active = "settings" %}
+{% set perm_groups = [
+  ("Customers", [
+    ("customers_view", "View customers"),
+    ("customers_edit", "Add or edit customers"),
+  ]),
+  ("Money", [
+    ("payments", "Collect payments"),
+    ("payment_date", "Set collection date (not only today)"),
+    ("change_due", "Change due (balance correction / waiver)"),
+    ("bills", "Bills and bill checker"),
+  ]),
+  ("Providers", [
+    ("portal_actions", "Queue provider actions and jobs"),
+    ("providers", "Providers, wallet and online list"),
+    ("packages", "Add or edit plans"),
+  ]),
+  ("Complaints", [
+    ("complaints", "Log and assign complaints"),
+    ("customer_whatsapp", "Send WhatsApp to customers"),
+  ]),
+  ("Field", [
+    ("inventory", "Stock counts and log used items"),
+  ]),
+  ("Admin", [
+    ("activity", "Activity log"),
+    ("bix_sync", "Bix upload and dues"),
+    ("agents", "Settings and staff logins"),
+  ]),
+] %}
+{% set default_perms = ['customers_view', 'payments', 'complaints', 'inventory'] %}
+{% set perm_total = permissions|length %}
 {% block title %}Agents · VK Platform{% endblock %}
 
+{% macro hidden_identity(a, include_active=true) %}
+  <input type="hidden" name="name" value="{{ a.name }}">
+  <input type="hidden" name="phone" value="{{ a.phone or '' }}">
+  <input type="hidden" name="provider_scope" value="{{ a.provider_scope or 'both' }}">
+  <input type="hidden" name="role" value="{{ a.role }}">
+  {% if include_active and a.active %}<input type="hidden" name="active" value="1" class="js-active-copy">{% endif %}
+{% endmacro %}
+
+{% macro hidden_perms(keys) %}
+  {% for key in keys %}
+  <input type="hidden" name="perm" value="{{ key }}">
+  {% endfor %}
+{% endmacro %}
+
+{% macro hidden_areas(areas) %}
+  {% for area in areas %}
+  <input type="hidden" name="area" value="{{ area }}">
+  {% endfor %}
+{% endmacro %}
+
+{% macro perm_fields(checked) %}
+  {% set ns = namespace(n=0) %}
+  {% for key, _label in permissions %}
+    {% if key in checked %}{% set ns.n = ns.n + 1 %}{% endif %}
+  {% endfor %}
+  <div class="ag-section-meta">
+    <span class="js-perm-count">{{ ns.n }} of {{ perm_total }} allowed</span>
+  </div>
+  {% for group, items in perm_groups %}
+  <div class="ag-perm-group">
+    <div class="ag-perm-h">
+      <strong>{{ group }}</strong>
+      <button type="button" class="ag-text-btn js-group-all">Select all</button>
+    </div>
+    {% for key, label in items %}
+    <label class="check">
+      <input type="checkbox" name="perm" value="{{ key }}"
+             {% if key in checked %}checked{% endif %}
+             {% if key == 'agents' %}class="js-admin-perm"{% endif %}>
+      {{ label }}
+    </label>
+    {% endfor %}
+  </div>
+  {% endfor %}
+  <p class="ag-amber js-admin-note"{% if 'agents' not in checked %} hidden{% endif %}>
+    This agent can change settings and other staff logins.
+  </p>
+{% endmacro %}
+
+{% macro area_fields(assigned, all_on) %}
+  {% set assigned_lower = assigned|map('lower')|list %}
+  {% set n = namespace(c=0) %}
+  {% for area in area_options %}
+    {% if area|lower in assigned_lower %}{% set n.c = n.c + 1 %}{% endif %}
+  {% endfor %}
+  {% if all_on %}{% set n.c = area_options|length %}{% endif %}
+  <label class="check ag-all-areas">
+    <input type="checkbox" class="js-all-areas"{% if all_on %} checked{% endif %}>
+    All areas
+  </label>
+  <div class="ag-area-tools">
+    <input type="search" class="js-area-search" placeholder="Search areas" autocomplete="off">
+    <button type="button" class="ag-text-btn js-areas-all">Select all</button>
+    <button type="button" class="ag-text-btn js-areas-clear">Clear</button>
+    <span class="js-area-count">{{ n.c }} of {{ area_options|length }} selected</span>
+  </div>
+  {% if area_options %}
+  <div class="ag-areas js-area-list{% if all_on %} is-locked{% endif %}">
+    {% for area in area_options %}
+    <label class="check" data-area="{{ area|lower }}">
+      <input type="checkbox" name="area" value="{{ area }}"
+             {% if all_on or area|lower in assigned_lower %}checked{% endif %}>
+      {{ area }}
+    </label>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="subtle">No localities yet.</p>
+  {% endif %}
+{% endmacro %}
+
 {% block content %}
-<div class="page-head">
+<div class="ag-page">
+<div class="page-head ag-page-head">
   <div>
     <h1>Agents &amp; access</h1>
-    <div class="subtle">
-      Each agent gets their own login. Collectors can take payments;
-      only tick portal or Bix access when that person should touch those.
-      Their GPS, collections and complaints show on <a href="/field">Field agents</a>.
-    </div>
+    <div class="subtle">ISP access decides which customers they see — Railtel + Hathway is the same list as the owner, including logins with no locality. Areas are field coverage only and do not hide customers.</div>
   </div>
+  <div class="spacer"></div>
+  <button type="button" class="btn btn-primary ag-add-btn" data-open="ag-new">+ Add agent</button>
 </div>
 
 {% include "_settings_tabs.html" %}
 
-<div class="card">
-  <div class="card-head"><h2>Add an agent</h2></div>
-  <form method="post" action="/settings/agents/new">
-    <div class="form-grid">
-      <div class="field"><label>Name</label><input type="text" name="name" required placeholder="Ramesh"></div>
-      <div class="field"><label>Username</label><input type="text" name="username" required placeholder="ramesh" autocomplete="off"></div>
-      <div class="field"><label>Password</label><input type="password" name="password" required autocomplete="new-password"></div>
-      <div class="field"><label>Role</label>
-        <select name="role">
-          <option value="collector" selected>Collector — payments only</option>
-          <option value="admin">Admin — everything</option>
-        </select>
-      </div>
-    </div>
-    <div class="subtle" style="margin:8px 0 6px">Extra access for a collector (ignored if you pick Admin)</div>
-    <div class="form-grid">
-      {% for key, label in permissions %}
-        {% if key not in ('customers_view', 'payments') %}
-        <label class="check"><input type="checkbox" name="perm" value="{{ key }}"> {{ label }}</label>
+<p class="subtle ag-moved">
+  WhatsApp group settings moved to <a href="/complaints">Complaints</a> →
+</p>
+
+{% if agents|length > 5 %}
+<div class="ag-search">
+  <input type="search" class="js-ag-search" placeholder="Search staff" autocomplete="off">
+</div>
+{% endif %}
+
+{% if not agents %}
+<div class="card ag-empty">
+  <p>No agents yet</p>
+  <button type="button" class="btn btn-primary" data-open="ag-new">Add agent</button>
+</div>
+{% else %}
+<div class="card ag-list-card">
+  <div class="ag-table-wrap">
+    <table class="ag-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Role</th>
+          <th>ISP</th>
+          <th>Phone</th>
+          <th>Areas</th>
+          <th>Permissions</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in agents %}
+        {% set assigned = agent_areas.get(a.id, []) %}
+        {% set assigned_lower = assigned|map('lower')|list %}
+        {% set area_state = namespace(all=true, n=0) %}
+        {% if not area_options %}
+          {% set area_state.all = false %}
+        {% else %}
+          {% for area in area_options %}
+            {% if area|lower in assigned_lower %}
+              {% set area_state.n = area_state.n + 1 %}
+            {% else %}
+              {% set area_state.all = false %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {% set is_self = current_agent and current_agent.id == a.id %}
+        {% set role_label = 'Admin' if a.role == 'admin' else 'Collector' %}
+        {% set perm_n = a.permissions|length %}
+        {% set show_all_areas = a.role == 'admin' or area_state.all %}
+        <tr class="ag-row" data-open="ag-{{ a.id }}"
+            data-name="{{ a.name|lower }}" data-username="{{ a.username|lower }}"
+            data-phone="{{ (a.phone or '')|lower }}" data-role="{{ role_label|lower }}">
+          <td>
+            <div class="ag-name">{{ a.name }}</div>
+            <div class="subtle ag-username">{{ a.username }}</div>
+          </td>
+          <td><span class="badge">{{ role_label }}</span></td>
+          <td class="nowrap">{% if a.role == 'admin' or (a.provider_scope or 'both') == 'both' %}Railtel + Hathway{% elif a.provider_scope == 'railtel' %}Railtel{% else %}Hathway{% endif %}</td>
+          <td>{% if a.phone %}{{ phone_cell(a.phone, compact=true) }}{% else %}<span class="subtle">—</span>{% endif %}</td>
+          <td class="nowrap">{% if show_all_areas %}All areas{% elif area_state.n %}{{ area_state.n }} area{% if area_state.n != 1 %}s{% endif %}{% else %}No areas{% endif %}</td>
+          <td class="nowrap">{{ perm_n }} of {{ perm_total }}</td>
+          <td>
+            <form method="post" action="/settings/agents/{{ a.id }}/edit" class="ag-status-form" data-stop-open>
+              {{ hidden_identity(a, include_active=false) }}
+              {{ hidden_perms(a.permissions) }}
+              {{ hidden_areas(assigned) }}
+              {% if is_self %}
+                <input type="hidden" name="active" value="1">
+              {% endif %}
+              <label class="ag-switch" title="{% if a.active %}Active{% else %}Disabled{% endif %}">
+                <input type="checkbox" name="active" value="1"
+                       {% if a.active %}checked{% endif %}
+                       {% if is_self %}disabled{% endif %}
+                       onchange="this.form.requestSubmit()">
+                <span>{% if a.active %}Active{% else %}Disabled{% endif %}</span>
+              </label>
+            </form>
+          </td>
+          <td class="ag-more-cell">
+            <div class="ag-menu">
+              <button type="button" class="ag-menu-btn" aria-label="More actions" aria-haspopup="true">…</button>
+              <div class="ag-menu-list" hidden>
+                <button type="button" data-open="ag-{{ a.id }}">Edit</button>
+                <button type="button" data-open="ag-{{ a.id }}" data-reset-pw>Reset password</button>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ag-cards">
+    {% for a in agents %}
+    {% set assigned = agent_areas.get(a.id, []) %}
+    {% set assigned_lower = assigned|map('lower')|list %}
+    {% set area_state = namespace(all=true, n=0) %}
+    {% if not area_options %}
+      {% set area_state.all = false %}
+    {% else %}
+      {% for area in area_options %}
+        {% if area|lower in assigned_lower %}
+          {% set area_state.n = area_state.n + 1 %}
+        {% else %}
+          {% set area_state.all = false %}
         {% endif %}
       {% endfor %}
-    </div>
-    <div style="margin-top:12px">
-      <button class="btn btn-primary" type="submit">Create agent</button>
-    </div>
-  </form>
-</div>
-
-{% for a in agents %}
-<div class="card">
-  <div class="card-head">
-    <h2>{{ a.name }} <span class="badge">{{ a.username }}</span></h2>
-    {% if a.role == 'admin' %}<span class="badge badge-ok">admin</span>
-    {% else %}<span class="badge">collector</span>{% endif %}
-    {% if not a.active %}<span class="badge badge-bad">disabled</span>{% endif %}
-  </div>
-  <form method="post" action="/settings/agents/{{ a.id }}/edit">
-    <div class="form-grid">
-      <div class="field"><label>Name</label><input type="text" name="name" value="{{ a.name }}" required></div>
-      <div class="field"><label>Role</label>
-        <select name="role" {% if current_agent and current_agent.id == a.id %}disabled{% endif %}>
-          <option value="collector" {% if a.role == 'collector' %}selected{% endif %}>Collector</option>
-          <option value="admin" {% if a.role == 'admin' %}selected{% endif %}>Admin</option>
-        </select>
-        {% if current_agent and current_agent.id == a.id %}
-          <input type="hidden" name="role" value="{{ a.role }}">
-        {% endif %}
+    {% endif %}
+    {% set is_self = current_agent and current_agent.id == a.id %}
+    {% set role_label = 'Admin' if a.role == 'admin' else 'Collector' %}
+    {% set perm_n = a.permissions|length %}
+    {% set show_all_areas = a.role == 'admin' or area_state.all %}
+    <div class="ag-mcard" data-open="ag-{{ a.id }}"
+         data-name="{{ a.name|lower }}" data-username="{{ a.username|lower }}"
+         data-phone="{{ (a.phone or '')|lower }}" data-role="{{ role_label|lower }}">
+      <div class="ag-mcard-top">
+        <div>
+          <div class="ag-name">{{ a.name }}</div>
+          <div class="subtle ag-username">{{ a.username }}</div>
+        </div>
+        <span class="badge">{{ role_label }}</span>
+        <span class="ag-chevron" aria-hidden="true">›</span>
       </div>
-      <div class="field"><label>New password (blank = keep)</label>
-        <input type="password" name="password" autocomplete="new-password"></div>
-      <div class="field">
-        <label class="check" style="margin-top:22px">
-          <input type="checkbox" name="active" value="1" {% if a.active %}checked{% endif %}
-                 {% if current_agent and current_agent.id == a.id %}disabled{% endif %}>
-          Can sign in
-        </label>
-        {% if current_agent and current_agent.id == a.id %}
+      <div class="ag-mcard-mid">
+        {% if a.phone %}{{ phone_cell(a.phone, compact=true) }}{% else %}<span class="subtle">No phone</span>{% endif %}
+        <span class="subtle">
+          {% if show_all_areas %}All areas{% elif area_state.n %}{{ area_state.n }} areas{% else %}No areas{% endif %}
+          · {{ perm_n }} permissions
+        </span>
+      </div>
+      <form method="post" action="/settings/agents/{{ a.id }}/edit" class="ag-status-form" data-stop-open>
+        {{ hidden_identity(a, include_active=false) }}
+        {{ hidden_perms(a.permissions) }}
+        {{ hidden_areas(assigned) }}
+        {% if is_self %}
           <input type="hidden" name="active" value="1">
         {% endif %}
+        <label class="ag-switch">
+          <input type="checkbox" name="active" value="1"
+                 {% if a.active %}checked{% endif %}
+                 {% if is_self %}disabled{% endif %}
+                 onchange="this.form.requestSubmit()">
+          <span>{% if a.active %}Active{% else %}Disabled{% endif %}</span>
+        </label>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# ---- New agent panel ---- #}
+<div class="ag-overlay" id="ag-new" hidden>
+  <div class="ag-sheet" role="dialog" aria-labelledby="ag-new-title">
+    <div class="ag-sheet-h">
+      <div>
+        <h2 id="ag-new-title">New agent</h2>
+        <span class="badge js-role-chip">Collector</span>
       </div>
+      <button type="button" class="ag-close" data-close aria-label="Close">×</button>
     </div>
-    {% if a.role != 'admin' %}
-    <div class="form-grid" style="margin-top:8px">
-      {% for key, label in permissions %}
-      <label class="check">
-        <input type="checkbox" name="perm" value="{{ key }}"
-               {% if key in a.permissions %}checked{% endif %}>
-        {{ label }}
+    <form method="post" action="/settings/agents/new" class="ag-sheet-body ag-new-form">
+      <div class="ag-card">
+        <h3>Details</h3>
+        <div class="field"><label>Name</label><input type="text" name="name" required placeholder="Ramesh"></div>
+        <div class="field"><label>Username</label><input type="text" name="username" required placeholder="ramesh" autocomplete="off"></div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" name="password" required autocomplete="new-password" minlength="8">
+          <div class="subtle">At least 8 characters, with a letter and a number.</div>
+        </div>
+        <div class="field"><label>Phone</label><input type="text" name="phone" placeholder="9876543210"></div>
+        <div class="field"><label>Role</label>
+          <select name="role" class="js-role">
+            <option value="collector" selected>Collector</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="field"><label>Customer access</label>
+          <select name="provider_scope">
+            <option value="both" selected>Railtel + Hathway</option>
+            <option value="railtel">Railtel only</option>
+            <option value="hathway">Hathway only</option>
+          </select>
+          <div class="subtle">Railtel + Hathway = same customers as the owner.</div>
+        </div>
+      </div>
+      <div class="ag-card js-access-card">
+        <h3>Access</h3>
+        {{ perm_fields(default_perms) }}
+      </div>
+      <div class="ag-card">
+        <h3>Areas</h3>
+        <p class="subtle" style="margin-top:0">Field coverage only. Does not hide customers.</p>
+        {{ area_fields([], false) }}
+      </div>
+      <div class="ag-card-foot ag-create-foot">
+        <button class="btn btn-primary" type="submit">Create agent</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ---- Edit panels ---- #}
+{% for a in agents %}
+{% set assigned = agent_areas.get(a.id, []) %}
+{% set assigned_lower = assigned|map('lower')|list %}
+{% set area_state = namespace(all=true) %}
+{% if not area_options %}
+  {% set area_state.all = false %}
+{% else %}
+  {% for area in area_options %}
+    {% if area|lower not in assigned_lower %}{% set area_state.all = false %}{% endif %}
+  {% endfor %}
+{% endif %}
+{% if a.role == 'admin' %}{% set area_state.all = true %}{% endif %}
+{% set is_self = current_agent and current_agent.id == a.id %}
+{% set role_label = 'Admin' if a.role == 'admin' else 'Collector' %}
+<div class="ag-overlay" id="ag-{{ a.id }}" hidden>
+  <div class="ag-sheet" role="dialog" aria-labelledby="ag-title-{{ a.id }}">
+    <div class="ag-sheet-h">
+      <div>
+        <h2 id="ag-title-{{ a.id }}">{{ a.name }}</h2>
+        <span class="badge js-role-chip">{{ role_label }}</span>
+      </div>
+      <label class="ag-switch ag-head-switch" title="{% if a.active %}Active{% else %}Disabled{% endif %}">
+        <input type="checkbox" class="js-head-active" value="1"
+               {% if a.active %}checked{% endif %}
+               {% if is_self %}disabled{% endif %}>
+        <span>{% if a.active %}Active{% else %}Disabled{% endif %}</span>
       </label>
-      {% endfor %}
+      <button type="button" class="ag-close" data-close aria-label="Close">×</button>
     </div>
-    {% endif %}
-    <div style="margin-top:12px">
-      <button class="btn btn-primary" type="submit">Save</button>
+    <div class="ag-sheet-body">
+      <form method="post" action="/settings/agents/{{ a.id }}/edit" class="ag-form" data-section="details">
+        {{ hidden_perms(a.permissions) }}
+        {{ hidden_areas(assigned) }}
+        {% if a.active or is_self %}<input type="hidden" name="active" value="1" class="js-active-copy">{% endif %}
+        <div class="ag-card js-track">
+          <h3>Details</h3>
+          <div class="field"><label>Name</label><input type="text" name="name" value="{{ a.name }}" required></div>
+          <div class="field">
+            <label>Username</label>
+            <div class="ag-readonly">{{ a.username }}</div>
+          </div>
+          <div class="field"><label>Phone</label><input type="text" name="phone" value="{{ a.phone or '' }}" placeholder="9876543210"></div>
+          <div class="field"><label>Role</label>
+            <select name="role" class="js-role" {% if is_self %}disabled{% endif %}>
+              <option value="collector" {% if a.role == 'collector' %}selected{% endif %}>Collector</option>
+              <option value="admin" {% if a.role == 'admin' %}selected{% endif %}>Admin</option>
+            </select>
+            {% if is_self %}<input type="hidden" name="role" value="{{ a.role }}">{% endif %}
+          </div>
+          <div class="field"><label>Customer access</label>
+            <select name="provider_scope">
+              <option value="both" {% if (a.provider_scope or 'both') == 'both' %}selected{% endif %}>Railtel + Hathway</option>
+              <option value="railtel" {% if a.provider_scope == 'railtel' %}selected{% endif %}>Railtel only</option>
+              <option value="hathway" {% if a.provider_scope == 'hathway' %}selected{% endif %}>Hathway only</option>
+            </select>
+            <div class="subtle">Railtel + Hathway = same customers as the owner, including no locality.</div>
+          </div>
+          <div class="field ag-pw-field">
+            <button type="button" class="btn btn-small js-reset-pw">Reset password</button>
+            <div class="ag-pw" hidden>
+              <label>New password</label>
+              <input type="password" name="password" autocomplete="new-password">
+              <div class="subtle">At least 8 characters, with a letter and a number. Leave blank to keep the current password.</div>
+            </div>
+          </div>
+          <div class="ag-card-foot">
+            <button class="btn js-save" type="submit" disabled>Save</button>
+          </div>
+        </div>
+      </form>
+
+      <form method="post" action="/settings/agents/{{ a.id }}/edit" class="ag-form" data-section="access">
+        {{ hidden_identity(a) }}
+        {{ hidden_areas(assigned) }}
+        {% if is_self %}<input type="hidden" name="active" value="1">{% endif %}
+        <div class="ag-card js-track js-access-card">
+          <h3>Access</h3>
+          {{ perm_fields(a.permissions) }}
+          <div class="ag-card-foot">
+            <button class="btn js-save" type="submit" disabled>Save</button>
+          </div>
+        </div>
+      </form>
+
+      <form method="post" action="/settings/agents/{{ a.id }}/edit" class="ag-form" data-section="areas">
+        {{ hidden_identity(a) }}
+        {{ hidden_perms(a.permissions) }}
+        {% if is_self %}<input type="hidden" name="active" value="1">{% endif %}
+        <div class="ag-card js-track">
+          <h3>Areas</h3>
+          <p class="subtle" style="margin-top:0">Field coverage only. Does not hide customers.</p>
+          {{ area_fields(assigned, area_state.all) }}
+          <div class="ag-card-foot">
+            <button class="btn js-save" type="submit" disabled>Save</button>
+          </div>
+        </div>
+      </form>
     </div>
-  </form>
+  </div>
 </div>
 {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/agents.js?v=3"></script>
 {% endblock %}

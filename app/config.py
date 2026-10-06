@@ -56,6 +56,10 @@ def _invoice_whatsapp_test_phone() -> str:
     return digits[-10:] if len(digits) >= 10 else ""
 
 
+def _complaint_whatsapp_group() -> str:
+    return (os.getenv("COMPLAINT_WHATSAPP_GROUP") or "").strip()
+
+
 def _float(name: str, default: float) -> float:
     try:
         return float((os.getenv(name) or "").strip())
@@ -78,6 +82,10 @@ class Settings:
     railtel_invoice_whatsapp_after_download: bool
     whatsapp_web_auto_send: bool
     whatsapp_web_session_dir: Path
+    complaint_whatsapp_notify_agent: bool
+    complaint_whatsapp_notify_group: bool
+    complaint_whatsapp_notify_customer: bool
+    complaint_whatsapp_group: str
     upstream_mode: str
     worker_enabled: bool
     job_poll_seconds: int
@@ -90,6 +98,9 @@ class Settings:
     due_days: int
     expiring_soon_days: int
     bix_history_db: Path
+    public_pay_enabled: bool
+    upi_vpa: str
+    upi_payee_name: str
 
     @property
     def is_live(self) -> bool:
@@ -126,6 +137,10 @@ def load_settings() -> Settings:
         ),
         whatsapp_web_auto_send=_flag("WHATSAPP_WEB_AUTO_SEND", True),
         whatsapp_web_session_dir=data_dir / "whatsapp_web",
+        complaint_whatsapp_notify_agent=_flag("COMPLAINT_WHATSAPP_NOTIFY_AGENT", True),
+        complaint_whatsapp_notify_group=_flag("COMPLAINT_WHATSAPP_NOTIFY_GROUP", True),
+        complaint_whatsapp_notify_customer=_flag("COMPLAINT_WHATSAPP_NOTIFY_CUSTOMER", True),
+        complaint_whatsapp_group=_complaint_whatsapp_group(),
         upstream_mode=mode,
         worker_enabled=_flag("VK_PLATFORM_WORKER_ENABLED", True),
         job_poll_seconds=max(1, _int("VK_PLATFORM_JOB_POLL_SECONDS", 5)),
@@ -138,7 +153,19 @@ def load_settings() -> Settings:
         due_days=_int("VK_PLATFORM_DUE_DAYS", 7),
         expiring_soon_days=_int("VK_PLATFORM_EXPIRING_SOON_DAYS", 7),
         bix_history_db=bix_history_db,
+        public_pay_enabled=_flag("VK_PLATFORM_PUBLIC_PAY", True),
+        upi_vpa=(os.getenv("VK_PLATFORM_UPI_VPA") or "").strip(),
+        upi_payee_name=(os.getenv("VK_PLATFORM_UPI_PAYEE") or "").strip()
+        or (os.getenv("VK_PLATFORM_OPERATOR") or "operator").strip(),
     )
 
 
 settings = load_settings()
+
+DEMO_DB_NAME = "vk_platform_demo.db"
+DEMO_PORT = 8801
+LIVE_PORT = 8800
+
+
+def is_demo_instance() -> bool:
+    return settings.db_path.name == DEMO_DB_NAME

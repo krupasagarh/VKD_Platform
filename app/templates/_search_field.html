@@ -1,0 +1,11 @@
+{% macro search_field(name='q', value='', placeholder='Search…', class='', id='', autocomplete='off') %}
+<label class="search-field {{ class }}" aria-label="Search">
+  <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="11" cy="11" r="7"></circle>
+    <path d="M20 20l-3.5-3.5"></path>
+  </svg>
+  <input type="search" name="{{ name }}"{% if id %} id="{{ id }}"{% endif %}
+         value="{{ value }}" placeholder="{{ placeholder }}" autocomplete="{{ autocomplete }}"
+         aria-label="{{ placeholder or 'Search' }}" enterkeyhint="search">
+</label>
+{% endmacro %}

@@ -3,7 +3,7 @@
 A small billing and CRM system for VK Digital Hub — the parts of CableWay that
 actually get used, with the provider automation you already own doing the work.
 
-Two providers: **Railtel / Railwire** (broadband) and **Hathway** (cable TV).
+Two providers: **Railtel** (broadband) and **Hathway** (cable TV).
 Renewals run through `railtel_debugger/vk_agent`, the same Playwright code the
 Telegram bot uses.
 
@@ -284,7 +284,7 @@ can see boxes that are live on Railtel but missing from billing.
 
 Worth knowing, because both cost us a bug:
 
-| | Railtel / Railwire | Hathway |
+| | Railtel | Hathway |
 | --- | --- | --- |
 | Expiry format | `23/09/26 11:59:59 PM` | `12-OCT-26` |
 | Session | `Active since 09/09/26 12:10:08 PM` | not reported |

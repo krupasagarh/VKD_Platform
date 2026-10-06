@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 
 from .config import settings
-from .messaging import invoice_whatsapp_target_phone, service_label
+from .messaging import invoice_caption_text, invoice_whatsapp_target_phone
 from .money import now_iso
 
 
@@ -51,15 +51,7 @@ def invoice_public_url(invoice_id: int, base_url: str = "") -> str:
 
 
 def invoice_whatsapp_caption(customer_name: str, invoice_no: str) -> str:
-    name = (customer_name or "Customer").strip() or "Customer"
-    inv = (invoice_no or "bill").strip()
-    service = service_label("railtel")
-    return (
-        f"Hi {name},\n\n"
-        f"Please find your {service} bill ({inv}).\n\n"
-        f"Thanks,\n"
-        f"VK DIGITAL"
-    )
+    return invoice_caption_text(customer_name, invoice_no, "railtel")
 
 
 def _record_invoice_whatsapp_result(

@@ -1,0 +1,35 @@
+{% macro customer_feed_actions(item, cid, can, next_url, only_provider=none) %}
+{% set ns = namespace(conn_id=none) %}
+{% if only_provider == 'hathway' and item.hathway_conns %}
+  {% set ns.conn_id = item.hathway_conns.split('|')[0].split(':')[0] %}
+{% elif only_provider == 'railtel' and item.railtel_conns %}
+  {% set ns.conn_id = item.railtel_conns.split('|')[0].split(':')[0] %}
+{% elif only_provider == 'iptv' and item.iptv_conns %}
+  {% set ns.conn_id = item.iptv_conns.split('|')[0].split(':')[0] %}
+{% elif only_provider == 'ott' and item.ott_conns %}
+  {% set ns.conn_id = item.ott_conns.split('|')[0].split(':')[0] %}
+{% elif item.hathway_conns %}
+  {% set ns.conn_id = item.hathway_conns.split('|')[0].split(':')[0] %}
+{% elif item.railtel_conns %}
+  {% set ns.conn_id = item.railtel_conns.split('|')[0].split(':')[0] %}
+{% elif item.iptv_conns %}
+  {% set ns.conn_id = item.iptv_conns.split('|')[0].split(':')[0] %}
+{% elif item.ott_conns %}
+  {% set ns.conn_id = item.ott_conns.split('|')[0].split(':')[0] %}
+{% endif %}
+{% if can('payments') %}
+  {% if ns.conn_id %}
+  <a class="v2-action v2-action-collect" href="/customers/{{ cid }}?connection_id={{ ns.conn_id }}#collect" title="Collect payment and renew">Collect</a>
+  {% else %}
+  <a class="v2-action v2-action-collect" href="/customers/{{ cid }}#collect" title="Collect payment and renew">Collect</a>
+  {% endif %}
+{% elif not can('portal_actions') %}
+  <a class="v2-action v2-action-open" href="/customers/{{ cid }}">Open</a>
+  {% endif %}
+{% if can('portal_actions') and ns.conn_id %}
+<form class="v2-inline-form" method="post" action="/connections/{{ ns.conn_id }}/collect-later">
+  <input type="hidden" name="next" value="{{ next_url }}">
+  <button class="v2-action v2-action-later" type="submit" title="Renew on portal and collect payment later">Later</button>
+</form>
+{% endif %}
+{% endmacro %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% set active = "inventory" %}
+{% block title %}{{ item.name }} · Inventory{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ item.name }}</h1>
+    <div class="subtle">{{ item.category }} · {{ item.unit }}</div>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn" href="/inventory">← All stock</a>
+</div>
+
+<div class="stats">
+  <div class="stat{% if item.on_hand <= 0 %} warn{% endif %}">
+    <div class="label">On hand</div>
+    <div class="value">{{ item.on_hand_label }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">Received</div>
+    <div class="value">{{ item.received_label }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">Used</div>
+    <div class="value">{{ item.used_label }}</div>
+  </div>
+  {% if can_receive %}
+  <div class="stat">
+    <div class="label">Paid in</div>
+    <div class="value">₹{{ item.paid_paise|rupees }}</div>
+  </div>
+  {% endif %}
+</div>
+
+{% if usage %}
+<div class="card">
+  <div class="card-head"><h2>Used</h2></div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>When</th><th>Qty</th><th>For</th><th>Customer</th><th>By</th><th>Note</th></tr>
+    </thead>
+    <tbody>
+    {% for u in usage %}
+      <tr>
+        <td>{{ u.used_on|nice_date }}</td>
+        <td>{{ u.qty_label }}</td>
+        <td>{{ u.kind_label }}</td>
+        <td>
+          {% if u.customer_id %}<a href="/customers/{{ u.customer_id }}">{{ u.customer_name }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ u.created_by or "—" }}</td>
+        <td class="subtle">{{ u.note or "—" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+{% if can_receive and receipts %}
+<div class="card">
+  <div class="card-head"><h2>Orders in</h2></div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>When</th><th>Qty</th><th class="num">Paid</th><th>Note</th><th>By</th></tr>
+    </thead>
+    <tbody>
+    {% for r in receipts %}
+      <tr>
+        <td>{{ r.received_on|nice_date }}</td>
+        <td>{{ r.qty_label }}</td>
+        <td class="num">{% if r.amount_paise %}₹{{ r.amount_paise|rupees }}{% else %}—{% endif %}</td>
+        <td class="subtle">{{ r.note or "—" }}</td>
+        <td>{{ r.created_by or "—" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

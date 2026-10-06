@@ -1,0 +1,54 @@
+{% extends "v2/base.html" %}
+{% from "v2/_expired_yesterday_card.html" import expired_yesterday_card %}
+{% set active = "expiring" %}
+{% block title %}Expired yesterday · VK Digital{% endblock %}
+
+{% block header %}
+<header class="v2-header">
+  <div class="v2-header-top">
+    <a class="v2-back" href="/v2/" aria-label="Back">←</a>
+    <div class="v2-header-main">
+      <div class="v2-route">Expired yesterday</div>
+      <div class="v2-subline">
+        {{ stats.customers }} customer{{ "s" if stats.customers != 1 else "" }}
+        · {{ stats.connections }} connection{{ "s" if stats.connections != 1 else "" }}
+      </div>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<p class="v2-page-note">
+  All providers — connections that expired <strong>yesterday</strong>.
+  Tap WhatsApp to send an expired-service reminder.
+</p>
+
+<form class="v2-filters" method="get" action="/v2/expired-yesterday">
+  <label class="v2-filter-field">
+    <span>Provider</span>
+    <select name="provider" onchange="this.form.submit()">
+      <option value="">Any provider</option>
+      {% for p in providers %}
+      <option value="{{ p }}" {% if provider == p %}selected{% endif %}>{{ provider_labels.get(p, p) }}</option>
+      {% endfor %}
+    </select>
+  </label>
+</form>
+
+{% if rows %}
+<div class="v2-feed">
+  {% for item in rows %}
+    {{ expired_yesterday_card(item, provider_labels, can, areas, list_next) }}
+  {% endfor %}
+</div>
+{% else %}
+<div class="v2-empty">
+  <h2>Nothing expired yesterday</h2>
+  <p>{% if provider %}No {{ provider_labels.get(provider, provider) }} connections expired yesterday.{% else %}No connections expired yesterday.{% endif %}</p>
+  {% if provider %}
+  <a class="v2-cta" href="/v2/expired-yesterday" style="display:inline-flex;margin-top:16px">Show all providers</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

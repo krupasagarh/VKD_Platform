@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_list_tools.html" import table_tools %}
+{% from "_complaint_whatsapp_menu.html" import complaint_whatsapp_menu %}
 {% set active = "complaints" %}
 {% block title %}Complaints · VK Platform{% endblock %}
 
@@ -21,7 +22,7 @@
   <a href="/complaints?status=fixed" class="{% if status == 'fixed' %}on{% endif %}">Fixed</a>
 </div>
 
-<form class="filters" method="get" action="/complaints">
+<form class="filters filters-bar" method="get" action="/complaints">
   <div class="field">
     <label>Status</label>
     <select name="status">
@@ -42,6 +43,28 @@
   </div>
   <button class="btn" type="submit">Apply</button>
 </form>
+
+{% if can('agents') %}
+<div class="card">
+  <div class="card-head"><h2>Complaint WhatsApp alerts</h2></div>
+  <p class="subtle">
+    Office auto-send on log/assign uses WhatsApp Web on this PC — the group name must
+    match the sidebar exactly (save the group in WhatsApp Web first).
+  </p>
+  <form method="post" action="/settings/complaint-whatsapp">
+    <div class="form-grid">
+      <div class="field">
+        <label>Technicians WhatsApp group name</label>
+        <input type="text" name="group_name" value="{{ complaint_whatsapp_group or '' }}"
+               placeholder="VK Technicians">
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <button class="btn" type="submit">Save group</button>
+    </div>
+  </form>
+</div>
+{% endif %}
 
 {% if recent_fixed and not status %}
 <div class="card">
@@ -97,6 +120,15 @@
         </div>
         <button class="btn" type="submit">Save assignment</button>
       </form>
+      <div class="complaint-wa-block">
+        <div class="complaint-wa-head">
+          <div class="complaint-wa-copy">
+            <div class="complaint-wa-title">WhatsApp alert</div>
+            <p class="complaint-wa-note">Notify technician group, assigned agent, and customer — opens WhatsApp on your phone.</p>
+          </div>
+          {{ complaint_whatsapp_menu(c.id, c.assigned_agent_id) }}
+        </div>
+      </div>
       <form method="post" action="/complaints/{{ c.id }}/note" style="margin-top:8px">
         <div class="field">
           <label>Follow-up note</label>

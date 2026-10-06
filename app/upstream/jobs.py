@@ -22,13 +22,13 @@ import logging
 import re
 import sqlite3
 import threading
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from .. import billing
+from .. import billing, repo
 from ..config import settings
 from ..db import connection, get_setting, log_activity, set_setting, transaction
-from ..money import fmt_datetime, now_iso, parse_date
+from ..money import fmt_datetime, now_iso, parse_date, today
 from .providers import (
     ACCOUNT_ACTIONS,
     ACTION_LABELS,
@@ -38,8 +38,10 @@ from .providers import (
     id_problem,
     link_state_from,
     is_permanent_error,
+    portal_reports_terminated,
     reports_terminated,
     run_action,
+    run_batch_status,
     wallet_summary,
 )
 
@@ -58,6 +60,47 @@ _otp_waiters: dict[int, dict] = {}
 # Lower number runs first. Anything an operator is waiting on beats a bulk sweep.
 PRIORITY_INTERACTIVE = 100
 PRIORITY_SWEEP = 900
+PRIORITY_EXPIRED_REFRESH = 950
+
+# Nightly sweep + expired-list batch checks — run in the worker thread but must not
+# trigger full-page UI reloads or "portal busy" banners.
+BACKGROUND_JOB_SQL = f"(action IN ('status', 'status_batch') AND priority >= {PRIORITY_SWEEP})"
+
+# These occupy the dealer portal login. Collect, browse, and status must stay usable;
+# only another renew or subscriber sync waits for the current one.
+EXCLUSIVE_PORTAL_ACTIONS = frozenset({"renew", "sync"})
+
+
+def exclusive_job_sql(alias: str = "") -> str:
+    col = f"{alias}.action" if alias else "action"
+    listed = ", ".join(f"'{name}'" for name in sorted(EXCLUSIVE_PORTAL_ACTIONS))
+    return f"({col} IN ({listed}))"
+
+
+def blocking_exclusive_job(
+    conn: sqlite3.Connection,
+    *,
+    except_job_id: int | None = None,
+):
+    """The renew/sync already using the portal login, if any."""
+    sql = (
+        "SELECT j.id, j.action, j.provider, j.status, "
+        "c.name AS customer_name, cn.upstream_id "
+        "FROM upstream_jobs j "
+        "LEFT JOIN customers c ON c.id = j.customer_id "
+        "LEFT JOIN connections cn ON cn.id = j.connection_id "
+        f"WHERE j.status IN ('running', 'queued', 'awaiting_confirm') "
+        f"AND {exclusive_job_sql('j')} "
+    )
+    params: list = []
+    if except_job_id:
+        sql += "AND j.id != ? "
+        params.append(int(except_job_id))
+    sql += (
+        "ORDER BY CASE j.status WHEN 'running' THEN 0 "
+        "WHEN 'queued' THEN 1 ELSE 2 END, j.id LIMIT 1"
+    )
+    return conn.execute(sql, params).fetchone()
 
 # Connection states worth asking the provider about. A terminated box has nothing left
 # to report, and re-checking it every night would waste a login each time.
@@ -105,9 +148,9 @@ def enqueue_job(
         raise ValueError(f"Connection {connection_id} not found")
 
     if (row["provider"] or "").lower() == "railtel" and action == "renew":
-        from ..railtel_sync import railtel_renew_block_reason
+        from ..railtel_sync import railtel_renew_block_reason_from_conn
 
-        reason = railtel_renew_block_reason(row["expiry_date"])
+        reason = railtel_renew_block_reason_from_conn(conn, connection_id)
         if reason:
             raise RenewNotAllowed(reason)
 
@@ -152,6 +195,40 @@ def enqueue_job(
             meta_json=json.dumps({"job_id": job_id, "action": action, "status": status}),
         )
     return job_id
+
+
+def enqueue_status_batch(
+    conn: sqlite3.Connection,
+    *,
+    provider: str,
+    connection_ids: list[int],
+    requested_by: str,
+    priority: int = PRIORITY_EXPIRED_REFRESH,
+) -> int | None:
+    """Queue one multi-subscriber status job (single portal login)."""
+    prov = (provider or "").strip().lower()
+    ids = [int(x) for x in connection_ids if int(x or 0) > 0]
+    if not ids or prov not in ("railtel", "hathway"):
+        return None
+
+    open_batch = conn.execute(
+        "SELECT id FROM upstream_jobs WHERE provider = ? AND action = 'status_batch' "
+        f"AND status IN ({_OPEN_SQL}) LIMIT 1",
+        (prov,),
+    ).fetchone()
+    if open_batch:
+        return None
+
+    payload = json.dumps({"connection_ids": ids})
+    stamp = now_iso()
+    cursor = conn.execute(
+        "INSERT INTO upstream_jobs(connection_id, customer_id, provider, action, status, "
+        "priority, sweep_id, payment_id, attempts, max_attempts, requested_by, "
+        "scheduled_for, collect_later, batch_json, created_at, updated_at) "
+        "VALUES(NULL, NULL, ?, 'status_batch', 'queued', ?, NULL, NULL, 0, 2, ?, ?, 0, ?, ?, ?)",
+        (prov, priority, requested_by, stamp, payload, stamp, stamp),
+    )
+    return int(cursor.lastrowid)
 
 
 def enqueue_customer_status(
@@ -223,7 +300,7 @@ def enqueue_provider_job(
     if action not in ACCOUNT_ACTIONS.get(provider, ()):
         raise ValueError(f"{provider} has no account action '{action}'")
 
-    if (provider or "").lower() in ("iptv", "ott") or action == "sync":
+    if (provider or "").lower() in ("iptv", "ott") or action in ("sync", "online"):
         needs_confirmation = False
 
     existing = conn.execute(
@@ -600,6 +677,7 @@ def claim_next_job() -> dict | None:
             "attempts": int(row["attempts"]) + 1,
             "max_attempts": int(row["max_attempts"]),
             "upstream_id": conn_row["upstream_id"] if conn_row else "",
+            "batch_json": row["batch_json"] if "batch_json" in row.keys() else None,
             "collect_later": bool(row["collect_later"]) if "collect_later" in row.keys() else False,
         }
 
@@ -991,80 +1069,96 @@ def _apply_success(job: dict, result) -> None:
         summary = result.message or ACTION_LABELS.get(job["action"], job["action"])
 
         later = bool(job.get("collect_later"))
+        unpaid_renew = later or not job.get("payment_id")
 
         if job["action"] == "renew":
+            raw = result.raw or {}
+            is_term = (job["provider"] or "").lower() == "railtel" and repo.connection_is_railtel_term(
+                conn, int(conn_row["id"])
+            )
+            xpath_sub = _real_date(parse_date(raw.get("subscription_expiry") or ""))
+            if is_term:
+                # Paid-through is Subscriber Details xpath tr[4] only — never 30/100-day math.
+                provider_expiry = xpath_sub
             bill_id, period_start, new_expiry = billing.bill_for_renewal(
                 conn, conn_row, package_row, provider_expiry=provider_expiry,
-                job_id=job["id"], collect_later=later,
+                job_id=job["id"], collect_later=unpaid_renew,
             )
             billing.bind_portal_plan(conn, int(conn_row["id"]), result.plan_name)
             new_expiry_s = new_expiry.strftime("%Y-%m-%d")
-            conn.execute(
-                "UPDATE connections SET expiry_date = ?, status = 'active', "
-                "last_synced_at = ?, updated_at = ? WHERE id = ?",
-                (
-                    new_expiry_s,
-                    stamp,
-                    stamp,
-                    conn_row["id"],
-                ),
-            )
+            term_exp_s = xpath_sub.strftime("%Y-%m-%d") if xpath_sub else None
+            if is_term:
+                conn.execute(
+                    "UPDATE connections SET "
+                    "subscription_expiry = COALESCE(?, subscription_expiry), "
+                    "status = 'active', link_state = '', link_since = '', link_days = NULL, "
+                    "last_synced_at = ?, updated_at = ? WHERE id = ?",
+                    (term_exp_s, stamp, stamp, conn_row["id"]),
+                )
+            else:
+                conn.execute(
+                    "UPDATE connections SET expiry_date = ?, "
+                    "status = 'active', link_state = '', link_since = '', link_days = NULL, "
+                    "last_synced_at = ?, updated_at = ? WHERE id = ?",
+                    (new_expiry_s, stamp, stamp, conn_row["id"]),
+                )
             if (job["provider"] or "").lower() == "railtel" and not result.simulated:
                 from .. import railtel_sync
 
-                railtel_sync.patch_railtel_subscriber_after_renew(
-                    conn,
-                    conn_row["upstream_id"],
-                    new_expiry_s,
-                    package=result.plan_name or "",
-                )
+                patch_exp = term_exp_s if is_term else new_expiry_s
+                if patch_exp:
+                    railtel_sync.patch_railtel_subscriber_after_renew(
+                        conn,
+                        conn_row["upstream_id"],
+                        patch_exp,
+                        package=result.plan_name or "",
+                    )
             billing.reconcile_customer(conn, job["customer_id"])
-            summary = (
-                f"Renewed until {new_expiry.strftime('%d %b %Y')}"
-                + (" (simulated)" if result.simulated else "")
-                + (" — collect payment later" if later else "")
+            repo.sync_customer_account_status(conn, job["customer_id"])
+            bill_row = conn.execute(
+                "SELECT collect_later, status FROM bills WHERE id = ?", (bill_id,)
+            ).fetchone() if bill_id else None
+            on_followup = bool(
+                bill_row is not None
+                and bill_row["collect_later"]
+                and bill_row["status"] in ("pending", "partial")
             )
+            later_note = " — collect payment later" if on_followup else ""
+            paid_through = xpath_sub if is_term else None
+            show_until = paid_through or new_expiry
+            if is_term and not xpath_sub:
+                summary = (
+                    "Renewed on portal — term expiry not read from Subscriber Details yet"
+                    + (" (simulated)" if result.simulated else "")
+                    + later_note
+                )
+                if not result.simulated:
+                    try:
+                        enqueue_job(
+                            conn,
+                            connection_id=int(conn_row["id"]),
+                            action="status",
+                            requested_by="post-renew term expiry",
+                            needs_confirmation=False,
+                            quiet=True,
+                        )
+                        summary += " — status check queued to read it"
+                    except Exception:
+                        log.exception("Could not queue post-renew status for job %s", job["id"])
+            else:
+                summary = (
+                    f"Renewed until {show_until.strftime('%d %b %Y')}"
+                    + (" (simulated)" if result.simulated else "")
+                    + later_note
+                )
 
         elif job["action"] == "status":
-            # A Hathway status check reports the viewing card, which the Bix export often
-            # lacks, so fill it in when missing — never overwrite. Both portals put this in
-            # a field called `mac`, but Railtel means the router's network MAC there, which
-            # is not a card number and must not be stored as one.
-            card = card_number_from(job["provider"], result.raw)
-            link = link_state_from(job["provider"], result.raw)
-            billing.bind_portal_plan(conn, int(conn_row["id"]), result.plan_name)
-            ott_note = None
-            if (job["provider"] or "").lower() == "ott":
-                portal_acc = re.sub(r"\D", "", str((result.raw or {}).get("account_id") or ""))
-                if portal_acc:
-                    ott_note = f"SmartPlay OTT acc {portal_acc}"
-            conn.execute(
-                "UPDATE connections SET "
-                "expiry_date = COALESCE(?, expiry_date), "
-                "card_number = CASE WHEN COALESCE(card_number, '') = '' "
-                "                   THEN NULLIF(?, '') ELSE card_number END, "
-                "link_state = ?, link_since = ?, link_days = ?, "
-                "notes = COALESCE(?, notes), "
-                "last_synced_at = ?, updated_at = ? WHERE id = ?",
-                (
-                    provider_expiry.strftime("%Y-%m-%d") if provider_expiry else None,
-                    card,
-                    link["state"],
-                    link["since"],
-                    link["days"],
-                    ott_note,
-                    stamp,
-                    stamp,
-                    conn_row["id"],
-                ),
-            )
-            summary = (
-                f"Status synced — expiry {provider_expiry.strftime('%d %b %Y')}"
-                if provider_expiry
-                else "Status synced, but the portal did not report an expiry date"
-            )
-            if link["state"] == "offline":
-                summary += " — the line is currently down"
+            if portal_reports_terminated(result):
+                summary = _mark_connection_terminated(conn, conn_row, stamp)
+            else:
+                summary = _apply_connection_status_update(
+                    conn, conn_row, result, stamp=stamp, parent_job_id=None
+                )
 
         elif job["action"] == "deactivate":
             conn.execute(
@@ -1172,6 +1266,33 @@ def _apply_success(job: dict, result) -> None:
             connection_id=job["connection_id"],
             meta_json=json.dumps({"job_id": job["id"], "bill_id": bill_id}),
         )
+
+
+def _auto_send_renewed_whatsapp(job: dict) -> None:
+    """Tell the customer their service is renewed, from the office WhatsApp."""
+    if not job.get("customer_id"):
+        return
+    from ..whatsapp_notify import queue_customer_message
+
+    agent_id = None
+    requested_by = (job.get("requested_by") or "").strip()
+    if requested_by:
+        with connection() as conn:
+            row = conn.execute(
+                "SELECT id FROM agents WHERE lower(name) = lower(?) OR lower(username) = lower(?) LIMIT 1",
+                (requested_by, requested_by),
+            ).fetchone()
+        agent_id = int(row["id"]) if row else None
+    try:
+        queue_customer_message(
+            customer_id=int(job["customer_id"]),
+            kind="renewed",
+            connection_id=job.get("connection_id"),
+            provider=job.get("provider"),
+            agent_id=agent_id,
+        )
+    except Exception:  # noqa: BLE001 - a WhatsApp hiccup must not fail the renew
+        log.exception("Renewed WhatsApp for job %s failed to queue", job.get("id"))
 
 
 def _auto_send_railtel_invoice_whatsapp(job: dict, result) -> None:
@@ -1320,8 +1441,258 @@ def _live_extras(job: dict) -> dict | None:
     return None
 
 
+def _mark_connection_terminated(
+    conn: sqlite3.Connection,
+    conn_row: sqlite3.Row,
+    stamp: str,
+) -> str:
+    """Persist a portal-terminated STB so billing and filters can see it."""
+    conn.execute(
+        "UPDATE connections SET status = 'terminated', expiry_date = '', "
+        "last_synced_at = ?, updated_at = ? WHERE id = ?",
+        (stamp, stamp, conn_row["id"]),
+    )
+    repo.sync_customer_account_status(conn, int(conn_row["customer_id"]))
+    log_activity(
+        conn,
+        "connection_updated",
+        f"{conn_row['provider']} reports this box is terminated — marked terminated "
+        f"here so it stops being billed",
+        customer_id=conn_row["customer_id"],
+        connection_id=conn_row["id"],
+    )
+    return (
+        f"{conn_row['provider']} reports this box is terminated — marked terminated here"
+    )
+
+
+_DOWN_SINCE_RE = re.compile(r"down\s+since\s+(\d{1,2})/(\d{1,2})/(\d{2,4})", re.I)
+
+
+def _real_date(value):
+    """Railtel prints 01/01/70 when no term pack is active; that is not an expiry."""
+    return value if value is not None and value.year >= 2000 else None
+
+
+def _term_end_from_downtime(raw: dict):
+    """Railtel cuts a lapsed term line at midnight, so it ended the day before "Down since"."""
+    m = _DOWN_SINCE_RE.search(str((raw or {}).get("downtime") or ""))
+    if not m:
+        return None
+    day, month, year = (int(x) for x in m.groups())
+    if year < 100:
+        year += 2000
+    try:
+        return date(year, month, day) - timedelta(days=1)
+    except ValueError:
+        return None
+
+
+def _apply_connection_status_update(
+    conn: sqlite3.Connection,
+    conn_row: sqlite3.Row,
+    result,
+    *,
+    stamp: str,
+    parent_job_id: int | None = None,
+) -> str:
+    """Write one status-check result onto a connection row."""
+    if portal_reports_terminated(result):
+        return _mark_connection_terminated(conn, conn_row, stamp)
+
+    raw = result.raw or {}
+    raw_sub = parse_date(raw.get("subscription_expiry") or "")
+    xpath_sub = _real_date(raw_sub)
+    if raw_sub is not None and xpath_sub is None:
+        xpath_sub = _term_end_from_downtime(raw)
+    provider_expiry = xpath_sub or _real_date(parse_date(result.expiry))
+    card = card_number_from(conn_row["provider"], result.raw)
+    link = link_state_from(conn_row["provider"], result.raw)
+    list_package = str(raw.get("list_package") or "").strip()
+    bind_name = result.plan_name
+    if re.search(r"\sx(3|6|10|12)\b", list_package, re.I):
+        bind_name = list_package
+    billing.bind_portal_plan(conn, int(conn_row["id"]), bind_name)
+    ott_note = None
+    if (conn_row["provider"] or "").lower() == "ott":
+        portal_acc = re.sub(r"\D", "", str((result.raw or {}).get("account_id") or ""))
+        if portal_acc:
+            ott_note = f"SmartPlay OTT acc {portal_acc}"
+    exp_s = provider_expiry.strftime("%Y-%m-%d") if provider_expiry else None
+    is_railtel_term = (conn_row["provider"] or "").lower() == "railtel" and (
+        repo.connection_is_railtel_term(conn, int(conn_row["id"]))
+        or bool(re.search(r"\sx(3|6|10|12)\b", f"{bind_name} {list_package}", re.I))
+    )
+    if is_railtel_term:
+        # Term end is Subscriber Details tr[4] only; result.expiry is the monthly cycle.
+        exp_s = xpath_sub.strftime("%Y-%m-%d") if xpath_sub else None
+        conn.execute(
+            "UPDATE connections SET "
+            "subscription_expiry = COALESCE(?, subscription_expiry), "
+            "card_number = CASE WHEN COALESCE(card_number, '') = '' "
+            "                   THEN NULLIF(?, '') ELSE card_number END, "
+            "link_state = ?, link_since = ?, link_days = ?, "
+            "notes = COALESCE(?, notes), "
+            "last_synced_at = ?, updated_at = ? WHERE id = ?",
+            (
+                exp_s,
+                card,
+                link["state"],
+                link["since"],
+                link["days"],
+                ott_note,
+                stamp,
+                stamp,
+                conn_row["id"],
+            ),
+        )
+    else:
+        conn.execute(
+            "UPDATE connections SET "
+            "expiry_date = COALESCE(?, expiry_date), "
+            "card_number = CASE WHEN COALESCE(card_number, '') = '' "
+            "                   THEN NULLIF(?, '') ELSE card_number END, "
+            "link_state = ?, link_since = ?, link_days = ?, "
+            "notes = COALESCE(?, notes), "
+            "last_synced_at = ?, updated_at = ? WHERE id = ?",
+            (
+                exp_s,
+                card,
+                link["state"],
+                link["since"],
+                link["days"],
+                ott_note,
+                stamp,
+                stamp,
+                conn_row["id"],
+            ),
+        )
+    repo.sync_customer_account_status(conn, int(conn_row["customer_id"]))
+    no_package = (conn_row["provider"] or "").lower() == "hathway" and not getattr(
+        result, "simulated", False
+    ) and (bool(raw.get("hathway_no_package")) or not (result.plan_name or "").strip())
+    if no_package:
+        summary = "Hathway plan has expired — no package on this box."
+        result.message = summary
+    elif is_railtel_term:
+        summary = (
+            f"Status synced — term ends {xpath_sub.strftime('%d %b %Y')}"
+            if xpath_sub
+            else "Status synced, but the portal did not show the term end date"
+        )
+    else:
+        summary = (
+            f"Status synced — expiry {provider_expiry.strftime('%d %b %Y')}"
+            if provider_expiry
+            else "Status synced, but the portal did not report an expiry date"
+        )
+    if link["state"] == "offline":
+        summary += " — the line is currently down"
+    if parent_job_id:
+        conn.execute(
+            "INSERT INTO upstream_jobs(connection_id, customer_id, provider, action, status, "
+            "priority, attempts, max_attempts, requested_by, result_json, completed_at, "
+            "created_at, updated_at) "
+            "VALUES(?, ?, ?, 'status', 'done', ?, 1, 1, ?, ?, ?, ?, ?)",
+            (
+                int(conn_row["id"]),
+                int(conn_row["customer_id"]),
+                conn_row["provider"],
+                PRIORITY_EXPIRED_REFRESH,
+                f"batch #{parent_job_id}",
+                json.dumps(result.as_dict())[:20000],
+                stamp,
+                stamp,
+                stamp,
+            ),
+        )
+    return summary
+
+
+def _apply_status_batch_success(job: dict, batch_result) -> None:
+    stamp = now_iso()
+    synced = failed = 0
+    with transaction() as conn:
+        for item in batch_result.items or []:
+            conn_row = conn.execute(
+                "SELECT * FROM connections WHERE id = ?", (int(item["connection_id"]),)
+            ).fetchone()
+            if conn_row is None:
+                failed += 1
+                continue
+            result = item["result"]
+            if not result.ok:
+                failed += 1
+                if portal_reports_terminated(result):
+                    conn.execute(
+                        "UPDATE connections SET status = 'terminated', expiry_date = '', "
+                        "last_synced_at = ?, updated_at = ? WHERE id = ?",
+                        (stamp, stamp, conn_row["id"]),
+                    )
+                    repo.sync_customer_account_status(conn, int(conn_row["customer_id"]))
+                continue
+            _apply_connection_status_update(
+                conn, conn_row, result, stamp=stamp, parent_job_id=int(job["id"])
+            )
+            synced += 1
+
+        payload = {
+            "synced": synced,
+            "failed": failed,
+            "total": len(batch_result.items or []),
+            "simulated": batch_result.simulated,
+        }
+        conn.execute(
+            "UPDATE upstream_jobs SET status = 'done', result_json = ?, error = NULL, "
+            "completed_at = ?, updated_at = ? WHERE id = ?",
+            (json.dumps(payload)[:20000], stamp, stamp, job["id"]),
+        )
+        log_activity(
+            conn,
+            "expired_status_batch",
+            f"Batch status check — {synced} synced, {failed} failed "
+            f"({job['provider']}, job #{job['id']})",
+            meta_json=json.dumps({"job_id": job["id"], **payload}),
+        )
+
+
+def _execute_status_batch(job: dict) -> None:
+    try:
+        batch = json.loads(job.get("batch_json") or "{}")
+    except json.JSONDecodeError:
+        _finish_failure(job, "Invalid batch payload")
+        return
+    conn_ids = [int(x) for x in (batch.get("connection_ids") or []) if int(x or 0) > 0]
+    if not conn_ids:
+        _finish_failure(job, "Empty status batch")
+        return
+
+    placeholders = ",".join("?" * len(conn_ids))
+    with connection() as conn:
+        rows = conn.execute(
+            f"SELECT id, customer_id, upstream_id, provider FROM connections WHERE id IN ({placeholders})",
+            conn_ids,
+        ).fetchall()
+    if not rows:
+        _finish_failure(job, "Connections were deleted before the batch could run")
+        return
+
+    batch_result = run_batch_status(job["provider"], rows)
+    if not batch_result.ok:
+        _finish_failure(job, batch_result.error or "Batch status check failed")
+        return
+    try:
+        _apply_status_batch_success(job, batch_result)
+    except Exception as exc:  # noqa: BLE001
+        log.exception("Failed to apply batch status job %s", job["id"])
+        _finish_failure(job, f"Portal batch succeeded but saving failed: {exc}")
+
+
 def execute_job(job: dict) -> None:
     """Run one claimed job. The provider call happens outside any transaction."""
+    if job.get("action") == "status_batch":
+        _execute_status_batch(job)
+        return
     if (
         (job.get("provider") or "").lower() == "railtel"
         and job.get("action") == "renew"
@@ -1337,7 +1708,9 @@ def execute_job(job: dict) -> None:
 
     try:
         result = run_action(
-            job["provider"], job["action"], job["upstream_id"], extras=_live_extras(job)
+            job["provider"], job["action"], job["upstream_id"],
+            extras=_live_extras(job),
+            connection_id=job.get("connection_id"),
         )
     except UpstreamUnsupported as exc:
         with transaction() as conn:
@@ -1355,6 +1728,8 @@ def execute_job(job: dict) -> None:
     if result.ok:
         try:
             _apply_success(job, result)
+            if job.get("action") == "renew" and not result.simulated:
+                _auto_send_renewed_whatsapp(job)
             if (
                 (job.get("provider") or "").lower() == "railtel"
                 and job.get("action") == "download_bill"
@@ -1390,7 +1765,10 @@ def save_sync_schedule(conn: sqlite3.Connection, values: dict) -> None:
 
 
 def run_scheduled_sweep() -> None:
-    """Start the nightly sweep once, when its hour arrives."""
+    """Start the nightly sweep once, when its hour arrives.
+
+    Not invoked by the worker anymore — use Providers → Start sweep.
+    """
     now = datetime.now()
     with transaction() as conn:
         schedule = sync_schedule(conn)
@@ -1422,7 +1800,6 @@ def _worker_loop() -> None:
     log.info("Upstream worker started (mode=%s)", settings.upstream_mode)
     while not _stop_event.is_set():
         try:
-            run_scheduled_sweep()
             close_finished_sweeps()
         except Exception:  # noqa: BLE001
             log.exception("Sweep bookkeeping failed")

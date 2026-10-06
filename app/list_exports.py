@@ -3,17 +3,11 @@ from __future__ import annotations
 
 from .csv_export import csv_response
 from .money import days_until, fmt_date, fmt_rupees
-from .upstream.providers import PROVIDER_LABELS
+from .upstream.providers import provider_label, providers_csv_label
 
 
 def _provider_labels(raw: str | None) -> str:
-    if not raw:
-        return ""
-    return ", ".join(
-        PROVIDER_LABELS.get(part.strip(), part.strip())
-        for part in raw.split(",")
-        if part.strip()
-    )
+    return providers_csv_label(raw)
 
 
 def _late_days(expiry) -> str:
@@ -31,6 +25,11 @@ def customers_csv(rows) -> Response:
             c["code"] or "",
             c["phone"] or "",
             c["sub_area"] or c["area"] or "",
+            c["address"] or "",
+            c["railtel_ids"] or "",
+            c["hathway_ids"] or "",
+            c["iptv_ids"] or "",
+            c["ott_ids"] or "",
             c["status"] or "",
             f"{c['active_count']}/{c['connection_count']}",
             _provider_labels(c["providers"]),
@@ -45,6 +44,11 @@ def customers_csv(rows) -> Response:
             "Code",
             "Phone",
             "Area",
+            "Location",
+            "Railtel ID",
+            "Hathway STB",
+            "ANT IPTV",
+            "SmartPlay OTT",
             "Status",
             "Connections",
             "Providers",
@@ -57,7 +61,7 @@ def customers_csv(rows) -> Response:
 
 
 def prepaid_csv(rows, *, filename: str, provider: str) -> Response:
-    label = PROVIDER_LABELS.get(provider, provider)
+    label = provider_label(provider, default=provider)
     data = []
     for r in rows:
         data.append([
@@ -139,7 +143,7 @@ def followup_csv(rows) -> Response:
             b["customer_code"] or "",
             b["phone"] or "",
             b["upstream_id"] or "",
-            PROVIDER_LABELS.get(b["provider"] or "", b["provider"] or ""),
+            provider_label(b["provider"] or "", default=b["provider"] or ""),
             b["followup_kind"] or "",
             b["package_name"] or "",
             b["created_at"] or "",
@@ -207,7 +211,7 @@ def jobs_csv(rows) -> Response:
         data.append([
             j["id"],
             j["provider"] or "",
-            PROVIDER_LABELS.get(j["provider"] or "", j["provider"] or ""),
+            provider_label(j["provider"] or "", default=j["provider"] or ""),
             j["action"] or "",
             j["status"] or "",
             j["customer_name"] or "",
@@ -242,7 +246,7 @@ def packages_csv(rows) -> Response:
     data = []
     for p in rows:
         data.append([
-            PROVIDER_LABELS.get(p["provider"] or "", p["provider"] or ""),
+            provider_label(p["provider"] or "", default=p["provider"] or ""),
             p["name"] or "",
             fmt_rupees(p["price_paise"]),
             p["validity_days"] or "",
@@ -278,21 +282,29 @@ def complaints_csv(rows) -> Response:
     )
 
 
-def activity_csv(rows) -> Response:
+def activity_csv(rows, *, with_location: bool = False) -> Response:
     data = []
     for a in rows:
-        data.append([
+        line = [
             a["at"] or "",
             a["actor"] or "",
             a["kind"] or "",
             a["message"] or "",
             a["customer_name"] or "",
-        ])
-    return csv_response(
-        "activity.csv",
-        ["When", "Who", "Kind", "Message", "Customer"],
-        data,
-    )
+        ]
+        if with_location:
+            has_loc = a["lat"] is not None and a["lng"] is not None
+            line += [
+                f"{a['lat']:.6f}" if has_loc else "",
+                f"{a['lng']:.6f}" if has_loc else "",
+                a["loc_at"] or "",
+                f"https://maps.google.com/?q={a['lat']},{a['lng']}" if has_loc else "",
+            ]
+        data.append(line)
+    headers = ["When", "Who", "Kind", "Message", "Customer"]
+    if with_location:
+        headers += ["Latitude", "Longitude", "Location time", "Map"]
+    return csv_response("activity.csv", headers, data)
 
 
 def railtel_online_csv(rows) -> Response:

@@ -23,11 +23,57 @@ from ..money import fmt_date, fmt_datetime, parse_date
 PROVIDERS = ("railtel", "hathway", "iptv", "ott")
 
 PROVIDER_LABELS = {
-    "railtel": "Railtel / Railwire",
+    "railtel": "Railtel",
     "hathway": "Hathway",
     "iptv": "ANT IPTV",
     "ott": "SmartPlay OTT",
 }
+
+_RAILWIRE_SUFFIX = re.compile(r"\s*/\s*Railwire\b", re.I)
+_RAILWIRE_WORD = re.compile(r"\bRailwire\b", re.I)
+
+
+def _scrub_railwire(text: str) -> str:
+    if not text:
+        return text
+    text = _RAILWIRE_SUFFIX.sub("", text)
+    text = _RAILWIRE_WORD.sub("Railtel", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def provider_label(provider: str | None, default: str | None = None) -> str:
+    """Display name for a provider key or any legacy stored label."""
+    raw = (provider or "").strip()
+    if not raw:
+        fallback = (default or "").strip()
+        return _scrub_railwire(fallback) if fallback else ""
+    key = raw.lower()
+    if key in PROVIDER_LABELS:
+        return _scrub_railwire(PROVIDER_LABELS[key])
+    return _scrub_railwire(raw)
+
+
+def providers_csv_label(raw: str | None) -> str:
+    if not raw:
+        return ""
+    return ", ".join(
+        provider_label(part.strip())
+        for part in raw.split(",")
+        if part.strip()
+    )
+
+
+class ProviderLabelsView:
+    """Template-friendly view; always returns scrubbed display names."""
+
+    def get(self, key, default=None):
+        if default is None:
+            default = key
+        d = str(default) if default is not None else None
+        return provider_label(key if key is not None else None, default=d)
+
+
+PROVIDER_LABELS_VIEW = ProviderLabelsView()
 
 # Actions that run against one connection.
 PROVIDER_ACTIONS: dict[str, tuple[str, ...]] = {
@@ -58,6 +104,7 @@ ACTION_LABELS = {
     "online": "Refresh online list",
     "subscribe": "Subscribe on ANT",
     "sync": "Sync subscribers from portal",
+    "status_batch": "Batch status check",
 }
 
 # Actions that change the customer's service and should be confirmed carefully.
@@ -110,12 +157,52 @@ def reports_terminated(error: str) -> bool:
     text = (error or "").strip().lower()
     return any(pattern in text for pattern in TERMINATED_PATTERNS)
 
+
+_TERMINATED_STATUS_KEYS = (
+    "hathway_plan_status",
+    "hathway_tv_status",
+    "plan_status",
+    "main_tv_row_status",
+    "tv_table_status",
+    "message",
+)
+
+
+def portal_reports_terminated(result) -> bool:
+    """True when a portal status check says the box is gone or terminated."""
+    if result is None:
+        return False
+    error = getattr(result, "error", None)
+    if error is None and isinstance(result, dict):
+        error = result.get("error")
+    if reports_terminated(str(error or "")):
+        return True
+    raw = getattr(result, "raw", None)
+    if raw is None and isinstance(result, dict):
+        raw = result
+    if not isinstance(raw, dict):
+        return False
+    for key in _TERMINATED_STATUS_KEYS:
+        text = str(raw.get(key) or "").strip().lower()
+        if "terminated" in text:
+            return True
+    return False
+
 # Hathway set-top boxes are N + 11 digits, viewing cards are T + 12 digits.
-# Railtel/Railwire logins look like "ka.something".
+# Railtel logins look like "ka.something".
 # ANT IPTV subscribers are looked up by the 10-digit mobile used on the CRM.
 HATHWAY_STB_RE = re.compile(r"^(N\d{11}|T\d{12})$", re.IGNORECASE)
+HATHWAY_HYBRID_PREFIX = "N722"  # Hybrid STBs — no separate T (VC) viewing card
 RAILTEL_ID_RE = re.compile(r"^ka\.[a-z0-9._-]+$", re.IGNORECASE)
 IPTV_PHONE_RE = re.compile(r"^\d{10}$")
+
+
+def is_hybrid_hathway_stb(upstream_id: str) -> bool:
+    """Hathway hybrid boxes (N722…) have no T-series viewing card."""
+    value = (upstream_id or "").strip().upper()
+    return value.startswith(HATHWAY_HYBRID_PREFIX) and bool(
+        re.match(r"^N\d{11}$", value, re.I)
+    )
 
 
 class UpstreamUnsupported(RuntimeError):
@@ -266,7 +353,19 @@ def _load(module_name: str, func_name: str) -> Callable:
     return func
 
 
-def _account_for(provider: str) -> str | None:
+def _account_for(provider: str, connection_id: int | None = None) -> str | None:
+    if provider == "railtel" and connection_id:
+        from ..db import connection
+
+        with connection() as conn:
+            row = conn.execute(
+                "SELECT portal_account_id FROM connections WHERE id = ?",
+                (int(connection_id),),
+            ).fetchone()
+        if row:
+            acc = (row["portal_account_id"] or "").strip()
+            if acc:
+                return acc
     if provider == "railtel":
         value = settings.railtel_account
     elif provider == "hathway":
@@ -368,9 +467,22 @@ def _normalise(provider: str, action: str, upstream_id: str, raw: dict) -> Upstr
             f"Recharge the partner wallet and retry."
         )
 
-    expiry = fmt_date(parse_date(_first_text(raw, "expiry", "hathway_valid_upto", "valid_upto")))
+    expiry = fmt_date(parse_date(_first_text(
+        raw, "subscription_expiry", "expiry", "hathway_valid_upto", "valid_upto"
+    )))
     plan_name = _first_text(raw, "hathway_plan_name", "plan_name", "package_name")
+    list_package = _first_text(raw, "list_package")
+    if list_package and re.search(r"\sx(3|6|10|12)\b", list_package, re.I):
+        if not plan_name or re.search(r"renewal\s+fee|per\s+day", plan_name, re.I):
+            plan_name = list_package
     message = _first_text(raw, "message", "downtime", "matched_cid")
+    if (
+        provider == "hathway"
+        and action == "status"
+        and ok
+        and (raw.get("hathway_no_package") or not plan_name)
+    ):
+        message = "Hathway plan has expired — no package on this box."
     if action == "online":
         count = raw.get("online_count")
         if count not in (None, ""):
@@ -500,7 +612,11 @@ def _railtel_live(
     if action == "renew":
         return _load("portal", "check_railtel_renew_subscriber")(upstream_id, account_id=account_id)
     if action == "status":
-        return _load("portal", "check_railtel_portal")(upstream_id, account_id=account_id)
+        return _load("portal", "check_railtel_portal")(
+            upstream_id,
+            account_id=account_id,
+            force_term=upstream_id.strip().lower() in _railtel_term_logins(),
+        )
     if action == "clear_session":
         return _load("portal", "check_clear_customer_session")(upstream_id, account_id=account_id)
     if action == "download_bill":
@@ -515,8 +631,31 @@ def _railtel_live(
     if action == "online":
         return _load("portal", "check_railtel_online_subscribers")(account_id=account_id)
     if action == "sync":
-        return _load("portal", "check_railtel_sync_subscribers")(account_id=account_id)
+        return _load("portal", "check_railtel_sync_subscribers")(
+            account_id=account_id,
+            term_usernames=sorted(_railtel_term_logins()),
+        )
     raise UpstreamUnsupported(f"Railtel does not support action '{action}'")
+
+
+def _railtel_term_logins() -> set[str]:
+    """Lower-cased logins on x3/x6/x10/x12 plans per the local package or portal plan.
+
+    The portal often shows "Package renewal Fee(Per Day)" for these, so the agent
+    cannot tell on its own that Subscription Expiry (xpath tr[4]) must be read.
+    """
+    from ..db import connection
+    from ..repo import _is_railtel_term_renewal_plan_sql
+
+    with connection() as conn:
+        rows = conn.execute(
+            "SELECT lower(trim(cn.upstream_id)) AS uid FROM connections cn "
+            "LEFT JOIN packages p ON p.id = cn.package_id "
+            "WHERE cn.provider = 'railtel' AND cn.status != 'terminated' "
+            "AND TRIM(COALESCE(cn.upstream_id, '')) != '' "
+            f"AND ({_is_railtel_term_renewal_plan_sql()})"
+        ).fetchall()
+    return {r["uid"] for r in rows}
 
 
 def _hathway_live(action: str, upstream_id: str, account_id: str | None) -> dict:
@@ -565,8 +704,106 @@ def _ott_live(action: str, upstream_id: str, account_id: str | None, extras: dic
     raise UpstreamUnsupported(f"SmartPlay OTT does not support action '{action}'")
 
 
+@dataclass
+class BatchStatusResult:
+    ok: bool
+    provider: str
+    error: str = ""
+    simulated: bool = False
+    items: list = field(default_factory=list)
+
+
+def run_batch_status(provider: str, connection_rows: list) -> BatchStatusResult:
+    """One portal login, many status checks — Railtel and Hathway only."""
+    provider = (provider or "").strip().lower()
+    rows = [dict(r) for r in (connection_rows or []) if r]
+    if not rows:
+        return BatchStatusResult(ok=False, provider=provider, error="No connections in batch")
+
+    if provider not in ("railtel", "hathway"):
+        return BatchStatusResult(
+            ok=False,
+            provider=provider,
+            error=f"Batch status is not supported for {PROVIDER_LABELS.get(provider, provider)}",
+        )
+
+    if not settings.is_live:
+        items = []
+        for row in rows:
+            sim = _simulated(provider, "status", row["upstream_id"])
+            items.append(
+                {
+                    "connection_id": int(row["id"]),
+                    "customer_id": int(row["customer_id"]),
+                    "upstream_id": row["upstream_id"],
+                    "result": sim,
+                }
+            )
+        return BatchStatusResult(ok=True, provider=provider, simulated=True, items=items)
+
+    account_id = _account_for(provider)
+    upstream_ids = [
+        str(r["upstream_id"] or "").strip() for r in rows if (r.get("upstream_id") or "").strip()
+    ]
+    try:
+        if provider == "railtel":
+            raw = _load("portal", "check_railtel_portal_batch")(
+                upstream_ids,
+                account_id=account_id,
+                term_ids=sorted(_railtel_term_logins()),
+            )
+        else:
+            raw = _load("hathway_portal", "check_hathway_portal_batch")(upstream_ids, account_id=account_id)
+    except Exception as exc:
+        return BatchStatusResult(
+            ok=False,
+            provider=provider,
+            error=f"{type(exc).__name__}: {exc}",
+        )
+
+    by_upstream: dict[str, dict] = {}
+    for row in rows:
+        key = str(row["upstream_id"] or "").strip().lower()
+        if key:
+            by_upstream[key] = row
+
+    items = []
+    for entry in raw.get("results") or []:
+        uid = str(entry.get("upstream_id") or entry.get("search_value") or "").strip()
+        conn_row = by_upstream.get(uid.lower())
+        if not conn_row:
+            continue
+        result = _normalise(provider, "status", uid, entry)
+        items.append(
+            {
+                "connection_id": int(conn_row["id"]),
+                "customer_id": int(conn_row["customer_id"]),
+                "upstream_id": uid,
+                "result": result,
+            }
+        )
+
+    if not items and not raw.get("success"):
+        return BatchStatusResult(
+            ok=False,
+            provider=provider,
+            error=raw.get("error") or "Batch status check failed",
+        )
+    return BatchStatusResult(
+        ok=bool(items),
+        provider=provider,
+        error="" if items else (raw.get("error") or "No matching results"),
+        items=items,
+    )
+
+
 def run_action(
-    provider: str, action: str, upstream_id: str, extras: dict | None = None
+    provider: str,
+    action: str,
+    upstream_id: str,
+    extras: dict | None = None,
+    *,
+    connection_id: int | None = None,
 ) -> UpstreamResult:
     """Execute one provider action. Blocking — call from the worker thread only."""
     provider = (provider or "").strip().lower()
@@ -592,7 +829,7 @@ def run_action(
     if not settings.is_live and not (provider == "ott" and action == "sync"):
         return _simulated(provider, action, upstream_id)
 
-    account_id = _account_for(provider)
+    account_id = _account_for(provider, connection_id)
     try:
         if provider == "railtel":
             raw = _railtel_live(action, upstream_id, account_id, extras)
