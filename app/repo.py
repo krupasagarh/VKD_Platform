@@ -1199,13 +1199,15 @@ def customer_payments(
     ).fetchall()
 
 
-def customer_jobs(conn: sqlite3.Connection, customer_id: int, limit: int = 20) -> list[sqlite3.Row]:
-    return conn.execute(
-        "SELECT j.*, cn.upstream_id FROM upstream_jobs j "
-        "LEFT JOIN connections cn ON cn.id = j.connection_id "
-        "WHERE j.customer_id = ? ORDER BY j.id DESC LIMIT ?",
+def customer_jobs(conn: sqlite3.Connection, customer_id: int, limit: int = 20) -> list:
+    rows = conn.execute(
+        f"SELECT j.*, cn.upstream_id, {JOB_CREATOR_COLS} FROM upstream_jobs j "
+        f"LEFT JOIN connections cn ON cn.id = j.connection_id "
+        f"{JOB_CREATOR_JOIN_SQL} "
+        f"WHERE j.customer_id = ? ORDER BY j.id DESC LIMIT ?",
         (customer_id, limit),
     ).fetchall()
+    return [_job_row(row) for row in rows]
 
 
 def customer_railtel_invoices(
@@ -1375,6 +1377,69 @@ def count_packages(conn: sqlite3.Connection) -> dict:
 # Jobs / bills / payments lists
 # --------------------------------------------------------------------------- #
 
+JOB_CREATOR_JOIN_SQL = """
+LEFT JOIN agents created_ag ON created_ag.id = (
+  SELECT a2.id FROM agents a2
+  WHERE lower(trim(a2.name)) = lower(trim(COALESCE(j.requested_by, '')))
+     OR lower(trim(a2.username)) = lower(trim(COALESCE(j.requested_by, '')))
+  ORDER BY CASE WHEN a2.role = 'admin' THEN 0 ELSE 1 END, a2.id
+  LIMIT 1
+)
+"""
+
+JOB_CREATOR_COLS = (
+    "created_ag.name AS created_agent_name, "
+    "created_ag.username AS created_agent_username, "
+    "created_ag.role AS created_agent_role"
+)
+
+
+def job_created_by_label(row) -> str:
+    """Who queued the job: owner, field agent, or a system/scheduled run."""
+    raw = ""
+    name = ""
+    role = ""
+    if row is not None:
+        if isinstance(row, dict):
+            raw = row.get("requested_by") or ""
+            name = row.get("created_agent_name") or ""
+            role = row.get("created_agent_role") or ""
+        elif hasattr(row, "keys"):
+            raw = row["requested_by"] if "requested_by" in row.keys() else ""
+            name = row["created_agent_name"] if "created_agent_name" in row.keys() else ""
+            role = row["created_agent_role"] if "created_agent_role" in row.keys() else ""
+        else:
+            raw = str(row or "")
+    raw = (raw or "").strip()
+    name = (name or "").strip()
+    role = (role or "").strip().lower()
+    if not raw and not name:
+        return "—"
+    key = raw.lower()
+    if (
+        key in {"scheduler", "post-renew term expiry"}
+        or key.startswith("expired-")
+        or key.startswith("sweep #")
+    ):
+        return "System"
+    display = name or raw
+    if role == "admin":
+        return f"{display} · Owner"
+    if role == "collector":
+        return f"{display} · Agent"
+    if role:
+        return f"{display} · {role.title()}"
+    return display
+
+
+def _job_row(row: sqlite3.Row | None) -> dict | None:
+    if row is None:
+        return None
+    item = dict(row)
+    item["created_by_label"] = job_created_by_label(row)
+    return item
+
+
 def list_jobs(
     conn: sqlite3.Connection,
     *,
@@ -1394,28 +1459,33 @@ def list_jobs(
         where.append("j.provider = ?")
         params.append(pf)
     clause = f"WHERE {' AND '.join(where)}" if where else ""
-    return conn.execute(
+    rows = conn.execute(
         f"SELECT j.*, c.name AS customer_name, c.code AS customer_code, cn.upstream_id, "
-        f"       cn.card_number, b.bill_no, b.total_paise AS bill_total_paise "
+        f"       cn.card_number, b.bill_no, b.total_paise AS bill_total_paise, "
+        f"       {JOB_CREATOR_COLS} "
         f"FROM upstream_jobs j "
         f"LEFT JOIN customers c ON c.id = j.customer_id "
         f"LEFT JOIN connections cn ON cn.id = j.connection_id "
-        f"LEFT JOIN bills b ON b.id = j.bill_id {clause} "
+        f"LEFT JOIN bills b ON b.id = j.bill_id "
+        f"{JOB_CREATOR_JOIN_SQL} {clause} "
         f"ORDER BY CASE j.status WHEN 'awaiting_otp' THEN 0 WHEN 'awaiting_confirm' THEN 1 "
         f"         WHEN 'running' THEN 2 WHEN 'queued' THEN 3 WHEN 'failed' THEN 4 ELSE 5 END, "
         f"j.id DESC LIMIT ?",
         [*params, limit],
     ).fetchall()
+    return [_job_row(row) for row in rows]
 
 
-def get_job(conn: sqlite3.Connection, job_id: int) -> sqlite3.Row | None:
-    return conn.execute(
-        "SELECT j.*, c.name AS customer_name, c.code AS customer_code, cn.upstream_id "
-        "FROM upstream_jobs j "
-        "LEFT JOIN customers c ON c.id = j.customer_id "
-        "LEFT JOIN connections cn ON cn.id = j.connection_id WHERE j.id = ?",
+def get_job(conn: sqlite3.Connection, job_id: int) -> dict | None:
+    return _job_row(conn.execute(
+        f"SELECT j.*, c.name AS customer_name, c.code AS customer_code, cn.upstream_id, "
+        f"       {JOB_CREATOR_COLS} "
+        f"FROM upstream_jobs j "
+        f"LEFT JOIN customers c ON c.id = j.customer_id "
+        f"LEFT JOIN connections cn ON cn.id = j.connection_id "
+        f"{JOB_CREATOR_JOIN_SQL} WHERE j.id = ?",
         (job_id,),
-    ).fetchone()
+    ).fetchone())
 
 
 def list_bills(conn: sqlite3.Connection, *, status: str = "", limit: int = 200) -> list[sqlite3.Row]:

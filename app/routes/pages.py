@@ -34,6 +34,10 @@ from ..upstream.providers import (
 
 router = APIRouter()
 
+
+def _job_by(request: Request) -> str:
+    return auth.job_requested_by(getattr(request.state, "agent", None))
+
 PAYMENT_MODES = ("cash", "upi", "scanner", "owner_upi", "bank", "gateway", "cheque")
 CONNECTION_STATUSES = ("active", "suspended", "inactive", "terminated")
 PLAN_TERMS = (
@@ -115,8 +119,21 @@ def _resolve_package_id(conn, provider: str, name: str) -> tuple[int | None, boo
 
 def _templates():
     from ..main import templates
+    from ..repo import job_created_by_label
 
+    if "job_created_by" not in templates.env.filters:
+        templates.env.filters["job_created_by"] = job_created_by_label
     return templates
+
+
+def _with_job_creator(rows):
+    """Attach Created-by text so job tables work even if a Jinja filter is missing."""
+    out = []
+    for row in rows or []:
+        item = dict(row)
+        item["created_by_label"] = repo.job_created_by_label(item)
+        out.append(item)
+    return out
 
 
 def _strip_flash_params(path: str) -> str:
@@ -456,15 +473,15 @@ async def dashboard(request: Request):
             provider=auth.agent_provider_scope(request.state.agent) or "",
         )
         job_provider = auth.agent_provider_scope(request.state.agent) or ""
-        awaiting = repo.list_jobs(
+        awaiting = _with_job_creator(repo.list_jobs(
             conn, status="awaiting_confirm", limit=10, provider=job_provider
-        )
-        awaiting_otp = repo.list_jobs(
+        ))
+        awaiting_otp = _with_job_creator(repo.list_jobs(
             conn, status="awaiting_otp", limit=10, provider=job_provider
-        )
-        failed = repo.list_jobs(
+        ))
+        failed = _with_job_creator(repo.list_jobs(
             conn, status="failed", limit=5, provider=job_provider
-        )
+        ))
         activity = repo.recent_activity(
             conn,
             limit=12,
@@ -1461,6 +1478,7 @@ async def iptv_subscribe(
                     conn,
                     connection_id=result["connection_id"],
                     action="subscribe",
+                    requested_by=_job_by(request),
                     needs_confirmation=False,
                 )
     except ValueError as exc:
@@ -1521,7 +1539,9 @@ async def ott_sync(request: Request):
     if not auth.can(request.state.agent, "portal_actions"):
         return _forbidden("You cannot sync the SmartPlay portal.")
     with transaction() as conn:
-        job_id = job_queue.enqueue_provider_job(conn, provider="ott", action="sync")
+        job_id = job_queue.enqueue_provider_job(
+            conn, provider="ott", action="sync", requested_by=_job_by(request)
+        )
         busy_note = _exclusive_busy_note(conn, "sync", job_id)
     return _redirect(
         "/ott",
@@ -1647,7 +1667,7 @@ async def customer_detail(request: Request, customer_id: int):
         ledger = billing.customer_ledger(conn, customer_id)
         bills = repo.customer_bills(conn, customer_id)
         payments = repo.customer_payments(conn, customer_id)
-        jobs = repo.customer_jobs(conn, customer_id)
+        jobs = _with_job_creator(repo.customer_jobs(conn, customer_id))
         packages = repo.list_packages(conn, only_active=True)
         statement = repo.customer_statement(conn, customer_id)
         complaints = repo.list_complaints(conn, customer_id=customer_id, limit=20)
@@ -2407,6 +2427,7 @@ async def connection_action(
                 conn,
                 connection_id=connection_id,
                 action=action,
+                requested_by=_job_by(request),
                 needs_confirmation=action not in ("status", "download_bill"),
             )
         except job_queue.RenewNotAllowed as exc:
@@ -2458,6 +2479,7 @@ async def connection_collect_later(
                 conn,
                 connection_id=connection_id,
                 action=action,
+                requested_by=_job_by(request),
                 collect_later=True,
                 needs_confirmation=True,
             )
@@ -2577,6 +2599,7 @@ async def collect_payment(
                     conn,
                     connection_id=conn_id,
                     action="renew",
+                    requested_by=_job_by(request),
                     collect_later=True,
                     needs_confirmation=True,
                 )
@@ -2664,6 +2687,7 @@ async def collect_payment(
                     connection_id=conn_id,
                     action="renew",
                     payment_id=payment_id,
+                    requested_by=_job_by(request),
                     needs_confirmation=True,
                 )
                 busy_note = _exclusive_busy_note(conn, "renew", job_id)
@@ -3288,14 +3312,16 @@ async def sync_schedule_save(
 
 
 @router.post("/providers/{provider}/{action}")
-async def provider_action(provider: str, action: str):
+async def provider_action(request: Request, provider: str, action: str):
     provider = provider.strip().lower()
     action = action.strip().lower()
     if action not in ACCOUNT_ACTIONS.get(provider, ()):
         return _redirect("/providers", flash="Unknown provider action.", level="err")
 
     with transaction() as conn:
-        job_id = job_queue.enqueue_provider_job(conn, provider=provider, action=action)
+        job_id = job_queue.enqueue_provider_job(
+            conn, provider=provider, action=action, requested_by=_job_by(request)
+        )
         busy_note = _exclusive_busy_note(conn, action, job_id)
     dest = "/providers/online" if action == "online" else "/providers"
     return _redirect(
@@ -3315,12 +3341,12 @@ async def jobs_list(request: Request):
     export = wants_csv(request)
     job_provider = auth.agent_provider_scope(request.state.agent) or ""
     with connection() as conn:
-        rows = repo.list_jobs(
+        rows = _with_job_creator(repo.list_jobs(
             conn,
             status=status,
             limit=EXPORT_ROW_LIMIT if export else 200,
             provider=job_provider,
-        )
+        ))
         stats = repo.dashboard_stats(conn, agent_scope=job_provider)
     if export:
         return list_exports.jobs_csv(rows)
@@ -3382,6 +3408,7 @@ async def job_detail(request: Request, job_id: int):
         job = repo.get_job(conn, job_id)
         if job is None:
             return _render(request, "not_found.html", what="Job")
+        job = _with_job_creator([job])[0]
     pretty = ""
     if job["result_json"]:
         try:

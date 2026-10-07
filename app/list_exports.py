@@ -1,6 +1,7 @@
 """Build CSV rows for each table listing."""
 from __future__ import annotations
 
+from . import repo
 from .csv_export import csv_response
 from .money import days_until, fmt_date, fmt_rupees
 from .upstream.providers import provider_label, providers_csv_label
@@ -218,6 +219,7 @@ def jobs_csv(rows) -> Response:
             j["customer_code"] or "",
             j["upstream_id"] or "",
             j["bill_no"] or "",
+            repo.job_created_by_label(j),
             j["created_at"] or "",
             j["completed_at"] or "",
             j["error"] or "",
@@ -234,6 +236,7 @@ def jobs_csv(rows) -> Response:
             "Code",
             "Connection",
             "Bill",
+            "Created by",
             "Created",
             "Completed",
             "Error",

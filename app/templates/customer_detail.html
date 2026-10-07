@@ -886,13 +886,14 @@
         {% if jobs %}
         <div class="table-wrap">
         <table>
-          <thead><tr><th>Job</th><th>Action</th><th>Provider id</th><th>Status</th><th>Finished</th><th>Detail</th></tr></thead>
+          <thead><tr><th>Job</th><th>Action</th><th>Provider id</th><th>Created by</th><th>Status</th><th>Finished</th><th>Detail</th></tr></thead>
           <tbody>
           {% for j in jobs %}
             <tr>
               <td><a href="/jobs/{{ j.id }}">#{{ j.id }}</a></td>
               <td>{{ action_labels.get(j.action, j.action) }}</td>
               <td class="mono">{{ j.upstream_id or "—" }}</td>
+              <td>{{ j.created_by_label }}</td>
               <td>
                 {% if j.status == 'done' %}<span class="badge badge-ok">done</span>
                 {% elif j.status == 'failed' %}<span class="badge badge-bad">failed</span>

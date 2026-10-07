@@ -181,6 +181,7 @@ async def api_record_payment(request: Request, customer_id: int, body: PaymentIn
                     connection_id=body.connection_id,
                     action="renew",
                     payment_id=payment_id,
+                    requested_by=auth.job_requested_by(agent),
                     needs_confirmation=not body.auto_confirm,
                 )
             except job_queue.RenewNotAllowed as exc:
@@ -247,6 +248,7 @@ async def api_create_job(request: Request, connection_id: int, body: JobIn):
                 conn,
                 connection_id=connection_id,
                 action=body.action,
+                requested_by=auth.job_requested_by(getattr(request.state, "agent", None)),
                 needs_confirmation=needs,
             )
         except job_queue.RenewNotAllowed as exc:

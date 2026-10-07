@@ -209,6 +209,15 @@ def _job_result_message(result_json: str | None) -> str:
 templates.env.filters["job_result_message"] = _job_result_message
 
 
+def _job_created_by_filter(row):
+    from .repo import job_created_by_label
+
+    return job_created_by_label(row)
+
+
+templates.env.filters["job_created_by"] = _job_created_by_filter
+
+
 def _plain_error(text: str | None) -> str:
     """Short operator-facing wording; keep the original string for a tooltip."""
     raw = (text or "").strip()

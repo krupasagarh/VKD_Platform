@@ -197,6 +197,13 @@ def collector_territory_limited(agent: dict | None) -> bool:
     return bool(agent and agent.get("active") and agent.get("role") != "admin")
 
 
+def job_requested_by(agent: dict | None) -> str:
+    """Name stored on provider jobs so the queue can show who created them."""
+    if not agent:
+        return settings.operator or "Owner"
+    return (agent.get("name") or agent.get("username") or settings.operator or "Owner").strip()
+
+
 def collector_id_for(agent: dict | None) -> int | None:
     if collector_territory_limited(agent):
         return int(agent["id"])

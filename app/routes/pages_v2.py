@@ -357,7 +357,7 @@ async def v2_railtel_online_refresh(request: Request):
         return RedirectResponse("/v2/", status_code=303)
     actor = None
     if request.state.agent:
-        actor = request.state.agent.get("username") or request.state.agent.get("name")
+        actor = auth.job_requested_by(request.state.agent)
     with transaction() as conn:
         job_id = job_queue.enqueue_provider_job(
             conn,

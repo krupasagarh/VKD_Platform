@@ -451,13 +451,14 @@
   </div>
   <div class="table-wrap">
   <table>
-    <thead><tr><th>Job</th><th>Customer</th><th>Action</th><th>Phone</th><th></th></tr></thead>
+    <thead><tr><th>Job</th><th>Customer</th><th>Action</th><th>Created by</th><th>Phone</th><th></th></tr></thead>
     <tbody>
     {% for j in awaiting_otp %}
       <tr>
         <td>#{{ j.id }}</td>
         <td>{% if j.customer_id %}<a href="/customers/{{ j.customer_id }}">{{ j.customer_name or "Customer" }}</a>{% else %}<span class="badge">Dealer account</span>{% endif %}</td>
         <td>{{ action_labels.get(j.action, j.action) }}</td>
+        <td>{{ j.created_by_label }}</td>
         <td class="mono">{{ j.upstream_id or "—" }}</td>
         <td>
           <form class="inline-form" method="post" action="/jobs/{{ j.id }}/otp">
@@ -487,7 +488,7 @@
   </div>
   <div class="table-wrap">
   <table>
-    <thead><tr><th>Job</th><th>Customer</th><th>Provider</th><th>Action</th><th>Provider id</th><th></th></tr></thead>
+    <thead><tr><th>Job</th><th>Customer</th><th>Provider</th><th>Action</th><th>Created by</th><th>Provider id</th><th></th></tr></thead>
     <tbody>
     {% for j in awaiting %}
       <tr>
@@ -501,6 +502,7 @@
         </td>
         <td>{{ provider_labels.get(j.provider, j.provider) }}</td>
         <td>{{ action_labels.get(j.action, j.action) }}</td>
+        <td>{{ j.created_by_label }}</td>
         <td class="mono">{{ j.upstream_id or "—" }}</td>
         <td>
           <form class="inline-form" method="post" action="/jobs/{{ j.id }}/confirm">
@@ -524,7 +526,7 @@
     <a class="btn btn-small" href="/jobs?status=failed">All</a></div>
   <div class="table-wrap">
   <table>
-    <thead><tr><th>Job</th><th>Customer</th><th>Action</th><th>Error</th><th></th></tr></thead>
+    <thead><tr><th>Job</th><th>Customer</th><th>Action</th><th>Created by</th><th>Error</th><th></th></tr></thead>
     <tbody>
     {% for j in failed %}
       <tr>
@@ -537,6 +539,7 @@
           {% endif %}
         </td>
         <td>{{ action_labels.get(j.action, j.action) }}</td>
+        <td>{{ j.created_by_label }}</td>
         <td class="subtle" title="{{ j.error or '' }}">{% if j.error %}{{ j.error|plain_error }}{% else %}—{% endif %}</td>
         <td>
           <form class="inline-form" method="post" action="/jobs/{{ j.id }}/retry">

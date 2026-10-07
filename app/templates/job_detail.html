@@ -33,7 +33,7 @@
     </dd>
     <dt>Provider id</dt><dd class="mono">{{ job.upstream_id or "—" }}</dd>
     <dt>Attempts</dt><dd>{{ job.attempts }} of {{ job.max_attempts }}</dd>
-    <dt>Requested by</dt><dd>{{ job.requested_by or "—" }}</dd>
+    <dt>Created by</dt><dd>{{ job.created_by_label }}</dd>
     <dt>Created</dt><dd>{{ job.created_at|nice_datetime }}</dd>
     <dt>Scheduled for</dt><dd>{{ job.scheduled_for|nice_datetime or "—" }}</dd>
     <dt>Started</dt><dd>{{ job.started_at|nice_datetime or "—" }}</dd>
