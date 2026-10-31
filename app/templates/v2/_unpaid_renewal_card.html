@@ -17,6 +17,13 @@
         Renewed {{ entry.renewed_at|nice_date }}
         {% if entry.bills|length > 1 %} · {{ entry.bills|length }} connections{% endif %}
       </div>
+      {% if entry.promise_date %}
+      <div style="margin-top:4px">
+        <span class="v2-badge{% if entry.promise_date <= today_iso() %} is-warn{% endif %}">
+          {% if entry.promise_date == today_iso() %}Promised today{% elif entry.promise_date < today_iso() %}Promised {{ entry.promise_date|nice_date }} · late{% else %}Promised {{ entry.promise_date|nice_date }}{% endif %}
+        </span>
+      </div>
+      {% endif %}
     </div>
     <div class="v2-card-timing">
       <div><strong>₹{{ entry.due_paise|rupees }}</strong></div>
@@ -89,9 +96,6 @@
       {% endif %}
       {% if can('change_due') %}
       <a class="v2-cta v2-cta-compact v2-cta-secondary" href="/customers/{{ entry.customer_id }}#change-due">Change due</a>
-      {% endif %}
-      {% if can('payments') %}
-      <a class="v2-cta v2-cta-compact v2-cta-collect" href="/customers/{{ entry.customer_id }}#collect">Collect</a>
       {% endif %}
     </div>
   </div>

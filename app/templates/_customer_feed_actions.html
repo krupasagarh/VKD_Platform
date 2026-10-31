@@ -1,3 +1,4 @@
+{% from "_later_menu.html" import later_menu %}
 {% macro customer_feed_actions(item, cid, can, next_url, only_provider=none) %}
 {% set ns = namespace(conn_id=none) %}
 {% if only_provider == 'hathway' and item.hathway_conns %}
@@ -27,9 +28,6 @@
   <a class="v2-action v2-action-open" href="/customers/{{ cid }}">Open</a>
   {% endif %}
 {% if can('portal_actions') and ns.conn_id %}
-<form class="v2-inline-form" method="post" action="/connections/{{ ns.conn_id }}/collect-later">
-  <input type="hidden" name="next" value="{{ next_url }}">
-  <button class="v2-action v2-action-later" type="submit" title="Renew on portal and collect payment later">Later</button>
-</form>
+{{ later_menu(ns.conn_id, next_url, btn_class="v2-action v2-action-later") }}
 {% endif %}
 {% endmacro %}

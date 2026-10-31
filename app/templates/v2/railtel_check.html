@@ -1,0 +1,112 @@
+{% extends "v2/base.html" %}
+{% set active = "railtel_check" %}
+{% block title %}Railtel status check · VK Digital{% endblock %}
+
+{% block header %}
+<header class="v2-header">
+  <div class="v2-header-top">
+    <a class="v2-back" href="/v2/" aria-label="Back">←</a>
+    <div class="v2-header-main">
+      <div class="v2-route">Railtel status check</div>
+      <div class="v2-subline">Is the customer's internet online?</div>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<form class="v2-filters" method="get" action="/v2/railtel-check" data-duty-free>
+  <label class="v2-filter-field">
+    <span>Phone number or Railtel ID</span>
+    <input type="search" name="q" value="{{ q }}" placeholder="98xxxxxxxx or ka.name" autocomplete="off" autocapitalize="none" {% if not q %}autofocus{% endif %}>
+  </label>
+  <button class="v2-cta" type="submit">Check</button>
+</form>
+
+{% if q %}
+<div class="v2-feed">
+  {% if rows %}
+  <div class="v2-muted" style="font-size:12px;padding:0 4px">
+    {% if rows|length >= 50 %}Showing the first 50 matches — type more to narrow it down.
+    {% else %}{{ rows|length }} match{{ "" if rows|length == 1 else "es" }}{% endif %}
+  </div>
+  {% endif %}
+  {% for r in rows %}
+  {% set show_exp = r.effective_expiry or r.expiry_date %}
+  {% set days_left = show_exp|days_until %}
+  {% set plan_expired = days_left is not none and days_left < 0 %}
+  {% set online = r.line_state == 'online' %}
+  {% set offline = r.line_state == 'offline' %}
+  <article class="v2-card v2-card-customer">
+    <div class="v2-card-top">
+      <div class="v2-avatar {% if online %}v2-avatar-good{% elif offline %}v2-avatar-bad{% endif %}" aria-hidden="true">{{ (r.customer_name or "?")[:1]|upper }}</div>
+      <div class="v2-card-info">
+        <h3 class="v2-card-name">{{ r.customer_name }}</h3>
+        <div class="v2-muted" style="font-size:12px;margin-top:2px">
+          <span class="mono">{{ r.upstream_id }}</span>{% if r.label %} · {{ r.label }}{% endif %}
+        </div>
+      </div>
+      <div class="v2-card-timing {% if online %}v2-card-timing-good{% elif offline %}v2-card-timing-bad{% endif %}">
+        <div><strong>{% if r.pending_job_id %}Checking…{% elif online %}Online{% elif offline %}Offline{% else %}Not checked{% endif %}</strong></div>
+      </div>
+    </div>
+
+    <div class="v2-facts">
+      <div class="v2-fact">
+        <div class="v2-fact-label">{% if online %}Online since{% elif offline %}Down since{% else %}Line{% endif %}</div>
+        <div class="v2-fact-value">
+          {% if (online or offline) and r.line_since %}{{ r.line_since|nice_datetime }}{% elif online %}Now{% elif offline %}—{% else %}Not checked yet{% endif %}
+        </div>
+        {% if online and r.online_for %}<div class="v2-muted" style="font-size:11px">{{ r.online_for }}</div>{% endif %}
+      </div>
+      <div class="v2-fact">
+        <div class="v2-fact-label">{% if plan_expired %}Plan expired{% else %}Paid through{% endif %}</div>
+        <div class="v2-fact-value">{{ show_exp|nice_date if show_exp else "—" }}</div>
+      </div>
+    </div>
+
+    <div class="v2-card-foot v2-card-foot--actions">
+      <div class="v2-muted" style="font-size:12px">
+        {% if r.pending_job_id %}
+          Asking Railtel now — this updates by itself.
+        {% elif r.checked_at %}
+          Checked {{ r.checked_at|relative_time }}{% if r.status_stale %} — older than {{ stale_minutes }} min{% endif %}.
+        {% else %}
+          Never checked with Railtel.
+        {% endif %}
+        {% if not r.pending_job_id and r.last_job_status == 'failed' and r.last_job_error %}
+          <div style="color:#991b1b;margin-top:2px">Last check failed: {{ r.last_job_error|plain_error }}</div>
+        {% endif %}
+      </div>
+      {% if r.status_stale and not r.pending_job_id %}
+      <div class="v2-card-foot-actions">
+        <form class="v2-inline-form" method="post" action="/railtel-check/refresh" data-duty-free>
+          <input type="hidden" name="connection_id" value="{{ r.connection_id }}">
+          <input type="hidden" name="q" value="{{ q }}">
+          <input type="hidden" name="ui" value="v2">
+          <button class="v2-cta v2-cta-compact" type="submit">Fetch latest status</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </article>
+  {% else %}
+  <div class="v2-empty">
+    <h2>No Railtel customer found</h2>
+    <p>Enter at least 3 letters of the Railtel ID (for example <span class="mono">mohan</span>) or at least 4 digits of the phone number.</p>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if any_pending %}
+<script>
+setTimeout(function () {
+  var u = new URL(window.location.href);
+  u.searchParams.delete("flash");
+  u.searchParams.delete("level");
+  window.location.replace(u.toString());
+}, 5000);
+</script>
+{% endif %}
+{% endblock %}

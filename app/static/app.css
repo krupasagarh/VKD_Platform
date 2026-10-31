@@ -627,6 +627,41 @@ table.statement td:last-child { font-weight: 600; }
 .wa-menu-toggle {
   list-style: none;
 }
+.later-menu > summary { list-style: none; cursor: pointer; }
+.later-menu > summary::-webkit-details-marker { display: none; }
+.card .wa-menu.later-menu,
+.wa-menu.later-menu { display: inline-block; width: auto; }
+.later-menu-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  min-width: 250px;
+  border-color: #fdba74;
+}
+.later-menu-title { font-weight: 700; font-size: 14px; }
+.later-menu-label { font-size: 13px; }
+.later-menu-label span { color: var(--muted); font-weight: 400; }
+.later-menu-date {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+}
+.later-menu-hint { margin: 0; font-size: 12px; color: var(--muted); }
+.later-menu-submit {
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: #c2410c;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cd-follow-note { font-size: 12px; align-self: center; }
 .wa-menu-toggle::-webkit-details-marker { display: none; }
 .wa-menu-toggle::after {
   content: "";

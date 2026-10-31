@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="{% if field_duty_on %}#14532d{% else %}#0a0a0a{% endif %}">
   <title>{% block title %}VK Digital{% endblock %}</title>
-  <link rel="stylesheet" href="/static/app.css?v=nav36">
+  <link rel="stylesheet" href="/static/app.css?v=nav37">
   <link rel="icon" href="/static/favicon.png?v=1">
 </head>
 <body{% if request.cookies.get('vk_ui') == 'v2' or field_duty_on %} class="{% if request.cookies.get('vk_ui') == 'v2' %}ui-v2{% endif %}{% if field_duty_on %} field-on-duty{% endif %}"{% endif %}
@@ -65,6 +65,9 @@
       <a href="/customers" class="{% if active == 'customers' %}on{% endif %}">Customers</a>
       {% if not fixed_provider or fixed_provider == 'hathway' %}
       <a href="/stbs" class="{% if active == 'stbs' %}on{% endif %}">Hathway STBs</a>
+      {% if can('customers_view') %}
+      <a href="/stbs/lookup" class="{% if active == 'stb_lookup' %}on{% endif %}">STB lookup</a>
+      {% endif %}
       {% endif %}
       {% if not fixed_provider %}
       <a href="/iptv" class="{% if active == 'iptv' %}on{% endif %}">ANT IPTV</a>
@@ -73,11 +76,15 @@
       {% if can('packages') %}
       <a href="/packages" class="{% if active == 'packages' %}on{% endif %}">Plans</a>
       {% endif %}
+      <a href="/railtel-check" class="{% if active == 'railtel_check' %}on{% endif %}">Railtel status check</a>
     </div>
-    {% elif can('packages') %}
+    {% else %}
     <div class="nav-group">
       <div class="nav-group-label">Customers</div>
+      <a href="/railtel-check" class="{% if active == 'railtel_check' %}on{% endif %}">Railtel status check</a>
+      {% if can('packages') %}
       <a href="/packages" class="{% if active == 'packages' %}on{% endif %}">Plans</a>
+      {% endif %}
     </div>
     {% endif %}
     {% if can('bills') or can('payments') %}
@@ -206,7 +213,7 @@
 {% if request.cookies.get('vk_ui') == 'v2' %}
 {% include "v2/_nav.html" %}
 {% endif %}
-<script src="/static/field.js?v=wa7"></script>
+<script src="/static/field.js?v=wa8"></script>
 {% block extra_js %}{% endblock %}
 <script>
 (function () {

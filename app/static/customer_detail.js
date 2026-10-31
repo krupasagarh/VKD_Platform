@@ -352,9 +352,16 @@
     var submit = document.getElementById("collect-submit");
     var hint = document.getElementById("collect-hint");
     var renewBox = document.getElementById("renew");
+    var promiseRow = document.getElementById("collect-promise-row");
+    var laterOpt = document.getElementById("collect-later-opt");
+    var follow = data.follow || {};
     var cashHint = hint ? hint.textContent : "";
     var coverDays = data.coverDays;
     var chipState = netDue > 0 ? "due" : "usual";
+
+    function followDue() {
+      return conn && conn.value && follow[conn.value] ? Number(follow[conn.value]) : 0;
+    }
 
     function rupees(paise) {
       return String(Math.ceil(Number(paise || 0) / 100));
@@ -380,12 +387,16 @@
         submit.textContent = "Renew and collect later";
         return;
       }
-      submit.textContent = "Collect ₹" + formatInr(currentPaise());
+      submit.textContent = (followDue() ? "Mark collected ₹" : "Collect ₹") + formatInr(currentPaise());
     }
     function updateHint() {
       if (!hint) return;
       if (modeValue() === "collect_later") {
         hint.textContent = "Service will be renewed. They stay on follow-up until you collect.";
+        return;
+      }
+      if (followDue()) {
+        hint.textContent = "Already renewed. This only records the payment — no new renewal.";
         return;
       }
       var paid = currentPaise();
@@ -430,6 +441,12 @@
         updateHint();
         return;
       }
+      if (followDue()) {
+        amount.value = rupees(followDue());
+        updateSubmit();
+        updateHint();
+        return;
+      }
       if (chipState === "due" && netDue > 0) {
         amount.value = rupees(netDue);
         updateSubmit();
@@ -457,11 +474,19 @@
       updateHint();
     }
     function syncMode() {
+      var onFollow = !!followDue();
+      if (onFollow && modeValue() === "collect_later") {
+        var first = form.querySelector("[name=mode]");
+        if (first) first.checked = true;
+      }
+      if (laterOpt) laterOpt.style.display = onFollow ? "none" : "";
+      if (onFollow && renewBox) renewBox.checked = false;
       var later = modeValue() === "collect_later";
       var cash = modeValue() === "cash";
       if (amount) amount.required = !later;
       if (amountField) amountField.style.display = later ? "none" : "";
-      if (renewRow) renewRow.style.display = later ? "none" : "";
+      if (renewRow) renewRow.style.display = (later || onFollow) ? "none" : "";
+      if (promiseRow) promiseRow.style.display = later ? "" : "none";
       if (waRow) waRow.style.display = later ? "none" : "";
       if (refRow) refRow.style.display = (!later && !cash) ? "" : "none";
       if (dateRow) dateRow.style.display = later ? "none" : "";
@@ -481,7 +506,7 @@
     });
     if (conn) conn.addEventListener("change", function () {
       if (chipState !== "custom" && chipState !== "due") chipState = "usual";
-      applyQuote();
+      syncMode();
     });
     if (amount) {
       amount.addEventListener("input", function () {

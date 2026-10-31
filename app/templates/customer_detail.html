@@ -3,10 +3,19 @@
 {% from "_wa_icon.html" import wa_icon %}
 {% from "_phone_cell.html" import phone_cell %}
 {% from "_hathway_pack.html" import hathway_pack_line %}
+{% from "_later_menu.html" import later_menu %}
 {% set active = "customers" %}
 {% set mode_labels = {"cash": "Cash", "upi": "UPI (agent)", "scanner": "Scanner / shop QR", "owner_upi": "UPI to " ~ (owner_name or "owner"), "bank": "Bank", "gateway": "Card", "cheque": "Cheque"} %}
 {% set follow_manual = followups | selectattr('followup_kind', 'equalto', 'manual') | list %}
 {% set follow_renew = followups | rejectattr('followup_kind', 'equalto', 'manual') | list %}
+{% set follow_map = {} %}
+{% for b in follow_renew %}
+  {% if b.connection_id %}
+    {% set key = b.connection_id|string %}
+    {% set _ = follow_map.update({key: follow_map.get(key, 0) + b.total_paise - b.paid_paise}) %}
+  {% endif %}
+{% endfor %}
+{% set collect_label = "Mark collected" if follow_renew else "Collect" %}
 {% set otp_pending = jobs | selectattr('status', 'equalto', 'awaiting_otp') | list %}
 {% set pending_jobs = jobs | selectattr('status', 'equalto', 'awaiting_confirm') | list %}
 {% set ns = namespace(last_paid=none, last_renew=none, tel_href="", expiry_conn_id=none, expiry_best=none, cover_expiry="", code_dup=false, locality="") %}
@@ -93,7 +102,7 @@
     </div>
     <div class="cd-head-actions">
       {% if can('payments') %}
-      <button type="button" class="btn btn-primary cd-collect-btn" data-open="collect">Collect</button>
+      <button type="button" class="btn btn-primary cd-collect-btn" data-open="collect"{% if follow_map|length == 1 %} data-conn="{{ (follow_map|list)[0] }}"{% endif %}>{{ collect_label }}</button>
       {% endif %}
       {% if ns.tel_href %}
       <a class="btn cd-call-btn" href="{{ ns.tel_href }}">Call</a>
@@ -248,6 +257,13 @@
         {{ b.upstream_id or "connection" }}
         · ₹{{ (b.total_paise - b.paid_paise)|rupees }}
         <span class="subtle">{{ b.package_name or "" }}</span>
+        {% if b.promise_date %}
+          <span class="badge{% if b.promise_date <= today_iso() %} badge-warn{% endif %}">Promised {{ b.promise_date|nice_date }}</span>
+        {% endif %}
+        {% if b.followup_kind != 'manual' and can('payments') %}
+          <button type="button" class="btn btn-small btn-primary" data-open="collect"
+                  {% if b.connection_id %}data-conn="{{ b.connection_id }}"{% endif %}>Mark collected</button>
+        {% endif %}
         {% if b.followup_kind != 'manual' and can('customer_whatsapp') %}
           {% set wa = whatsapp_renew_followup_url(customer.name, customer.phone, b.provider) %}
           {% if wa %}
@@ -583,13 +599,17 @@
                 <dd>{% if term %}{{ term }}d{% else %}—{% endif %}</dd>
               </div>
             </dl>
+            {% set on_follow = follow_map.get(cn.id|string) %}
             <div class="cd-conn-actions">
+              {% if on_follow %}
+              <span class="subtle cd-follow-note">Renewed, waiting for ₹{{ on_follow|rupees }}</span>
+              {% endif %}
               {% if can('payments') and not cn.free_reason %}
               <button type="button" class="btn btn-primary cd-conn-btn" data-open="collect" data-conn="{{ cn.id }}"
-                      title="Record a payment for {{ cn.upstream_id }}">Collect</button>
+                      title="Record a payment for {{ cn.upstream_id }}">{% if on_follow %}Mark collected{% else %}Collect{% endif %}</button>
               {% endif %}
               {% if can('portal_actions') and not id_issue %}
-                {% if 'renew' in provider_actions.get(cn.provider, []) %}
+                {% if 'renew' in provider_actions.get(cn.provider, []) and not on_follow %}
                 <form class="inline-form" method="post" action="/connections/{{ cn.id }}/action">
                   <input type="hidden" name="action" value="renew">
                   <input type="hidden" name="next" value="/customers/{{ customer.id }}">
@@ -597,11 +617,7 @@
                           title="{% if cn.free_reason %}Free STB — renew without charge{% else %}Renew on portal{% endif %}">Renew</button>
                 </form>
                 {% if not cn.free_reason %}
-                <form class="inline-form" method="post" action="/connections/{{ cn.id }}/collect-later"
-                      onsubmit="return confirm('Renew on {{ provider_labels.get(cn.provider, cn.provider) }} now and collect payment later?')">
-                  <input type="hidden" name="next" value="/customers/{{ customer.id }}">
-                  <button class="btn cd-conn-btn" type="submit" title="Renew now, collect payment later">Collect later</button>
-                </form>
+                {{ later_menu(cn.id, "/customers/" ~ customer.id, btn_class="btn cd-conn-btn", label="Later") }}
                 {% endif %}
                 {% endif %}
                 {% if 'download_bill' in provider_actions.get(cn.provider, []) %}
@@ -1009,7 +1025,7 @@
 {% if can('payments') or ns.tel_href or (can('customer_whatsapp') and customer.phone) %}
 <div class="cd-dock">
   {% if can('payments') %}
-  <button type="button" class="btn btn-primary" data-open="collect">Collect</button>
+  <button type="button" class="btn btn-primary" data-open="collect"{% if follow_map|length == 1 %} data-conn="{{ (follow_map|list)[0] }}"{% endif %}>{{ collect_label }}</button>
   {% endif %}
   {% if ns.tel_href %}
   <a class="btn" href="{{ ns.tel_href }}">Call</a>
@@ -1073,13 +1089,20 @@
             </label>
             {% endfor %}
             {% if can('portal_actions') and connections %}
-            <label>
+            <label id="collect-later-opt">
               <input type="radio" name="mode" value="collect_later">
               <span>Later</span>
             </label>
             {% endif %}
           </div>
         </div>
+        {% if can('portal_actions') and connections %}
+        <div class="field" id="collect-promise-row" style="display:none">
+          <label for="collect-promise">Promised to pay on <span class="subtle">(optional)</span></label>
+          <input type="date" id="collect-promise" name="promise_date" min="{{ today_iso() }}">
+          <p class="subtle" style="margin:6px 0 0">With a date, they move to the top of Follow-up on that day.</p>
+        </div>
+        {% endif %}
         <div class="field" id="collect-ref-row" style="display:none">
           <label>Reference / UTR</label>
           <input type="text" name="reference">
@@ -1142,7 +1165,8 @@
   "netDue": ledger.net_due_paise or 0,
   "usual": usual_collect_paise or 0,
   "breakdown": connection_charges,
-  "coverDays": ns.expiry_best
+  "coverDays": ns.expiry_best,
+  "follow": follow_map
 }|tojson }}</script>
 {% endif %}
 
@@ -1471,5 +1495,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="/static/customer_detail.js?v=12"></script>
+<script src="/static/customer_detail.js?v=13"></script>
 {% endblock %}

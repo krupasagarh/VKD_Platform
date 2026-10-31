@@ -1,0 +1,82 @@
+{% extends "v2/base.html" %}
+{% set active = "advance" %}
+{% block title %}Advance paid · VK Digital{% endblock %}
+
+{% block header %}
+<header class="v2-header">
+  <div class="v2-header-top">
+    <a class="v2-back" href="/v2/" aria-label="Back">←</a>
+    <div class="v2-header-main">
+      <div class="v2-route">Advance paid</div>
+      <div class="v2-subline">
+        {{ rows|length }} connection{{ "s" if rows|length != 1 else "" }} expired today or yesterday
+      </div>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<p class="v2-page-note">
+  These customers already paid in advance. Tap <strong>Renew</strong> — the advance pays for it,
+  so do not collect again.
+</p>
+
+{% if rows %}
+<div class="v2-feed">
+  {% for item in rows %}
+  {% set name = item.customer_name %}
+  <article class="v2-card v2-card-customer">
+    <div class="v2-card-top">
+      <div class="v2-avatar" aria-hidden="true">{{ (name or "?")[:1]|upper }}</div>
+      <div class="v2-card-info">
+        <h3 class="v2-card-name"><a href="/customers/{{ item.customer_id }}">{{ name }}</a></h3>
+        <div class="v2-muted" style="font-size:12px;margin-top:2px">
+          {{ provider_labels.get(item.provider, item.provider) }}
+          {% if item.upstream_id %}· <span class="mono">{{ item.upstream_id }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="v2-card-timing v2-card-timing-warn">
+        <div><strong>{% if item.effective_expiry == today_iso() %}Today{% else %}Yesterday{% endif %}</strong></div>
+        <div>{{ item.effective_expiry|nice_date }}</div>
+      </div>
+    </div>
+
+    <div class="v2-facts">
+      <div class="v2-fact">
+        <div class="v2-fact-label">Advance</div>
+        <div class="v2-fact-value"><strong>₹{{ item.credit_paise|rupees }}</strong></div>
+      </div>
+      <div class="v2-fact">
+        <div class="v2-fact-label">Plan</div>
+        <div class="v2-fact-value">{{ item.package_name or "—" }}</div>
+      </div>
+    </div>
+
+    <div class="v2-card-foot v2-card-foot--actions">
+      {% if item.renew_job_status %}
+      <div class="v2-muted" style="font-size:12px">Renewal already queued — check Jobs.</div>
+      {% else %}
+      <div class="v2-muted" style="font-size:12px">Renew uses the advance.</div>
+      {% endif %}
+      <div class="v2-card-foot-actions v2-customer-actions">
+        {% if can('portal_actions') and not item.renew_job_status %}
+        <form class="v2-inline-form" method="post" action="/connections/{{ item.id }}/action">
+          <input type="hidden" name="action" value="renew">
+          <input type="hidden" name="next" value="/v2/advance-paid">
+          <button class="v2-cta v2-cta-compact v2-cta-collect" type="submit">Renew</button>
+        </form>
+        {% endif %}
+        <a class="v2-cta v2-cta-compact v2-cta-secondary" href="/customers/{{ item.customer_id }}">Open</a>
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="v2-empty">
+  <h2>Nothing to renew</h2>
+  <p>No advance-paid customer has a connection that expired today or yesterday.</p>
+</div>
+{% endif %}
+{% endblock %}

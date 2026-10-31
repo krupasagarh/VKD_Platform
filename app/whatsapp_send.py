@@ -23,6 +23,10 @@ log = logging.getLogger("vk_platform.whatsapp")
 _wa_cmd_queue: queue.Queue = queue.Queue()
 _wa_worker: threading.Thread | None = None
 _wa_worker_lock = threading.Lock()
+# (started monotonic, caller timeout) of the command the worker is running, or None.
+_wa_busy: tuple[float, float] | None = None
+# A Playwright driver crash leaves the worker blocked forever; past this margin we abandon it.
+_WA_STUCK_GRACE_SEC = 600.0
 
 
 @dataclass
@@ -102,16 +106,67 @@ def _discard_stale_session() -> None:
     _session = _WaBrowser()
 
 
+def _kill_profile_browsers() -> int:
+    """Kill leftover Chrome processes using our WhatsApp profile (else relaunch exits with code 21)."""
+    if os.name != "nt":
+        return 0
+    import subprocess
+
+    profile = str(settings.whatsapp_web_session_dir).replace("'", "''")
+    script = (
+        "$p = '" + profile + "'; $n = 0; "
+        "Get-CimInstance Win32_Process -Filter \"Name='chrome.exe'\" | "
+        "Where-Object { $_.CommandLine -and $_.CommandLine.Contains($p) } | "
+        "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue; $n++ }; $n"
+    )
+    try:
+        out = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", script],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+        killed = int((out.stdout or "0").strip().splitlines()[-1] or 0)
+    except Exception as exc:
+        log.warning("Could not clear leftover WhatsApp browser: %s", exc)
+        return 0
+    if killed:
+        log.warning("Closed %s leftover WhatsApp browser process(es)", killed)
+        time.sleep(2)
+    return killed
+
+
+def _worker_stuck() -> bool:
+    busy = _wa_busy
+    if busy is None:
+        return False
+    started, cmd_timeout = busy
+    return time.monotonic() - started > cmd_timeout + _WA_STUCK_GRACE_SEC
+
+
 def _ensure_wa_worker() -> None:
-    global _wa_worker
+    global _wa_worker, _wa_cmd_queue, _wa_busy
     with _wa_worker_lock:
+        if _wa_worker and _wa_worker.is_alive() and _worker_stuck():
+            log.error(
+                "WhatsApp worker stuck (browser driver likely crashed) — starting a fresh browser"
+            )
+            _wa_cmd_queue = queue.Queue()
+            _wa_busy = None
+            _discard_stale_session()
+            _wa_worker = None
+            _kill_profile_browsers()
         if _wa_worker and _wa_worker.is_alive():
             return
         if _wa_worker and not _wa_worker.is_alive():
             _discard_stale_session()
             _wa_worker = None
         _wa_worker = threading.Thread(
-            target=_wa_worker_loop, name="whatsapp-sender", daemon=True
+            target=_wa_worker_loop,
+            args=(_wa_cmd_queue,),
+            name="whatsapp-sender",
+            daemon=True,
         )
         _wa_worker.start()
 
@@ -119,7 +174,7 @@ def _ensure_wa_worker() -> None:
 def _dispatch(fn, /, *args, timeout: float = 600.0, **kwargs):
     _ensure_wa_worker()
     result = _WaCmdResult()
-    _wa_cmd_queue.put((fn, args, kwargs, result))
+    _wa_cmd_queue.put((fn, args, kwargs, result, timeout))
     if not result.event.wait(timeout=timeout):
         raise TimeoutError(f"WhatsApp operation timed out after {int(timeout)}s")
     if result.error is not None:
@@ -127,23 +182,26 @@ def _dispatch(fn, /, *args, timeout: float = 600.0, **kwargs):
     return result.value
 
 
-def _wa_worker_loop() -> None:
-    global _session
+def _wa_worker_loop(cmd_queue: queue.Queue) -> None:
+    global _session, _wa_busy
     owner = threading.get_ident()
     if _session.worker_thread_id not in (None, owner):
         _discard_stale_session()
     _session.worker_thread_id = owner
 
     while True:
-        item = _wa_cmd_queue.get()
+        item = cmd_queue.get()
         if item is None:
             _close_whatsapp_session_impl()
             break
-        fn, args, kwargs, result = item
+        fn, args, kwargs, result, cmd_timeout = item
+        _wa_busy = (time.monotonic(), cmd_timeout)
         try:
             result.value = fn(*args, **kwargs)
         except BaseException as exc:
-            if _is_thread_error(exc):
+            if cmd_queue is not _wa_cmd_queue:
+                pass  # abandoned worker: the session now belongs to its replacement
+            elif _is_thread_error(exc):
                 log.warning("WhatsApp Playwright thread mismatch - resetting session")
                 _close_whatsapp_session_impl()
             else:
@@ -153,7 +211,11 @@ def _wa_worker_loop() -> None:
                     _close_whatsapp_session_impl()
             result.error = exc
         finally:
+            if cmd_queue is _wa_cmd_queue:
+                _wa_busy = None
             result.event.set()
+        if cmd_queue is not _wa_cmd_queue:
+            break
 
 
 def warm_whatsapp_session() -> None:
@@ -569,6 +631,7 @@ def _ensure_page():
         _session.worker_thread_id = threading.get_ident()
         _trim_extra_tabs(context, page)
         _set_viewport(page)
+        _watch_dialogs(page)
         return page
 
     last_exc: BaseException | None = None
@@ -591,18 +654,36 @@ def _ensure_page():
             _session.worker_thread_id = threading.get_ident()
             _trim_extra_tabs(_session.context, _session.page)
             _set_viewport(_session.page)
+            _watch_dialogs(_session.page)
             return _session.page
         except Exception as exc:
             last_exc = exc
             _close_whatsapp_session_impl()
             if attempt == 1 and _is_browser_crash(exc):
                 log.warning("WhatsApp browser launch failed — retrying: %s", exc)
-                time.sleep(3)
+                if not _kill_profile_browsers():
+                    time.sleep(3)
                 continue
             raise
     if last_exc is not None:
         raise last_exc
     raise RuntimeError("WhatsApp browser launch failed")
+
+
+def _accept_dialog(dialog) -> None:
+    try:
+        dialog.accept()
+    except Exception:
+        pass
+
+
+def _watch_dialogs(page) -> None:
+    # Without a listener Playwright auto-dismisses dialogs, and a dismiss racing a
+    # navigation crashes its Node driver ("No dialog is showing"), hanging every send.
+    try:
+        page.on("dialog", _accept_dialog)
+    except Exception:
+        pass
 
 
 def _set_viewport(page) -> None:

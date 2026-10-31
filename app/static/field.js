@@ -89,7 +89,7 @@
   var ACTION_SELECTOR = "a, button, summary, label, select, input, textarea, [role=button], [onclick]";
 
   function isDutyFree(el) {
-    if (el.closest(".field-duty-form, #field-duty-prompt")) return true;
+    if (el.closest(".field-duty-form, #field-duty-prompt, [data-duty-free]")) return true;
     if (el.tagName === "A") {
       var href = el.getAttribute("href") || "";
       if (DUTY_FREE_HREF.test(href)) return true;
@@ -115,7 +115,7 @@
     document.addEventListener("submit", function (event) {
       var form = event.target;
       if (!form || form.tagName !== "FORM") return;
-      if (form.classList.contains("field-duty-form")) return;
+      if (form.classList.contains("field-duty-form") || form.hasAttribute("data-duty-free")) return;
       event.preventDefault();
       showDutyPrompt();
     }, true);

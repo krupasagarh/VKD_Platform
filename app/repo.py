@@ -4,10 +4,10 @@ from __future__ import annotations
 import calendar
 import re
 import sqlite3
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from .config import settings
-from .money import add_days, fmt_date_display, now_iso, today
+from .money import add_days, fmt_date_display, now_iso, parse_datetime, today
 
 PAGE_SIZE = 50
 EXPORT_PAGE_SIZE = 100_000
@@ -1488,7 +1488,9 @@ def get_job(conn: sqlite3.Connection, job_id: int) -> dict | None:
     ).fetchone())
 
 
-def list_bills(conn: sqlite3.Connection, *, status: str = "", limit: int = 200) -> list[sqlite3.Row]:
+def list_bills(
+    conn: sqlite3.Connection, *, status: str = "", limit: int = 200, provider: str = ""
+) -> list[sqlite3.Row]:
     where: list[str] = []
     params: list = []
     if status == "open":
@@ -1496,6 +1498,13 @@ def list_bills(conn: sqlite3.Connection, *, status: str = "", limit: int = 200) 
     elif status:
         where.append("b.status = ?")
         params.append(status)
+    pf = (provider or "").strip().lower()
+    if pf:
+        where.append(
+            "EXISTS (SELECT 1 FROM connections bcn WHERE bcn.customer_id = b.customer_id "
+            "AND bcn.provider = ? AND (b.connection_id IS NULL OR bcn.id = b.connection_id))"
+        )
+        params.append(pf)
     clause = f"WHERE {' AND '.join(where)}" if where else ""
     return conn.execute(
         f"SELECT b.*, c.name AS customer_name, c.code AS customer_code, c.phone "
@@ -1737,14 +1746,16 @@ def recent_activity(
         "LEFT JOIN connections cn ON cn.id = a.connection_id "
         "WHERE ( "
         "  (a.connection_id IS NOT NULL AND cn.provider = ?) "
-        "  OR (a.connection_id IS NULL AND a.customer_id IS NULL) "
+        "  OR (a.connection_id IS NULL AND a.customer_id IS NULL "
+        "      AND lower(COALESCE(a.message, '')) NOT LIKE ? "
+        "      AND lower(COALESCE(a.kind, '')) NOT LIKE ?) "
         "  OR (a.connection_id IS NULL AND a.customer_id IS NOT NULL AND EXISTS ( "
         "        SELECT 1 FROM connections cn2 "
         "        WHERE cn2.customer_id = a.customer_id AND cn2.provider = ? "
         "      ) AND lower(COALESCE(a.message, '')) NOT LIKE ? "
         "     ) "
         ") ORDER BY a.id DESC LIMIT ?",
-        (pf, pf, f"%{other}%", limit),
+        (pf, f"%{other}%", f"%{other}%", pf, f"%{other}%", limit),
     ).fetchall()
 
 
@@ -1862,10 +1873,14 @@ def list_collect_later(
         kind=kind, since=since, until=until, provider=provider, collector_id=collector_id
     )
     params.append(limit)
+    today_str = today().strftime("%Y-%m-%d")
     return conn.execute(
         _FOLLOWUP_SELECT
         + f"WHERE {where} "
-        "ORDER BY CASE b.followup_kind WHEN 'manual' THEN 0 ELSE 1 END, b.created_at DESC, b.id DESC "
+        "ORDER BY CASE WHEN COALESCE(b.promise_date, '') != '' "
+        f"              AND b.promise_date <= '{today_str}' THEN 0 ELSE 1 END, "
+        "         b.promise_date, "
+        "         CASE b.followup_kind WHEN 'manual' THEN 0 ELSE 1 END, b.created_at DESC, b.id DESC "
         "LIMIT ?",
         params,
     ).fetchall()
@@ -1900,14 +1915,25 @@ def group_followup_by_customer(rows: list[sqlite3.Row]) -> list[dict]:
                 "due_paise": 0,
                 "bills": [],
                 "renewed_at": row["created_at"],
+                "promise_date": "",
             }
         entry = grouped[cid]
         entry["due_paise"] += due
         entry["bills"].append(row)
         if (row["created_at"] or "") < (entry["renewed_at"] or ""):
             entry["renewed_at"] = row["created_at"]
+        promised = (row["promise_date"] if "promise_date" in row.keys() else "") or ""
+        if promised and (not entry["promise_date"] or promised < entry["promise_date"]):
+            entry["promise_date"] = promised
     out = list(grouped.values())
+    today_str = today().strftime("%Y-%m-%d")
     out.sort(key=lambda item: item["renewed_at"] or "", reverse=True)
+    out.sort(
+        key=lambda item: (
+            0 if item["promise_date"] and item["promise_date"] <= today_str else 1,
+            item["promise_date"] if item["promise_date"] and item["promise_date"] <= today_str else "",
+        )
+    )
     return out
 
 
@@ -1918,6 +1944,87 @@ def customer_collect_later(conn: sqlite3.Connection, customer_id: int) -> list[s
         "WHERE b.customer_id = ? AND b.collect_later = 1 AND b.status IN ('pending', 'partial') "
         "ORDER BY b.id",
         (customer_id,),
+    ).fetchall()
+
+
+def connection_paid_through(conn: sqlite3.Connection, connection_id: int) -> str:
+    """Paid-through date (YYYY-MM-DD) shown on the connection card, or ''."""
+    row = conn.execute(
+        f"SELECT {CONNECTION_EFFECTIVE_EXPIRY_SQL} AS exp FROM connections cn "
+        "LEFT JOIN packages p ON p.id = cn.package_id WHERE cn.id = ?",
+        (connection_id,),
+    ).fetchone()
+    return ((row["exp"] if row else "") or "")[:10]
+
+
+_CUSTOMER_CREDIT_SQL = (
+    "((SELECT COALESCE(SUM(pm.amount_paise), 0) FROM payments pm WHERE pm.customer_id = c.id) "
+    " - (SELECT COALESCE(SUM(bx.paid_paise), 0) FROM bills bx "
+    "    WHERE bx.customer_id = c.id AND bx.status != 'cancelled'))"
+)
+
+
+def advance_paid_expired(
+    conn: sqlite3.Connection,
+    *,
+    provider: str = "",
+    hide_owner: bool = False,
+    limit: int = 300,
+) -> list[sqlite3.Row]:
+    """Customers holding advance money whose connection ran out today or yesterday."""
+    ref = today()
+    params: list = [add_days(ref, -1).strftime("%Y-%m-%d"), ref.strftime("%Y-%m-%d")]
+    sql = (
+        "SELECT cn.id, cn.customer_id, cn.provider, cn.upstream_id, cn.status, "
+        f"       ({CONNECTION_EFFECTIVE_EXPIRY_SQL}) AS effective_expiry, "
+        "       COALESCE(p.name, cn.upstream_plan_name, '') AS package_name, "
+        "       c.name AS customer_name, c.code AS customer_code, c.phone, c.area, c.sub_area, "
+        f"      {_CUSTOMER_CREDIT_SQL} AS credit_paise, "
+        "       (SELECT j.status FROM upstream_jobs j WHERE j.connection_id = cn.id "
+        "         AND j.action = 'renew' AND j.status IN ('awaiting_confirm', 'queued', 'running') "
+        "         ORDER BY j.id DESC LIMIT 1) AS renew_job_status "
+        "FROM connections cn JOIN customers c ON c.id = cn.customer_id "
+        "LEFT JOIN packages p ON p.id = cn.package_id "
+        "WHERE COALESCE(cn.free_reason, '') = '' "
+        "  AND lower(COALESCE(cn.status, '')) NOT IN ('terminated', 'inactive') "
+        f" AND ({CONNECTION_EFFECTIVE_EXPIRY_SQL}) BETWEEN ? AND ? "
+        f" AND {_CUSTOMER_CREDIT_SQL} > 0 "
+    )
+    pf = (provider or "").strip().lower()
+    if pf:
+        sql += "AND cn.provider = ? "
+        params.append(pf)
+    sql += f"ORDER BY ({CONNECTION_EFFECTIVE_EXPIRY_SQL}), c.name COLLATE NOCASE LIMIT ?"
+    params.append(limit)
+    rows = conn.execute(sql, params).fetchall()
+    if hide_owner:
+        rows = without_owner_customers(conn, rows)
+    return rows
+
+
+def free_renewals(
+    conn: sqlite3.Connection, *, since: str = "", until: str = "", limit: int = 500
+) -> list[sqlite3.Row]:
+    """Zero-charge renewals of free STBs (police station, node points …), newest first."""
+    clauses = ["b.total_paise = 0", "b.notes LIKE 'Free STB%'", "b.status != 'cancelled'"]
+    params: list = []
+    if since:
+        clauses.append("substr(b.created_at, 1, 10) >= ?")
+        params.append(since[:10])
+    if until:
+        clauses.append("substr(b.created_at, 1, 10) <= ?")
+        params.append(until[:10])
+    params.append(limit)
+    return conn.execute(
+        "SELECT b.id, b.customer_id, b.connection_id, b.created_at, b.period_end, b.notes, "
+        "       b.package_name, c.name AS customer_name, cn.upstream_id, cn.provider, "
+        "       j.requested_by "
+        "FROM bills b JOIN customers c ON c.id = b.customer_id "
+        "LEFT JOIN connections cn ON cn.id = b.connection_id "
+        "LEFT JOIN upstream_jobs j ON j.id = b.job_id "
+        f"WHERE {' AND '.join(clauses)} "
+        "ORDER BY b.created_at DESC, b.id DESC LIMIT ?",
+        params,
     ).fetchall()
 
 
@@ -1996,6 +2103,78 @@ def hathway_mapping_stats(conn: sqlite3.Connection) -> dict:
         "extra_local": int(extra_local),
         "unmapped": int(unmapped_local) + int(portal_gap),
     }
+
+
+STB_BULK_LOOKUP_MAX = 500
+
+
+def parse_stb_ids(text: str) -> list[str]:
+    """Unique upper-cased ids from pasted text (lines, commas, tabs or spaces)."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for token in re.split(r"[\s,;]+", (text or "").replace("\ufeff", "")):
+        key = token.strip().upper()
+        if key and key not in seen:
+            seen.add(key)
+            out.append(key)
+    return out
+
+
+def stb_bulk_lookup(
+    conn: sqlite3.Connection, ids: list[str], *, hide_owner: bool = False
+) -> list[dict]:
+    """One row per pasted id: the Hathway STB / VC match, its customer and all their boxes."""
+    ids = ids[:STB_BULK_LOOKUP_MAX]
+    if not ids:
+        return []
+    owner_clause = "AND COALESCE(cn.owner_reason, '') = '' " if hide_owner else ""
+    marks = ",".join("?" * len(ids))
+    hits = conn.execute(
+        "SELECT cn.id AS connection_id, cn.customer_id, "
+        "       upper(trim(COALESCE(cn.upstream_id, ''))) AS stb, "
+        "       upper(trim(COALESCE(cn.card_number, ''))) AS vc, "
+        "       cn.status AS stb_status, cn.expiry_date, "
+        "       COALESCE(NULLIF(cn.hathway_pack_name, ''), NULLIF(cn.upstream_plan_name, ''), p.name, '') AS pack, "
+        "       c.code AS customer_code, c.name AS customer_name, c.phone, c.alt_phone, "
+        "       c.area, c.sub_area, c.address, c.status AS customer_status "
+        "FROM connections cn "
+        "JOIN customers c ON c.id = cn.customer_id "
+        "LEFT JOIN packages p ON p.id = cn.package_id "
+        f"WHERE cn.provider = 'hathway' {owner_clause}"
+        f"AND (upper(trim(COALESCE(cn.upstream_id, ''))) IN ({marks}) "
+        f"     OR upper(trim(COALESCE(cn.card_number, ''))) IN ({marks}))",
+        [*ids, *ids],
+    ).fetchall()
+    customer_ids = sorted({int(h["customer_id"]) for h in hits})
+    boxes: dict[int, list[dict]] = {}
+    if customer_ids:
+        cmarks = ",".join("?" * len(customer_ids))
+        for b in conn.execute(
+            "SELECT cn.customer_id, cn.upstream_id, cn.card_number, cn.status "
+            "FROM connections cn "
+            f"WHERE cn.provider = 'hathway' AND cn.customer_id IN ({cmarks}) {owner_clause}"
+            "ORDER BY cn.status = 'active' DESC, cn.upstream_id",
+            customer_ids,
+        ):
+            boxes.setdefault(int(b["customer_id"]), []).append(dict(b))
+    wanted = set(ids)
+    by_id: dict[str, list[dict]] = {}
+    for h in hits:
+        item = dict(h)
+        item["all_boxes"] = boxes.get(int(h["customer_id"]), [])
+        if item["stb"] in wanted:
+            by_id.setdefault(item["stb"], []).append({**item, "matched_on": "STB"})
+        if item["vc"] and item["vc"] in wanted:
+            by_id.setdefault(item["vc"], []).append({**item, "matched_on": "VC"})
+    out: list[dict] = []
+    for key in ids:
+        matches = by_id.get(key) or []
+        if not matches:
+            out.append({"input_id": key, "found": False})
+            continue
+        for m in matches:
+            out.append({"input_id": key, "found": True, **m})
+    return out
 
 
 def list_hathway_stbs(
@@ -2709,6 +2888,112 @@ def term_expiring_month_connections(
     return expiry_window_connections(conn, when="term_month", provider=provider, limit=limit)
 
 
+RAILTEL_STATUS_STALE_MINUTES = 30
+
+
+def railtel_status_lookup(
+    conn: sqlite3.Connection,
+    query: str,
+    *,
+    hide_owner: bool = False,
+    limit: int = 50,
+) -> list[dict]:
+    """Railtel lines by phone, Railtel ID or customer code (full or partial) — never a name search."""
+    raw = (query or "").strip()
+    if not raw:
+        return []
+    digits = re.sub(r"\D", "", raw)
+    login = raw.lower()
+    full_login = login if login.startswith("ka.") else f"ka.{login}"
+    exact = [
+        "lower(cn.upstream_id) = ?",
+        "lower(cn.upstream_id) = ?",
+        "lower(COALESCE(c.code, '')) = ?",
+    ]
+    exact_params: list = [login, full_login, login]
+    where = list(exact)
+    params: list = list(exact_params)
+    if len(login) >= 3:
+        like = "%" + login.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        where += [
+            "lower(cn.upstream_id) LIKE ? ESCAPE '\\'",
+            "lower(COALESCE(c.code, '')) LIKE ? ESCAPE '\\'",
+        ]
+        params += [like, like]
+    phone_only = len(digits) == len(re.sub(r"[\s+\-()]", "", raw))
+    if phone_only and len(digits) >= 10:
+        last10 = digits[-10:]
+        for col in ("COALESCE(c.phone, '')", "COALESCE(c.alt_phone, '')"):
+            where.append(f"substr({_phone_sql_normalized(col)}, -10) = ?")
+        params += [last10, last10]
+    elif phone_only and len(digits) >= 4:
+        for col in ("COALESCE(c.phone, '')", "COALESCE(c.alt_phone, '')"):
+            where.append(f"instr({_phone_sql_normalized(col)}, ?) > 0")
+        params += [digits, digits]
+    owner_clause = "AND COALESCE(cn.owner_reason, '') = '' " if hide_owner else ""
+    rows = conn.execute(
+        "SELECT cn.id AS connection_id, cn.upstream_id, cn.label, cn.status, "
+        "       cn.expiry_date, cn.subscription_expiry, cn.link_state, cn.link_since, "
+        "       cn.link_days, cn.last_synced_at, "
+        f"      {CONNECTION_EFFECTIVE_EXPIRY_SQL} AS effective_expiry, "
+        "       c.id AS customer_id, c.name AS customer_name, c.code AS customer_code, "
+        "       (SELECT j.completed_at FROM upstream_jobs j WHERE j.connection_id = cn.id "
+        "          AND j.action = 'status' AND j.status = 'done' "
+        "          ORDER BY j.id DESC LIMIT 1) AS last_status_at, "
+        "       (SELECT j.id FROM upstream_jobs j WHERE j.connection_id = cn.id "
+        "          AND j.action = 'status' "
+        "          AND j.status IN ('awaiting_confirm', 'queued', 'running', 'awaiting_otp') "
+        "          ORDER BY j.id DESC LIMIT 1) AS pending_job_id, "
+        "       (SELECT j.error FROM upstream_jobs j WHERE j.connection_id = cn.id "
+        "          AND j.action = 'status' ORDER BY j.id DESC LIMIT 1) AS last_job_error, "
+        "       (SELECT j.status FROM upstream_jobs j WHERE j.connection_id = cn.id "
+        "          AND j.action = 'status' ORDER BY j.id DESC LIMIT 1) AS last_job_status "
+        "FROM connections cn "
+        "JOIN customers c ON c.id = cn.customer_id "
+        "LEFT JOIN packages p ON p.id = cn.package_id "
+        f"WHERE cn.provider = 'railtel' AND ({' OR '.join(where)}) {owner_clause}"
+        f"ORDER BY CASE WHEN {' OR '.join(exact)} THEN 0 ELSE 1 END, "
+        "c.name, cn.upstream_id LIMIT ?",
+        [*params, *exact_params, limit],
+    ).fetchall()
+    snapshot = latest_railtel_online(conn)
+    snap_at = parse_datetime(snapshot["fetched_at"]) if snapshot else None
+    now = datetime.now()
+    out: list[dict] = []
+    for row in rows:
+        item = dict(row)
+        status_at = parse_datetime(item.get("last_status_at") or "")
+        state = (item.get("link_state") or "") if status_at else ""
+        since = (item.get("link_since") or "") if status_at else ""
+        checked = status_at
+        online_for = ""
+        # The bulk online list is newer than this line's own check: trust it instead.
+        if snap_at and (status_at is None or snap_at > status_at):
+            session = conn.execute(
+                "SELECT start_at, start_time, total_time FROM railtel_online_rows "
+                "WHERE snapshot_id = ? AND lower(username) = lower(?) LIMIT 1",
+                (int(snapshot["id"]), item["upstream_id"]),
+            ).fetchone()
+            if session is not None:
+                state, checked = "online", snap_at
+                since = session["start_at"] or session["start_time"] or ""
+                online_for = session["total_time"] or ""
+            elif not int(snapshot["partial"] or 0):
+                state, since, checked = "offline", "", snap_at
+        item["line_state"] = state
+        item["line_since"] = since
+        item["online_for"] = online_for
+        item["checked_at"] = checked.strftime("%Y-%m-%d %H:%M:%S") if checked else ""
+        item["status_age_minutes"] = (
+            int((now - checked).total_seconds() // 60) if checked else None
+        )
+        item["status_stale"] = (
+            checked is None or item["status_age_minutes"] >= RAILTEL_STATUS_STALE_MINUTES
+        )
+        out.append(item)
+    return out
+
+
 def latest_railtel_online(conn: sqlite3.Connection) -> sqlite3.Row | None:
     return conn.execute(
         "SELECT * FROM railtel_online_snapshots ORDER BY id DESC LIMIT 1"
@@ -2794,6 +3079,8 @@ def list_complaints(
     agent_id: int | None = None,
     customer_id: int | None = None,
     limit: int = 200,
+    provider: str = "",
+    viewer_agent_id: int | None = None,
 ) -> list[sqlite3.Row]:
     where: list[str] = []
     params: list = []
@@ -2806,6 +3093,7 @@ def list_complaints(
     if customer_id:
         where.append("cp.customer_id = ?")
         params.append(customer_id)
+    _complaint_scope(where, params, provider, viewer_agent_id)
     clause = f"WHERE {' AND '.join(where)}" if where else ""
     return conn.execute(
         f"SELECT cp.*, c.name AS customer_name, c.code AS customer_code, c.phone AS customer_phone, "
@@ -2828,10 +3116,33 @@ def get_complaint(conn: sqlite3.Connection, complaint_id: int) -> sqlite3.Row | 
     ).fetchone()
 
 
-def recent_fixed_complaints(conn: sqlite3.Connection, limit: int = 8) -> list[sqlite3.Row]:
+def recent_fixed_complaints(
+    conn: sqlite3.Connection,
+    limit: int = 8,
+    *,
+    provider: str = "",
+    viewer_agent_id: int | None = None,
+) -> list[sqlite3.Row]:
+    where = ["cp.status = 'fixed'"]
+    params: list = []
+    _complaint_scope(where, params, provider, viewer_agent_id)
     return conn.execute(
         "SELECT cp.*, c.name AS customer_name, c.code AS customer_code "
         "FROM complaints cp JOIN customers c ON c.id = cp.customer_id "
-        "WHERE cp.status = 'fixed' ORDER BY cp.resolved_at DESC, cp.id DESC LIMIT ?",
-        (limit,),
+        f"WHERE {' AND '.join(where)} ORDER BY cp.resolved_at DESC, cp.id DESC LIMIT ?",
+        [*params, limit],
     ).fetchall()
+
+
+def _complaint_scope(
+    where: list[str], params: list, provider: str, viewer_agent_id: int | None
+) -> None:
+    """Single-provider agents: their provider's customers, plus complaints handed to them."""
+    pf = (provider or "").strip().lower()
+    if not pf:
+        return
+    where.append(
+        "(EXISTS (SELECT 1 FROM connections scn WHERE scn.customer_id = cp.customer_id "
+        "AND scn.provider = ?) OR cp.assigned_agent_id = ?)"
+    )
+    params.extend([pf, int(viewer_agent_id or 0)])

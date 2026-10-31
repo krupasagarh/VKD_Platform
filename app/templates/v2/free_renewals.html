@@ -1,0 +1,67 @@
+{% extends "v2/base.html" %}
+{% set active = "free_renewals" %}
+{% block title %}Free renewals · VK Digital{% endblock %}
+
+{% block header %}
+<header class="v2-header">
+  <div class="v2-header-top">
+    <a class="v2-back" href="/v2/" aria-label="Back">←</a>
+    <div class="v2-header-main">
+      <div class="v2-route">Free renewals</div>
+      <div class="v2-subline">
+        {{ rows|length }} renewal{{ "s" if rows|length != 1 else "" }} with no charge
+      </div>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<p class="v2-page-note">
+  Free STBs (police station, node points …) renewed on the portal. No payment is recorded for these.
+</p>
+
+<div class="v2-chips">
+  <a href="/v2/free-renewals?period=month" class="v2-chip {% if period == 'month' %}on{% endif %}">This month</a>
+  <a href="/v2/free-renewals?period=last" class="v2-chip {% if period == 'last' %}on{% endif %}">Last month</a>
+  <a href="/v2/free-renewals?period=all" class="v2-chip {% if period == 'all' %}on{% endif %}">All</a>
+</div>
+
+{% if rows %}
+<div class="v2-feed">
+  {% for r in rows %}
+  <article class="v2-card v2-card-customer">
+    <div class="v2-card-top">
+      <div class="v2-avatar" aria-hidden="true">{{ (r.customer_name or "?")[:1]|upper }}</div>
+      <div class="v2-card-info">
+        <h3 class="v2-card-name"><a href="/customers/{{ r.customer_id }}">{{ r.customer_name }}</a></h3>
+        <div class="v2-muted" style="font-size:12px;margin-top:2px">
+          {{ provider_labels.get(r.provider, r.provider or "") }}
+          {% if r.upstream_id %}· <span class="mono">{{ r.upstream_id }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="v2-card-timing">
+        <div><strong>{{ r.created_at|nice_date }}</strong></div>
+        {% if r.period_end %}<div>until {{ r.period_end|nice_date }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="v2-facts">
+      <div class="v2-fact">
+        <div class="v2-fact-label">Why free</div>
+        <div class="v2-fact-value">{{ (r.notes or "")|replace("Free STB — ", "") }}</div>
+      </div>
+      <div class="v2-fact">
+        <div class="v2-fact-label">Renewed by</div>
+        <div class="v2-fact-value">{{ r.requested_by or "—" }}</div>
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="v2-empty">
+  <h2>No free renewals</h2>
+  <p>No free STB was renewed in this period.</p>
+</div>
+{% endif %}
+{% endblock %}

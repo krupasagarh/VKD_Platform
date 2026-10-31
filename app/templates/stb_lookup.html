@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% set active = "stb_lookup" %}
+{% block title %}STB lookup · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>STB lookup</h1>
+    <div class="subtle">
+      Paste Hathway STB numbers (N…) or VC numbers (T…) to see whose they are.
+      One per line, or separated by commas or spaces — up to {{ max_ids }} at a time.
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/stbs">Hathway STBs</a>
+  <a href="/stbs/lookup" class="on">STB lookup</a>
+  <a href="/stbs/expiry-report">Expiry report</a>
+</div>
+
+<form class="card" method="post" action="/stbs/lookup" data-duty-free>
+  <label for="stb-ids" class="subtle" style="display:block;margin-bottom:6px">STB / VC numbers</label>
+  <textarea id="stb-ids" name="ids" rows="7" class="mono stb-lookup-box"
+    placeholder="Click here and paste STB numbers — e.g. N70130693206" {% if rows is none %}autofocus{% endif %}>{{ ids_text }}</textarea>
+  <div class="form-row" style="margin-top:10px;gap:8px">
+    <button class="btn btn-primary" type="submit">Look up</button>
+    {% if rows %}
+    <button class="btn" type="submit" name="export" value="csv">Download CSV</button>
+    {% endif %}
+    {% if rows is not none %}<a class="btn" href="/stbs/lookup">Clear</a>{% endif %}
+  </div>
+</form>
+
+{% if rows is not none %}
+{% if truncated %}
+<div class="flash flash-warn">Only the first {{ max_ids }} numbers were looked up. Split the rest into another search.</div>
+{% endif %}
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">Searched</div>
+    <div class="value">{{ searched }}</div>
+  </div>
+  <div class="stat good">
+    <div class="label">Found</div>
+    <div class="value">{{ found_count }}</div>
+    <div class="hint">{{ customer_count }} customer{{ "s" if customer_count != 1 else "" }}</div>
+  </div>
+  <div class="stat {% if searched - found_count %}warn{% endif %}">
+    <div class="label">Not found</div>
+    <div class="value">{{ searched - found_count }}</div>
+    <div class="hint">not in VK Platform</div>
+  </div>
+</div>
+
+{% if rows %}
+<div class="card">
+<div class="table-wrap table-wrap-sticky">
+<table>
+  <thead>
+    <tr>
+      <th>Searched</th>
+      <th>Customer</th>
+      <th>Area</th>
+      <th>STB / VC</th>
+      <th>Status</th>
+      <th>Pack</th>
+      <th>Expiry</th>
+      <th>All STBs of this customer</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    {% if r.found %}
+    <tr>
+      <td class="mono">{{ r.input_id }}{% if r.matched_on == 'VC' %}<div class="subtle">matched VC</div>{% endif %}</td>
+      <td>
+        <a href="/customers/{{ r.customer_id }}">{{ r.customer_name }}</a>
+        {% if r.customer_code %}<span class="badge">{{ r.customer_code }}</span>{% endif %}
+        <div class="subtle">
+          {{ r.phone or "" }}{% if r.alt_phone and r.alt_phone != r.phone %} · {{ r.alt_phone }}{% endif %}
+        </div>
+        {% if r.customer_status and r.customer_status != 'active' %}
+        <div class="subtle">Customer {{ r.customer_status }}</div>
+        {% endif %}
+      </td>
+      <td>
+        {{ r.sub_area or r.area or "—" }}
+        {% if r.address and r.address != r.area %}<div class="subtle">{{ r.address }}</div>{% endif %}
+      </td>
+      <td class="mono">{{ r.stb or "—" }}<div class="subtle">{{ r.vc or "" }}</div></td>
+      <td>
+        {% if r.stb_status == 'active' %}<span class="badge badge-ok">{{ r.stb_status }}</span>
+        {% elif r.stb_status == 'terminated' %}<span class="badge badge-bad">{{ r.stb_status }}</span>
+        {% else %}<span class="badge badge-warn">{{ r.stb_status }}</span>{% endif %}
+      </td>
+      <td>{{ r.pack or "—" }}</td>
+      <td class="date">{{ r.expiry_date|nice_date if r.expiry_date else "—" }}</td>
+      <td>
+        <strong>{{ r.all_boxes|length }}</strong> STB{{ "s" if r.all_boxes|length != 1 else "" }}
+        <div class="subtle mono" style="font-size:12px;line-height:1.5">
+          {% for b in r.all_boxes %}
+          <span{% if (b.upstream_id or '')|upper == r.stb %} style="font-weight:600;color:inherit"{% endif %}>{{ b.upstream_id or b.card_number }}</span>
+          {%- if b.status != 'active' %} ({{ b.status }}){% endif %}{% if not loop.last %}<br>{% endif %}
+          {% endfor %}
+        </div>
+      </td>
+    </tr>
+    {% else %}
+    <tr style="background:#fff7ed">
+      <td class="mono">{{ r.input_id }}</td>
+      <td colspan="7" class="subtle">Not found in VK Platform</td>
+    </tr>
+    {% endif %}
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+</div>
+{% endif %}
+{% endif %}
+
+<style>
+  .stb-lookup-box { width: 100%; box-sizing: border-box; }
+  .stb-lookup-box::placeholder { color: #9ca3af; font-style: italic; font-family: inherit; }
+  body[data-field-duty="off"] .content > form[data-duty-free] { opacity: 1; filter: none; }
+</style>
+{% endblock %}

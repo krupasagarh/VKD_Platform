@@ -11,7 +11,7 @@ from ..config import settings
 from ..db import connection, transaction
 from ..upstream import jobs as job_queue
 from ..upstream.providers import PROVIDERS
-from .pages import _list_qs, _render
+from .pages import _list_qs, _render, railtel_check_context
 from .pay_portal import pay_admin_context
 
 router = APIRouter(prefix="/v2", redirect_slashes=True)
@@ -54,6 +54,21 @@ async def v2_home(request: Request):
         collector_stats = (
             repo.agent_collection_stats(conn, collector_id) if collector_id else None
         )
+        advance_rows = repo.advance_paid_expired(
+            conn, provider=fixed or "", hide_owner=bool(collector_id)
+        )
+        is_owner = (request.state.agent or {}).get("role") == "admin"
+        free_month = 0
+        if is_owner:
+            since, until = repo.followup_period_bounds("month")
+            free_month = len(repo.free_renewals(conn, since=since, until=until))
+    stats = dict(stats)
+    stats["advance_paid"] = {
+        "connections": len(advance_rows),
+        "customers": len({int(r["customer_id"]) for r in advance_rows}),
+    }
+    stats["show_free_renewals"] = is_owner
+    stats["free_renewals_month"] = free_month
 
     return _render_v2(
         request,
@@ -301,6 +316,38 @@ async def v2_unpaid_renewals(request: Request):
     )
 
 
+@router.get("/advance-paid", response_class=HTMLResponse)
+async def v2_advance_paid(request: Request):
+    if not (
+        auth.can(request.state.agent, "customers_view")
+        or auth.can(request.state.agent, "payments")
+        or auth.can(request.state.agent, "portal_actions")
+    ):
+        return RedirectResponse("/v2/", status_code=303)
+    fixed = auth.agent_provider_scope(request.state.agent)
+    with connection() as conn:
+        rows = repo.advance_paid_expired(
+            conn,
+            provider=fixed or "",
+            hide_owner=bool(auth.collector_id_for(request.state.agent)),
+        )
+    return _render_v2(request, "advance_paid.html", rows=rows)
+
+
+@router.get("/free-renewals", response_class=HTMLResponse)
+async def v2_free_renewals(request: Request):
+    agent = request.state.agent or {}
+    if agent.get("role") != "admin":
+        return RedirectResponse("/v2/", status_code=303)
+    period = (request.query_params.get("period") or "month").strip().lower()
+    if period not in ("month", "last", "all"):
+        period = "month"
+    since, until = repo.followup_period_bounds(period)
+    with connection() as conn:
+        rows = repo.free_renewals(conn, since=since, until=until)
+    return _render_v2(request, "free_renewals.html", rows=rows, period=period)
+
+
 def _railtel_online_job_row(conn, job_id: int | None = None):
     if job_id:
         return conn.execute(
@@ -355,6 +402,8 @@ async def v2_railtel_online(request: Request):
 async def v2_railtel_online_refresh(request: Request):
     if not auth.can(request.state.agent, "providers"):
         return RedirectResponse("/v2/", status_code=303)
+    if auth.agent_provider_scope(request.state.agent) == "hathway":
+        return RedirectResponse("/v2/", status_code=303)
     actor = None
     if request.state.agent:
         actor = auth.job_requested_by(request.state.agent)
@@ -368,11 +417,18 @@ async def v2_railtel_online_refresh(request: Request):
     return RedirectResponse(f"/v2/railtel-online?job={job_id}", status_code=303)
 
 
+@router.get("/railtel-check", response_class=HTMLResponse)
+async def v2_railtel_check(request: Request):
+    return _render_v2(request, "railtel_check.html", **railtel_check_context(request))
+
+
 @router.get("/api/railtel-online")
 async def v2_railtel_online_api(request: Request):
     if not auth.is_authenticated(request):
         return JSONResponse({"ok": False, "error": "not signed in"}, status_code=401)
     if not auth.can(request.state.agent, "providers"):
+        return JSONResponse({"ok": False, "error": "forbidden"}, status_code=403)
+    if auth.agent_provider_scope(request.state.agent) == "hathway":
         return JSONResponse({"ok": False, "error": "forbidden"}, status_code=403)
 
     job_id = int(request.query_params.get("job") or 0) or None

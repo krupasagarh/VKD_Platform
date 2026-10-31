@@ -41,9 +41,14 @@ def _money(row: dict, *keys: str) -> dict:
 
 @router.get("/stats")
 async def api_stats(request: Request):
-    collector_id = auth.collector_id_for(getattr(request.state, "agent", None))
+    agent = getattr(request.state, "agent", None)
+    collector_id = auth.collector_id_for(agent)
     with connection() as conn:
-        stats = repo.dashboard_stats(conn, collector_id=collector_id)
+        stats = repo.dashboard_stats(
+            conn,
+            agent_scope=auth.agent_provider_scope(agent) or "",
+            collector_id=collector_id,
+        )
     stats["by_provider"] = _rows(stats["by_provider"])
     return _money(stats, "outstanding_paise", "collected_today_paise", "collected_month_paise")
 
@@ -93,38 +98,48 @@ async def api_customer(request: Request, customer_id: int):
 
 
 @router.get("/lookup")
-async def api_lookup(q: str):
+async def api_lookup(request: Request, q: str):
     """Find a connection by STB number, Railtel login, VC number or phone."""
+    agent = _require(request, "customers_view")
     text = (q or "").strip()
     if not text:
         raise HTTPException(status_code=400, detail="q is required")
     like = f"%{text}%"
     phone_conds, phone_params = repo.phone_search_or_columns(["c.phone", "c.alt_phone"], text)
     phone_part = "(" + " OR ".join(phone_conds) + ")" if phone_conds else "0"
+    scope = auth.agent_provider_scope(agent) or ""
+    scope_sql = "AND cn.provider = ? " if scope else ""
+    owner_sql = "AND COALESCE(cn.owner_reason, '') = '' " if auth.collector_id_for(agent) else ""
     with connection() as conn:
         rows = conn.execute(
             "SELECT cn.*, c.name AS customer_name, c.code AS customer_code, c.phone, "
             "       p.name AS package_name, p.price_paise AS package_price_paise "
             "FROM connections cn JOIN customers c ON c.id = cn.customer_id "
             "LEFT JOIN packages p ON p.id = cn.package_id "
-            f"WHERE cn.upstream_id LIKE ? OR cn.card_number LIKE ? OR {phone_part} "
-            "   OR c.name LIKE ? OR c.code LIKE ? LIMIT 25",
-            [like, like, *phone_params, like, like],
+            f"WHERE (cn.upstream_id LIKE ? OR cn.card_number LIKE ? OR {phone_part} "
+            f"   OR c.name LIKE ? OR c.code LIKE ?) {scope_sql}{owner_sql}LIMIT 25",
+            [like, like, *phone_params, like, like, *([scope] if scope else [])],
         ).fetchall()
     return {"matches": _rows(rows)}
 
 
 @router.get("/jobs")
-async def api_jobs(status: str = "", limit: int = 100):
+async def api_jobs(request: Request, status: str = "", limit: int = 100):
+    agent = _require(request, "portal_actions")
     with connection() as conn:
-        rows = repo.list_jobs(conn, status=status, limit=limit)
+        rows = repo.list_jobs(
+            conn, status=status, limit=limit, provider=auth.agent_provider_scope(agent) or ""
+        )
     return {"jobs": _rows(rows)}
 
 
 @router.get("/bills")
-async def api_bills(status: str = "open", limit: int = 100):
+async def api_bills(request: Request, status: str = "open", limit: int = 100):
+    agent = _require(request, "bills")
     with connection() as conn:
-        rows = repo.list_bills(conn, status=status, limit=limit)
+        rows = repo.list_bills(
+            conn, status=status, limit=limit, provider=auth.agent_provider_scope(agent) or ""
+        )
     return {"bills": [_money(dict(r), "total_paise", "paid_paise") for r in rows]}
 
 

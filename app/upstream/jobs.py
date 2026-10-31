@@ -139,6 +139,7 @@ def enqueue_job(
     sweep_id: int | None = None,
     quiet: bool = False,
     collect_later: bool = False,
+    promise_date: str = "",
 ) -> int:
     row = conn.execute(
         "SELECT id, customer_id, provider, expiry_date FROM connections WHERE id = ?",
@@ -163,8 +164,8 @@ def enqueue_job(
     cursor = conn.execute(
         "INSERT INTO upstream_jobs(connection_id, customer_id, provider, action, status, "
         "priority, sweep_id, payment_id, attempts, max_attempts, requested_by, "
-        "scheduled_for, collect_later, created_at, updated_at) "
-        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)",
+        "scheduled_for, collect_later, promise_date, created_at, updated_at) "
+        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)",
         (
             connection_id,
             int(row["customer_id"]),
@@ -178,6 +179,7 @@ def enqueue_job(
             requested_by or settings.operator,
             stamp,
             1 if collect_later else 0,
+            (promise_date or "")[:10] if collect_later else "",
             stamp,
             stamp,
         ),
@@ -679,6 +681,7 @@ def claim_next_job() -> dict | None:
             "upstream_id": conn_row["upstream_id"] if conn_row else "",
             "batch_json": row["batch_json"] if "batch_json" in row.keys() else None,
             "collect_later": bool(row["collect_later"]) if "collect_later" in row.keys() else False,
+            "promise_date": (row["promise_date"] or "") if "promise_date" in row.keys() else "",
         }
 
 
@@ -1083,6 +1086,7 @@ def _apply_success(job: dict, result) -> None:
             bill_id, period_start, new_expiry = billing.bill_for_renewal(
                 conn, conn_row, package_row, provider_expiry=provider_expiry,
                 job_id=job["id"], collect_later=unpaid_renew,
+                promise_date=job.get("promise_date") or "",
             )
             billing.bind_portal_plan(conn, int(conn_row["id"]), result.plan_name)
             new_expiry_s = new_expiry.strftime("%Y-%m-%d")
@@ -1175,7 +1179,8 @@ def _apply_success(job: dict, result) -> None:
             summary = "Connection reactivated on provider portal"
             if later:
                 bill_id = billing.bill_for_collect_later_enable(
-                    conn, conn_row, package_row, job_id=job["id"]
+                    conn, conn_row, package_row, job_id=job["id"],
+                    promise_date=job.get("promise_date") or "",
                 )
                 billing.reconcile_customer(conn, job["customer_id"])
                 summary = "Enabled — collect payment later"

@@ -1,0 +1,13 @@
+{% macro later_menu(conn_id, next_url, btn_class="v2-cta v2-cta-compact v2-cta-later", label="Later") %}
+<details class="wa-menu later-menu">
+  <summary class="{{ btn_class }}" title="Renew now, customer pays later">{{ label }}</summary>
+  <form class="wa-menu-list later-menu-form" method="post" action="/connections/{{ conn_id }}/collect-later">
+    <input type="hidden" name="next" value="{{ next_url }}">
+    <div class="later-menu-title">Renew now, customer pays later</div>
+    <label class="later-menu-label" for="promise-{{ conn_id }}">Promised to pay on <span>(optional)</span></label>
+    <input class="later-menu-date" id="promise-{{ conn_id }}" type="date" name="promise_date" min="{{ today_iso() }}">
+    <p class="later-menu-hint">With a date, they move to the top of Follow-up on that day.</p>
+    <button class="later-menu-submit" type="submit">Renew, pay later</button>
+  </form>
+</details>
+{% endmacro %}

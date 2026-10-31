@@ -18,7 +18,7 @@ def _late_days(expiry) -> str:
     return str(-left)
 
 
-def customers_csv(rows) -> Response:
+def customers_csv(rows, *, scope: str = "") -> Response:
     data = []
     for c in rows:
         data.append([
@@ -27,8 +27,8 @@ def customers_csv(rows) -> Response:
             c["phone"] or "",
             c["sub_area"] or c["area"] or "",
             c["address"] or "",
-            c["railtel_ids"] or "",
-            c["hathway_ids"] or "",
+            "" if scope == "hathway" else c["railtel_ids"] or "",
+            "" if scope == "railtel" else c["hathway_ids"] or "",
             c["iptv_ids"] or "",
             c["ott_ids"] or "",
             c["status"] or "",
@@ -111,6 +111,43 @@ def stbs_csv(rows) -> Response:
     return csv_response(
         "hathway-stbs.csv",
         ["STB", "VC", "Customer", "Code", "Phone", "Area", "Plan", "Status", "Expiry", "Note"],
+        data,
+    )
+
+
+def stb_lookup_csv(rows) -> Response:
+    data = []
+    for r in rows:
+        if not r.get("found"):
+            data.append([r["input_id"], "Not found"] + [""] * 15)
+            continue
+        boxes = r.get("all_boxes") or []
+        data.append([
+            r["input_id"],
+            r["matched_on"],
+            r["customer_name"] or "",
+            r["customer_code"] or "",
+            r["phone"] or "",
+            r["alt_phone"] or "",
+            r["area"] or "",
+            r["sub_area"] or "",
+            (r["address"] or "").replace("\n", " "),
+            r["customer_status"] or "",
+            r["stb"] or "",
+            r["vc"] or "",
+            r["stb_status"] or "",
+            r["pack"] or "",
+            fmt_date(r["expiry_date"]) if r["expiry_date"] else "",
+            len(boxes),
+            ", ".join(f"{b['upstream_id'] or b['card_number']} ({b['status']})" for b in boxes),
+        ])
+    return csv_response(
+        "stb-lookup.csv",
+        [
+            "Searched ID", "Matched on", "Customer", "Code", "Phone", "Alt phone", "Area",
+            "Sub area", "Address", "Customer status", "STB", "VC", "STB status", "Pack",
+            "Expiry", "STB count", "All STBs",
+        ],
         data,
     )
 

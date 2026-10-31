@@ -18,6 +18,13 @@
 
 {% block content %}
 <div class="v2-menu-list">
+  <div class="v2-menu-group">
+    <div class="v2-menu-group-title">Quick check</div>
+    <a class="v2-menu-item" href="/v2/railtel-check">
+      <span>Railtel status check</span>
+      <span class="sub">Phone or Railtel ID · online now?</span>
+    </a>
+  </div>
   {% if can('customers_view') or can('payments') or can('portal_actions') %}
   <div class="v2-menu-group">
     <div class="v2-menu-group-title">Customers</div>

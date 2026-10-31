@@ -17,7 +17,7 @@ from typing import Iterator
 from .config import settings
 from .money import now_iso
 
-SCHEMA_VERSION = 40
+SCHEMA_VERSION = 41
 
 # Logged-in agent for the current request, so every activity row knows who and where.
 _current_agent_id: contextvars.ContextVar[int | None] = contextvars.ContextVar(
@@ -1031,6 +1031,11 @@ MIGRATIONS: dict[int, tuple[str, ...]] = {
         " amount_paise = paid_paise + ((total_paise - paid_paise + 99) / 100) * 100 - gst_paise "
         "WHERE status IN ('pending', 'partial') AND total_paise > paid_paise "
         " AND (total_paise - paid_paise) % 100 != 0",
+    ),
+    41: (
+        # Date the customer promised to pay when the agent tapped Later.
+        "ALTER TABLE upstream_jobs ADD COLUMN promise_date TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE bills ADD COLUMN promise_date TEXT NOT NULL DEFAULT ''",
     ),
 }
 

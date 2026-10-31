@@ -16,7 +16,16 @@ from .. import auth, billing, bix_history, bix_schedule, bix_sync, field, hathwa
 from ..csv_export import EXPORT_ROW_LIMIT, export_url, wants_csv
 from ..config import settings
 from ..db import connection, get_setting, log_activity, set_setting, transaction
-from ..money import add_days, fmt_rupees, normalise_expiry_input, now_iso, parse_date, to_paise, today
+from ..money import (
+    add_days,
+    fmt_date_display,
+    fmt_rupees,
+    normalise_expiry_input,
+    now_iso,
+    parse_date,
+    to_paise,
+    today,
+)
 from ..plans import price_plan
 from ..upstream import jobs as job_queue
 from ..upstream.providers import (
@@ -491,7 +500,12 @@ async def dashboard(request: Request):
             hidden = repo.owner_customer_ids(conn)
             expiring = [r for r in expiring if int(r["customer_id"] or 0) not in hidden]
             activity = [r for r in activity if int(r["customer_id"] or 0) not in hidden]
-        recent_fixed = repo.recent_fixed_complaints(conn, limit=8)
+        recent_fixed = repo.recent_fixed_complaints(
+            conn,
+            limit=8,
+            provider=auth.agent_provider_scope(request.state.agent) or "",
+            viewer_agent_id=(request.state.agent or {}).get("id"),
+        )
     return _render(
         request,
         "dashboard.html",
@@ -1295,7 +1309,9 @@ async def customers_list(request: Request):
         )
         areas = repo.list_area_options(conn)
     if export:
-        return list_exports.customers_csv(result["rows"])
+        return list_exports.customers_csv(
+            result["rows"], scope=auth.agent_provider_scope(request.state.agent) or ""
+        )
     list_params = {
         "q": q,
         "provider": provider,
@@ -1363,6 +1379,54 @@ async def hathway_stbs(request: Request):
         view=result["view"],
         providers_tab="hathway",
         export_href=export_url("/stbs", q=q, view=result["view"]),
+    )
+
+
+def _stb_lookup_allowed(request: Request) -> bool:
+    agent = request.state.agent
+    return auth.can(agent, "customers_view") and auth.agent_provider_scope(agent) in (
+        None,
+        "hathway",
+    )
+
+
+@router.get("/stbs/lookup")
+async def stb_lookup_page(request: Request):
+    if not _stb_lookup_allowed(request):
+        return _forbidden()
+    return _render(
+        request,
+        "stb_lookup.html",
+        ids_text="",
+        rows=None,
+        max_ids=repo.STB_BULK_LOOKUP_MAX,
+        providers_tab="hathway",
+    )
+
+
+@router.post("/stbs/lookup")
+async def stb_lookup_run(request: Request, ids: str = Form(""), export: str = Form("")):
+    if not _stb_lookup_allowed(request):
+        return _forbidden()
+    wanted = repo.parse_stb_ids(ids)
+    with connection() as conn:
+        rows = repo.stb_bulk_lookup(
+            conn, wanted, hide_owner=bool(auth.collector_id_for(request.state.agent))
+        )
+    if export == "csv":
+        return list_exports.stb_lookup_csv(rows)
+    found_ids = {r["input_id"] for r in rows if r.get("found")}
+    return _render(
+        request,
+        "stb_lookup.html",
+        ids_text=ids,
+        rows=rows,
+        searched=len(wanted[: repo.STB_BULK_LOOKUP_MAX]),
+        truncated=len(wanted) > repo.STB_BULK_LOOKUP_MAX,
+        found_count=len(found_ids),
+        customer_count=len({r["customer_id"] for r in rows if r.get("found")}),
+        max_ids=repo.STB_BULK_LOOKUP_MAX,
+        providers_tab="hathway",
     )
 
 
@@ -2444,11 +2508,20 @@ async def connection_action(
     )
 
 
+def _promise_day(raw: str) -> str:
+    """Promised pay date from the Later form; past or unreadable dates are dropped."""
+    day = parse_date((raw or "").strip())
+    if day is None or day < today():
+        return ""
+    return day.strftime("%Y-%m-%d")
+
+
 @router.post("/connections/{connection_id}/collect-later")
 async def connection_collect_later(
     request: Request,
     connection_id: int,
     action: str = Form(""),
+    promise_date: str = Form(""),
     next: str = Form(""),
 ):
     if not auth.can(request.state.agent, "portal_actions"):
@@ -2482,6 +2555,7 @@ async def connection_collect_later(
                 requested_by=_job_by(request),
                 collect_later=True,
                 needs_confirmation=True,
+                promise_date=_promise_day(promise_date),
             )
         except job_queue.RenewNotAllowed as exc:
             return _redirect(
@@ -2489,15 +2563,18 @@ async def connection_collect_later(
                 flash=str(exc),
                 level="err",
             )
+        promised = _promise_day(promise_date)
         log_activity(
             conn,
             "collect_later",
-            f"{ACTION_LABELS.get(action, action)} now, collect later",
+            f"{ACTION_LABELS.get(action, action)} now, collect later"
+            + (f" — promised {fmt_date_display(promised)}" if promised else ""),
             customer_id=customer_id,
             connection_id=connection_id,
         )
         busy_note = _exclusive_busy_note(conn, action, job_id)
-    later_note = " After it succeeds they appear on Payment follow-up."
+    later_note = " After it succeeds they appear on Payment follow-up"
+    later_note += f" (promised {fmt_date_display(promised)})." if promised else "."
     return _redirect(
         _safe_next(next, f"/customers/{customer_id}"),
         flash=_job_flash(action, job_id, row["provider"], busy_note=busy_note) + later_note,
@@ -2548,6 +2625,7 @@ async def collect_payment(
     renew: str = Form(""),
     whatsapp: str = Form(""),
     whatsapp_shown: str = Form(""),
+    promise_date: str = Form(""),
     lat: str = Form(""),
     lng: str = Form(""),
     accuracy: str = Form(""),
@@ -2602,20 +2680,24 @@ async def collect_payment(
                     requested_by=_job_by(request),
                     collect_later=True,
                     needs_confirmation=True,
+                    promise_date=_promise_day(promise_date),
                 )
             except job_queue.RenewNotAllowed as exc:
                 return _redirect(f"/customers/{customer_id}", flash=str(exc), level="err")
+            promised = _promise_day(promise_date)
             log_activity(
                 conn,
                 "collect_later",
-                "Renew and collect later",
+                "Renew and collect later"
+                + (f" — promised {fmt_date_display(promised)}" if promised else ""),
                 customer_id=customer_id,
                 connection_id=conn_id,
             )
         return _redirect(
             f"/customers/{customer_id}",
             flash=_job_flash("renew", job_id, row["provider"])
-            + " After it succeeds they appear on Payment follow-up as Renewed, not paid.",
+            + " After it succeeds they appear on Payment follow-up as Renewed, not paid"
+            + (f" (promised {fmt_date_display(promised)})." if promised else "."),
         )
 
     amount_paise = to_paise(amount)
@@ -2676,6 +2758,19 @@ async def collect_payment(
         renew_provider = ""
         renew_blocked = None
         busy_note = ""
+        advance_note = ""
+        if wants_renew and conn_id:
+            paid_through = repo.connection_paid_through(conn, conn_id)
+            if paid_through and paid_through > today().strftime("%Y-%m-%d"):
+                wants_renew = False
+                up = conn.execute(
+                    "SELECT upstream_id FROM connections WHERE id = ?", (conn_id,)
+                ).fetchone()
+                advance_note = (
+                    f" Saved as advance — {up['upstream_id'] if up else 'this connection'} "
+                    f"is active until {fmt_date_display(paid_through)}, so it was not renewed. "
+                    "It will show under Home → Advance paid when it expires."
+                )
         if wants_renew and conn_id and auth.can(request.state.agent, "portal_actions"):
             cn = conn.execute(
                 "SELECT provider FROM connections WHERE id = ?", (conn_id,)
@@ -2760,6 +2855,7 @@ async def collect_payment(
                 flash += busy_note
     elif wants_renew:
         flash += " Pick a connection if they also need a portal recharge."
+    flash += advance_note
     if wants_wa and wa_url:
         flash += " Send WhatsApp to confirm."
     elif wants_wa:
@@ -3216,6 +3312,8 @@ async def providers_page(request: Request):
 
 @router.get("/providers/online")
 async def providers_online(request: Request):
+    if auth.agent_provider_scope(request.state.agent) == "hathway":
+        return _forbidden("The Railtel online list is not available for Hathway-only agents.")
     q = (request.query_params.get("q") or "").strip()
     view = (request.query_params.get("view") or "all").strip()
     if view not in ("all", "known", "unknown"):
@@ -3263,10 +3361,13 @@ async def providers_online(request: Request):
 
 @router.post("/sync/start")
 async def sync_start(
+    request: Request,
     providers: str = Form("both"),
     stale_days: str = Form("7"),
     limit: str = Form("700"),
 ):
+    if auth.agent_provider_scope(request.state.agent):
+        return _forbidden("Bulk status sweeps are not available for single-provider agents.")
     try:
         stale = max(0, int(stale_days))
         cap = max(1, int(limit))
@@ -3281,7 +3382,9 @@ async def sync_start(
 
 
 @router.post("/sync/{sweep_id}/cancel")
-async def sync_cancel(sweep_id: int):
+async def sync_cancel(request: Request, sweep_id: int):
+    if auth.agent_provider_scope(request.state.agent):
+        return _forbidden("Bulk status sweeps are not available for single-provider agents.")
     with transaction() as conn:
         dropped = job_queue.cancel_sweep(conn, sweep_id)
     return _redirect(
@@ -3293,12 +3396,15 @@ async def sync_cancel(sweep_id: int):
 
 @router.post("/sync/schedule")
 async def sync_schedule_save(
+    request: Request,
     enabled: str = Form(""),
     hour: str = Form("2"),
     providers: str = Form("both"),
     stale_days: str = Form("7"),
     limit: str = Form("700"),
 ):
+    if auth.agent_provider_scope(request.state.agent):
+        return _forbidden("Bulk status sweeps are not available for single-provider agents.")
     with transaction() as conn:
         job_queue.save_sync_schedule(conn, {
             "sync_schedule_enabled": "1" if enabled else "0",
@@ -3317,6 +3423,9 @@ async def provider_action(request: Request, provider: str, action: str):
     action = action.strip().lower()
     if action not in ACCOUNT_ACTIONS.get(provider, ()):
         return _redirect("/providers", flash="Unknown provider action.", level="err")
+    scope = auth.agent_provider_scope(request.state.agent)
+    if scope and provider != scope:
+        return _forbidden(f"{PROVIDER_LABELS.get(provider, provider)} is outside your access.")
 
     with transaction() as conn:
         job_id = job_queue.enqueue_provider_job(
@@ -3419,6 +3528,74 @@ async def job_detail(request: Request, job_id: int):
 
 
 # --------------------------------------------------------------------------- #
+# Railtel status check (every signed-in agent, even Hathway-only)
+# --------------------------------------------------------------------------- #
+
+def railtel_check_context(request: Request) -> dict:
+    q = (request.query_params.get("q") or "").strip()[:60]
+    rows: list[dict] = []
+    if q:
+        with connection() as conn:
+            rows = repo.railtel_status_lookup(
+                conn, q, hide_owner=bool(auth.collector_id_for(request.state.agent))
+            )
+    return {
+        "q": q,
+        "rows": rows,
+        "any_pending": any(r["pending_job_id"] for r in rows),
+        "stale_minutes": repo.RAILTEL_STATUS_STALE_MINUTES,
+    }
+
+
+@router.get("/railtel-check", response_class=HTMLResponse)
+async def railtel_check(request: Request):
+    return _render(request, "railtel_check.html", **railtel_check_context(request))
+
+
+@router.post("/railtel-check/refresh")
+async def railtel_check_refresh(
+    request: Request,
+    connection_id: int = Form(...),
+    q: str = Form(""),
+    ui: str = Form(""),
+):
+    base = "/v2/railtel-check" if ui == "v2" else "/railtel-check"
+    dest = f"{base}?{urlencode({'q': q.strip()[:60]})}"
+    with transaction() as conn:
+        row = conn.execute(
+            "SELECT id, upstream_id, owner_reason FROM connections "
+            "WHERE id = ? AND provider = 'railtel'",
+            (connection_id,),
+        ).fetchone()
+        if row is None or (
+            auth.collector_id_for(request.state.agent) and (row["owner_reason"] or "").strip()
+        ):
+            return _redirect(dest, flash="Railtel connection not found.", level="err")
+        problem = id_problem("railtel", row["upstream_id"] or "")
+        if problem:
+            return _redirect(dest, flash=f"Not checked — {problem}", level="err")
+        pending = conn.execute(
+            "SELECT id FROM upstream_jobs WHERE connection_id = ? AND action = 'status' "
+            "AND status IN ('awaiting_confirm', 'queued', 'running', 'awaiting_otp') "
+            "ORDER BY id DESC LIMIT 1",
+            (connection_id,),
+        ).fetchone()
+        if pending:
+            return _redirect(dest, flash=f"Already checking {row['upstream_id']} with Railtel.")
+        job_queue.enqueue_job(
+            conn,
+            connection_id=connection_id,
+            action="status",
+            requested_by=_job_by(request),
+            needs_confirmation=False,
+        )
+    return _redirect(
+        dest,
+        flash=f"Checking {row['upstream_id']} with Railtel — this page updates when it's done.",
+    )
+
+
+# --------------------------------------------------------------------------- #
 # Bills & payments
 # --------------------------------------------------------------------------- #
 
@@ -3427,7 +3604,12 @@ async def bills_list(request: Request):
     status = request.query_params.get("status", "open")
     export = wants_csv(request)
     with connection() as conn:
-        rows = repo.list_bills(conn, status=status, limit=EXPORT_ROW_LIMIT if export else 200)
+        rows = repo.list_bills(
+            conn,
+            status=status,
+            limit=EXPORT_ROW_LIMIT if export else 200,
+            provider=auth.agent_provider_scope(request.state.agent) or "",
+        )
     if export:
         return list_exports.bills_csv(rows)
     return _render(
@@ -3535,14 +3717,19 @@ async def complaints_page(request: Request):
         agent_id = int(assigned)
     export = wants_csv(request)
     with connection() as conn:
+        scope = auth.agent_provider_scope(me) or ""
         rows = repo.list_complaints(
             conn,
             status=status,
             agent_id=agent_id,
             limit=EXPORT_ROW_LIMIT if export else 200,
+            provider=scope,
+            viewer_agent_id=me.get("id"),
         )
         agents = repo.list_agents(conn)
-        recent_fixed = repo.recent_fixed_complaints(conn, limit=6)
+        recent_fixed = repo.recent_fixed_complaints(
+            conn, limit=6, provider=scope, viewer_agent_id=me.get("id")
+        )
         complaint_group = get_setting(conn, "complaint_whatsapp_group", "")
     if export:
         return list_exports.complaints_csv(rows)

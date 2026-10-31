@@ -304,7 +304,7 @@ async def lifespan(app: FastAPI):
             close_whatsapp_session()
 
 
-_DUTY_FREE_PATHS = ("/field/duty", "/field/ping", "/logout", "/login")
+_DUTY_FREE_PATHS = ("/field/duty", "/field/ping", "/logout", "/login", "/railtel-check/refresh", "/stbs/lookup")
 
 
 def _field_duty_block(request: Request):

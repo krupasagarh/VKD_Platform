@@ -11,8 +11,8 @@
 {% set ex = stats.get('expiring_today', {'connections': 0, 'customers': 0}) %}
 {% set ey = stats.get('expired_yesterday', {'connections': 0, 'customers': 0}) %}
 {% set tm = stats.get('term_expiring_month', {'connections': 0, 'customers': 0}) %}
-{% set collected_href = '/field' if collector_stats else ('/payments?from=' ~ stats.today ~ '&to=' ~ stats.today) %}
-{% set month_href = '/field' if collector_stats and not can('payments') else ('/payments?from=' ~ stats.month_start ~ '&to=' ~ stats.today) %}
+{% set collected_href = '/payments?from=' ~ stats.today ~ '&to=' ~ stats.today %}
+{% set month_href = '/payments?from=' ~ stats.month_start ~ '&to=' ~ stats.today %}
 {% set collected_paise = collector_stats.collected_today_paise if collector_stats else stats.collected_today_paise %}
 {% set month_paise = collector_stats.collected_month_paise if collector_stats else stats.collected_month_paise %}
 {% set ur = stats.get('unpaid_renewals_month', {'customers': 0, 'due_paise': 0}) %}
@@ -83,12 +83,18 @@
 
   {% if show_work %}
   <section class="v2-home-work">
+    {% set adv = stats.get('advance_paid') or {} %}
     <div class="v2-sec-title">Follow-up</div>
-    <div class="v2-tiles v2-tiles-2">
+    <div class="v2-tiles v2-tiles-3">
       <a class="v2-tile" href="{{ followup_href }}">
         <div class="v2-tile-num{% if ur.customers %} is-warn{% endif %}">{{ ur.customers or 0 }}</div>
         <div class="v2-tile-label">Renewed, not paid</div>
         <div class="v2-tile-hint">this month · {{ inr_tile(ur.due_paise or 0) }}</div>
+      </a>
+      <a class="v2-tile" href="/v2/advance-paid">
+        <div class="v2-tile-num{% if adv.connections %} is-warn{% endif %}">{{ adv.customers or 0 }}</div>
+        <div class="v2-tile-label">Advance paid</div>
+        <div class="v2-tile-hint">expired · renew now</div>
       </a>
       <a class="v2-tile" href="{{ faulty_href }}">
         <div class="v2-tile-num{% if stats.faulty_customers %} is-bad{% endif %}">{{ stats.faulty_customers or 0 }}</div>
@@ -174,6 +180,13 @@
         <div class="v2-tile-label">Free STBs</div>
         <div class="v2-tile-hint">Social cause · node points</div>
       </a>
+      {% if stats.get('show_free_renewals') %}
+      <a class="v2-tile" href="/v2/free-renewals">
+        <div class="v2-tile-num">{{ stats.get('free_renewals_month') or 0 }}</div>
+        <div class="v2-tile-label">Free renewals</div>
+        <div class="v2-tile-hint">this month · no charge</div>
+      </a>
+      {% endif %}
       {% set own = stats.get('owner') or {} %}
       {% if own %}
       <a class="v2-tile" href="/v2/customers?view=owner{% if fixed_provider %}&provider={{ fixed_provider }}{% endif %}">

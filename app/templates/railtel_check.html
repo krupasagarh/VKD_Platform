@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% set active = 'railtel_check' %}
+{% block title %}Railtel status check · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Railtel status check</h1>
+    <div class="subtle">
+      Enter the customer's phone number or Railtel ID (full or part of it) to see if their internet is online.
+    </div>
+  </div>
+</div>
+
+<form class="filters filters-bar" method="get" action="/railtel-check" data-duty-free>
+  <div class="field" style="min-width:280px">
+    <label>Phone number or Railtel ID</label>
+    <input type="search" name="q" value="{{ q }}" placeholder="98xxxxxxxx or ka.name" autocomplete="off" {% if not q %}autofocus{% endif %}>
+  </div>
+  <button class="btn btn-primary" type="submit">Check</button>
+  {% if q %}<a class="btn" href="/railtel-check">Clear</a>{% endif %}
+</form>
+
+{% if q %}
+<div class="card">
+  {% if rows %}
+  <p class="subtle" style="margin:0 0 8px">
+    {% if rows|length >= 50 %}Showing the first 50 matches — type more of the ID or phone to narrow it down.
+    {% else %}{{ rows|length }} match{{ "" if rows|length == 1 else "es" }}{% endif %}
+  </p>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Customer</th>
+        <th>Railtel ID</th>
+        <th>Line</th>
+        <th>Since</th>
+        <th>Plan</th>
+        <th>Last checked</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+      {% set show_exp = r.effective_expiry or r.expiry_date %}
+      {% set days_left = show_exp|days_until %}
+      {% set plan_expired = days_left is not none and days_left < 0 %}
+      {% set online = r.line_state == 'online' %}
+      {% set offline = r.line_state == 'offline' %}
+      <tr>
+        <td>{{ r.customer_name }}{% if r.customer_code %}<div class="subtle">{{ r.customer_code }}</div>{% endif %}</td>
+        <td class="mono">{{ r.upstream_id }}{% if r.label %}<div class="subtle">{{ r.label }}</div>{% endif %}</td>
+        <td>
+          {% if r.pending_job_id %}<span class="badge pill-info">Checking…</span>
+          {% elif online %}<span class="badge badge-ok">Online</span>
+          {% elif offline %}<span class="badge badge-bad">Offline</span>
+          {% else %}<span class="badge">Not checked</span>{% endif %}
+        </td>
+        <td>
+          {% if (online or offline) and r.line_since %}{{ r.line_since|nice_datetime }}{% else %}—{% endif %}
+          {% if online and r.online_for %}<div class="subtle">{{ r.online_for }}</div>{% endif %}
+        </td>
+        <td>
+          {% if show_exp %}
+            {% if plan_expired %}<span class="badge badge-bad">Expired</span> {{ show_exp|nice_date }}
+            {% else %}Paid through {{ show_exp|nice_date }}{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td class="subtle">
+          {% if r.pending_job_id %}Asking Railtel now…
+          {% elif r.checked_at %}{{ r.checked_at|relative_time }}{% if r.status_stale %} <span class="badge badge-warn">old</span>{% endif %}
+          {% else %}Never{% endif %}
+          {% if not r.pending_job_id and r.last_job_status == 'failed' and r.last_job_error %}
+            <div style="color:#991b1b">Last check failed: {{ r.last_job_error|plain_error }}</div>
+          {% endif %}
+        </td>
+        <td>
+          {% if r.status_stale and not r.pending_job_id %}
+          <form class="inline-form" method="post" action="/railtel-check/refresh" data-duty-free>
+            <input type="hidden" name="connection_id" value="{{ r.connection_id }}">
+            <input type="hidden" name="q" value="{{ q }}">
+            <button class="btn btn-small btn-primary" type="submit">Fetch latest status</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="subtle" style="margin-top:8px">Status older than {{ stale_minutes }} minutes can be fetched again from the Railtel portal.</p>
+  {% else %}
+  <p><strong>No Railtel customer found.</strong></p>
+  <p class="subtle">Enter at least 3 letters of the Railtel ID (for example <span class="mono">mohan</span>) or at least 4 digits of the phone number.</p>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if any_pending %}
+<script>
+setTimeout(function () {
+  var u = new URL(window.location.href);
+  u.searchParams.delete("flash");
+  u.searchParams.delete("level");
+  window.location.replace(u.toString());
+}, 5000);
+</script>
+{% endif %}
+{% endblock %}

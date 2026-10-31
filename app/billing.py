@@ -1262,6 +1262,7 @@ def bill_for_renewal(
     provider_expiry: date | None,
     job_id: int | None = None,
     collect_later: bool = False,
+    promise_date: str = "",
 ) -> tuple[int, date, date]:
     """Create the renewal bill and return (bill_id, period_start, new_expiry).
 
@@ -1314,6 +1315,7 @@ def bill_for_renewal(
                     "updated_at = ? WHERE id = ?",
                     (now_iso(), int(existing["id"])),
                 )
+                _set_promise_date(conn, int(existing["id"]), promise_date)
             return int(existing["id"]), period_start, new_expiry
     elif billed["usual_paise"]:
         plan_total = billed["quote"]["total_paise"]
@@ -1336,7 +1338,19 @@ def bill_for_renewal(
         followup_kind="renew" if follow else "",
         amount_exclusive=billed["amount_exclusive"],
     )
+    if follow:
+        _set_promise_date(conn, bill_id, promise_date)
     return bill_id, period_start, new_expiry
+
+
+def _set_promise_date(conn: sqlite3.Connection, bill_id: int, promise_date: str) -> None:
+    day = parse_date(promise_date or "")
+    if day is None:
+        return
+    conn.execute(
+        "UPDATE bills SET promise_date = ? WHERE id = ?",
+        (day.strftime("%Y-%m-%d"), bill_id),
+    )
 
 
 def bill_for_collect_later_enable(
@@ -1345,6 +1359,7 @@ def bill_for_collect_later_enable(
     package_row: sqlite3.Row | None,
     *,
     job_id: int | None = None,
+    promise_date: str = "",
 ) -> int:
     """Bill the plan amount after enabling a box the customer will pay for later."""
     amount = connection_charge_paise(conn_row, package_row)
@@ -1359,7 +1374,7 @@ def bill_for_collect_later_enable(
             period_start=today(), period_end=None, source="collect_later", job_id=job_id,
         )
     provider = (conn_row["provider"] or "").strip().lower()
-    return create_bill(
+    bill_id = create_bill(
         conn,
         customer_id=int(conn_row["customer_id"]),
         connection_id=int(conn_row["id"]),
@@ -1376,6 +1391,8 @@ def bill_for_collect_later_enable(
         followup_kind="renew",
         amount_exclusive=provider == "railtel",
     )
+    _set_promise_date(conn, bill_id, promise_date)
+    return bill_id
 
 
 # --------------------------------------------------------------------------- #
