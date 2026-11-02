@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, parse_qsl, quote, urlencode, unquote
 
 from fastapi import APIRouter, File, Form, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from .. import auth, billing, bix_history, bix_schedule, bix_sync, field, hathway_expiry_sync, inventory, iptv_plans, list_exports, ott_plans, public_pay, repo, settlements
 from ..csv_export import EXPORT_ROW_LIMIT, export_url, wants_csv
@@ -4137,6 +4137,26 @@ async def agents_page(request: Request):
         area_options=area_options,
         agent_areas=agent_areas,
     )
+
+
+@router.get("/settings/whatsapp-screen")
+async def settings_whatsapp_screen(request: Request):
+    if (request.state.agent or {}).get("role") != "admin":
+        return _forbidden()
+    return _render(request, "settings_whatsapp_screen.html", settings_tab="wa_screen")
+
+
+@router.get("/settings/whatsapp-screen.png")
+async def settings_whatsapp_screen_png(request: Request):
+    if (request.state.agent or {}).get("role") != "admin":
+        return _forbidden()
+    from ..whatsapp_send import whatsapp_screen_png
+
+    try:
+        png = await asyncio.to_thread(whatsapp_screen_png)
+    except Exception as exc:  # noqa: BLE001
+        return HTMLResponse(f"WhatsApp browser not available: {exc}", status_code=503)
+    return Response(png, media_type="image/png", headers={"Cache-Control": "no-store"})
 
 
 @router.post("/settings/complaint-whatsapp")

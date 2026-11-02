@@ -11,6 +11,7 @@
 {% set ex = stats.get('expiring_today', {'connections': 0, 'customers': 0}) %}
 {% set ey = stats.get('expired_yesterday', {'connections': 0, 'customers': 0}) %}
 {% set tm = stats.get('term_expiring_month', {'connections': 0, 'customers': 0}) %}
+{% set xa = stats.get('expired_all', {'connections': 0, 'customers': 0}) %}
 {% set collected_href = '/payments?from=' ~ stats.today ~ '&to=' ~ stats.today %}
 {% set month_href = '/payments?from=' ~ stats.month_start ~ '&to=' ~ stats.today %}
 {% set collected_paise = collector_stats.collected_today_paise if collector_stats else stats.collected_today_paise %}
@@ -36,7 +37,7 @@
   {% if show_today %}
   <section class="v2-home-today">
     <div class="v2-sec-title">Today</div>
-    <div class="v2-tiles v2-tiles-3">
+    <div class="v2-tiles v2-tiles-2">
       <a class="v2-tile" href="/v2/expiring-today{% if fixed_provider %}?provider={{ fixed_provider }}{% endif %}">
         <div class="v2-tile-num{% if ex.customers %} is-warn{% endif %}">{{ ex.customers or 0 }}</div>
         <div class="v2-tile-label">Expiring today</div>
@@ -44,6 +45,10 @@
       <a class="v2-tile" href="/v2/expiring-today?when=1d{% if fixed_provider %}&provider={{ fixed_provider }}{% endif %}">
         <div class="v2-tile-num{% if ey.customers %} is-bad{% endif %}">{{ ey.customers or 0 }}</div>
         <div class="v2-tile-label">Expired yesterday</div>
+      </a>
+      <a class="v2-tile" href="/v2/expiring-today?when=all{% if fixed_provider %}&provider={{ fixed_provider }}{% endif %}">
+        <div class="v2-tile-num{% if xa.customers %} is-bad{% endif %}">{{ xa.customers or 0 }}</div>
+        <div class="v2-tile-label">Expired · not renewed</div>
       </a>
       {% if not fixed_provider or fixed_provider == 'railtel' %}
       <a class="v2-tile" href="/v2/expiring-today?when=term_month&provider=railtel">

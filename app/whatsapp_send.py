@@ -224,6 +224,19 @@ def warm_whatsapp_session() -> None:
     _dispatch(_warm_whatsapp_session_impl, timeout=180.0)
 
 
+def whatsapp_screen_png() -> bytes:
+    """Screenshot of the WhatsApp Web tab, so the QR can be scanned on a headless server."""
+    return _dispatch(_whatsapp_screen_impl, timeout=90.0)
+
+
+def _whatsapp_screen_impl() -> bytes:
+    page = _ensure_page()
+    if not (page.url or "").startswith("https://web.whatsapp.com"):
+        page.goto("https://web.whatsapp.com/", wait_until="domcontentloaded", timeout=60000)
+        page.wait_for_timeout(5000)
+    return page.screenshot(full_page=False)
+
+
 def close_whatsapp_session() -> None:
     global _wa_worker
     with _wa_worker_lock:

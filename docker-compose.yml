@@ -1,0 +1,40 @@
+# VK Platform on any Docker host.
+#
+#   cp .env.docker.example .env.docker      # fill in passwords / portal logins
+#   docker compose up -d --build            # builds from ../ (needs railtel_debugger next to vk_platform)
+#
+# Or, on a server that only has the image (docker load / registry pull), keep the
+# `image:` line, delete the `build:` block and run `docker compose up -d`.
+services:
+  vk-platform:
+    image: vk-platform:latest
+    build:
+      context: ..
+      dockerfile: vk_platform/Dockerfile
+    container_name: vk-platform
+    restart: unless-stopped
+    env_file: .env.docker
+    ports:
+      - "8800:8800"
+    volumes:
+      - vk_data:/data
+      # Multi-operator portal logins (RAILWIRE_ACCOUNTS_FILE=/secrets/...); read-only.
+      - ./secrets:/secrets:ro
+    # Chromium needs more shared memory than Docker's 64 MB default.
+    shm_size: "1gb"
+    # One container only: SQLite and the WhatsApp login cannot be shared between copies.
+
+  # Optional: Cloudflare Tunnel keeps vkdigital.tipturbroadband.in working without opening ports.
+  # Create a tunnel in Cloudflare Zero Trust, point it at http://vk-platform:8800, put the token in
+  # .env.docker as TUNNEL_TOKEN, then: docker compose --profile tunnel up -d
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    env_file: .env.docker
+    depends_on:
+      - vk-platform
+
+volumes:
+  vk_data:

@@ -57,6 +57,9 @@ async def v2_home(request: Request):
         advance_rows = repo.advance_paid_expired(
             conn, provider=fixed or "", hide_owner=bool(collector_id)
         )
+        expired_all = repo.expiry_window_stats(
+            conn, when="all", provider=fixed or "", collector_id=collector_id
+        )
         is_owner = (request.state.agent or {}).get("role") == "admin"
         free_month = 0
         if is_owner:
@@ -67,6 +70,7 @@ async def v2_home(request: Request):
         "connections": len(advance_rows),
         "customers": len({int(r["customer_id"]) for r in advance_rows}),
     }
+    stats["expired_all"] = expired_all
     stats["show_free_renewals"] = is_owner
     stats["free_renewals_month"] = free_month
 
@@ -188,6 +192,9 @@ async def v2_expiring_today(request: Request):
 
     when, _window = repo.parse_expiry_when(request.query_params.get("when") or "")
     q = (request.query_params.get("q") or "").strip()
+    sort = (request.query_params.get("sort") or "").strip().lower()
+    if sort not in ("new", "old") or when == "tonight":
+        sort = ""
 
     if when == "term_month" and fixed == "hathway":
         when = "tonight"
@@ -198,7 +205,13 @@ async def v2_expiring_today(request: Request):
     collector_id = auth.collector_id_for(request.state.agent)
     with connection() as conn:
         rows = repo.expiry_window_connections(
-            conn, when=when, provider=provider, q=q, limit=500, collector_id=collector_id
+            conn,
+            when=when,
+            provider=provider,
+            q=q,
+            limit=1500 if when == "all" else 500,
+            collector_id=collector_id,
+            sort=sort,
         )
         stats = repo.expiry_window_stats(
             conn, when=when, provider=provider, collector_id=collector_id
@@ -221,10 +234,13 @@ async def v2_expiring_today(request: Request):
         list_next += f"&provider={provider}"
     if q:
         list_next += f"&q={quote(q)}"
+    if sort:
+        list_next += f"&sort={sort}"
 
     return _render_v2(
         request,
         "expiring_today.html",
+        sort=sort,
         rows=rows,
         stats=stats,
         provider=provider,

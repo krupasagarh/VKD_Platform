@@ -1,0 +1,18 @@
+# Build context is vk_digital_hub/ — send only what the image needs, never secrets or data.
+*
+
+!vk_platform/app
+!vk_platform/scripts
+!vk_platform/docker
+!vk_platform/run.py
+!vk_platform/requirements.txt
+!railtel_debugger/vk_agent/*.py
+!bix42_export/*.py
+
+**/__pycache__
+**/*.pyc
+**/.env
+**/*.env
+**/*.db
+**/*.log
+**/cookies.json

@@ -609,8 +609,9 @@
                       title="Record a payment for {{ cn.upstream_id }}">{% if on_follow %}Mark collected{% else %}Collect{% endif %}</button>
               {% endif %}
               {% if can('portal_actions') and not id_issue %}
-                {% if 'renew' in provider_actions.get(cn.provider, []) and not on_follow %}
-                <form class="inline-form" method="post" action="/connections/{{ cn.id }}/action">
+                {% if 'renew' in provider_actions.get(cn.provider, []) %}
+                <form class="inline-form" method="post" action="/connections/{{ cn.id }}/action"
+                      {% if on_follow %}onsubmit="return confirm('This connection already has an unpaid renewal of ₹{{ on_follow|rupees }}. Renew again on the portal?')"{% endif %}>
                   <input type="hidden" name="action" value="renew">
                   <input type="hidden" name="next" value="/customers/{{ customer.id }}">
                   <button class="btn{% if cn.free_reason %} btn-primary{% endif %} cd-conn-btn" type="submit"
@@ -1495,5 +1496,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="/static/customer_detail.js?v=13"></script>
+<script src="/static/customer_detail.js?v=14"></script>
 {% endblock %}

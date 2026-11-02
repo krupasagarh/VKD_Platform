@@ -140,6 +140,7 @@ NEXT_EXPIRY_SQL = f"""
 
 EXPIRY_WHEN_WINDOWS: dict[str, dict] = {
     "tonight": {"kind": "tonight", "label": "Expiring tonight"},
+    "all": {"kind": "all", "label": "Expired — not renewed"},
     "term_month": {
         "kind": "month",
         "label": "Railtel term plans this month",
@@ -192,6 +193,8 @@ def _expiry_window_where(
     base = f"{status} AND ({expiry_sql}) IS NOT NULL AND julianday({expiry_sql}) < julianday(?)"
     params: list = [today_str]
     days_late = int(window.get("days_late") or 0)
+    if kind == "all":
+        return base, params
     if kind == "exact":
         where = (
             f"{base} AND date({expiry_sql}) = date(?, '-' || ? || ' days')"
@@ -266,6 +269,7 @@ def expiry_window_connections(
     q: str = "",
     limit: int = 500,
     collector_id: int | None = None,
+    sort: str = "",
 ) -> list[sqlite3.Row]:
     key, window = parse_expiry_when(when)
     where, params = _expiry_window_where(window)
@@ -285,8 +289,18 @@ def expiry_window_connections(
         )
         params.extend([like, like, like, like])
     kind = window.get("kind")
-    if kind == "month":
+    if sort in ("new", "old"):
+        direction = "DESC" if sort == "new" else "ASC"
+        order = (
+            f"julianday({CONNECTION_EFFECTIVE_EXPIRY_SQL}) {direction}, "
+            "c.name COLLATE NOCASE, cn.id"
+        )
+    elif kind == "month":
         order = "cn.expiry_date ASC, c.name COLLATE NOCASE, cn.id"
+    elif kind == "all":
+        order = (
+            f"julianday({CONNECTION_EFFECTIVE_EXPIRY_SQL}) DESC, c.name COLLATE NOCASE, cn.id"
+        )
     elif kind == "from":
         order = (
             f"julianday({CONNECTION_EFFECTIVE_EXPIRY_SQL}) ASC, c.name COLLATE NOCASE, cn.id"
@@ -873,18 +887,16 @@ def search_customers(
             where.append(f"({NEXT_EXPIRY_SQL}) IS NOT NULL AND ({NEXT_EXPIRY_SQL}) <= ?")
             params.append(limit_date)
     elif view == "expired":
-        if provider:
-            where.append(
-                "EXISTS (SELECT 1 FROM connections cn "
-                "LEFT JOIN packages p ON p.id = cn.package_id "
-                "WHERE cn.customer_id = c.id AND cn.provider = ? "
-                f"AND ({CONNECTION_EFFECTIVE_EXPIRY_SQL}) IS NOT NULL "
-                f"AND ({CONNECTION_EFFECTIVE_EXPIRY_SQL}) < ?)"
-            )
-            params.extend([provider, today_str])
-        else:
-            where.append(f"({NEXT_EXPIRY_SQL}) IS NOT NULL AND ({NEXT_EXPIRY_SQL}) < ?")
-            params.append(today_str)
+        # Suspended / inactive boxes count too — Hathway suspends an STB the day it lapses.
+        where.append(
+            "EXISTS (SELECT 1 FROM connections cn "
+            "LEFT JOIN packages p ON p.id = cn.package_id "
+            "WHERE cn.customer_id = c.id AND cn.status != 'terminated' "
+            "AND (? = '' OR cn.provider = ?) "
+            f"AND ({CONNECTION_EFFECTIVE_EXPIRY_SQL}) IS NOT NULL "
+            f"AND ({CONNECTION_EFFECTIVE_EXPIRY_SQL}) < ?)"
+        )
+        params.extend([provider, provider, today_str])
     elif view == "hathway_live":
         where.append(
             "EXISTS (SELECT 1 FROM connections cn WHERE cn.customer_id = c.id "

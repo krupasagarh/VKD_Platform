@@ -2,6 +2,7 @@
 {% from "_customer_area.html" import customer_area_cell %}
 {% from "_whatsapp_menu.html" import whatsapp_menu %}
 {% from "_check_status_btn.html" import check_status_btn %}
+{% from "_later_menu.html" import later_menu %}
 {% macro unpaid_renewal_card(entry, provider_labels, can, areas, list_next, payment_modes, only_provider=none) %}
 {% set name = entry.customer_name %}
 {% set initials = (name or "?")[:1]|upper %}
@@ -81,6 +82,17 @@
       </select>
       <button class="v2-quick-collect-btn" type="submit">Mark collected</button>
     </form>
+    {% endif %}
+    {% if can('portal_actions') and b.connection_id %}
+    <div class="v2-card-foot-actions" style="margin-top:8px">
+      <form class="inline-form" method="post" action="/connections/{{ b.connection_id }}/action"
+            onsubmit="return confirm('Renew this connection again on the portal? It already has an unpaid renewal.')">
+        <input type="hidden" name="action" value="renew">
+        <input type="hidden" name="next" value="{{ list_next }}">
+        <button class="v2-cta v2-cta-compact v2-cta-secondary" type="submit">Renew</button>
+      </form>
+      {{ later_menu(b.connection_id, list_next) }}
+    </div>
     {% endif %}
   </div>
   {% endif %}

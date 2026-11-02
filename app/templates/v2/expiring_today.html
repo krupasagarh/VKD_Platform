@@ -29,6 +29,9 @@
   {% elif is_term_month %}
   Railtel term plans (<span class="mono">x3</span>, <span class="mono">x6</span>, <span class="mono">x10</span>, …) whose
   <strong>portal renewal date</strong> falls this calendar month — active, inactive, or suspended; already renewed or not.
+  {% elif when == 'all' %}
+  Every Hathway, Railtel, ANT and SmartPlay connection whose paid-through date has passed and
+  was not renewed — newest first. Terminated connections are left out.
   {% else %}
   Paid-through from the portal: term plans (x3/x6/x10) use Subscription Expiry, then the
   stored Railtel date. Monthly packs use the portal expiry. Use Check if you need a live date.
@@ -38,16 +41,26 @@
 <div class="v2-chips">
   {% for key, _spec in when_choices.items() %}
   {% if key != 'term_month' or not fixed_provider or fixed_provider == 'railtel' %}
-  <a href="/v2/expiring-today?when={{ key }}{% if provider %}&provider={{ provider }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+  <a href="/v2/expiring-today?when={{ key }}{% if provider %}&provider={{ provider }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}{% if sort and key != 'tonight' %}&sort={{ sort }}{% endif %}"
      class="v2-chip {% if when == key %}on{% endif %}">
-    {% if key == 'tonight' %}Tonight{% elif key == 'term_month' %}This month{% elif key == '1d' %}1 day late{% elif key == '2d' %}2 days late{% else %}7+ days late{% endif %}
+    {% if key == 'tonight' %}Tonight{% elif key == 'term_month' %}This month{% elif key == '1d' %}1 day late{% elif key == '2d' %}2 days late{% elif key == 'all' %}All expired{% else %}7+ days late{% endif %}
   </a>
   {% endif %}
   {% endfor %}
 </div>
 
+{% if not is_tonight %}
+{% set sort_base = '/v2/expiring-today?when=' ~ when ~ (('&provider=' ~ provider) if provider else '') ~ (('&q=' ~ q|urlencode) if q else '') %}
+<div class="v2-chips" style="padding-top:4px">
+  <span class="v2-chips-label">Sort by expiry</span>
+  <a href="{{ sort_base }}&sort=new" class="v2-chip {% if sort == 'new' or (not sort and when == 'all') %}on{% endif %}">Latest first</a>
+  <a href="{{ sort_base }}&sort=old" class="v2-chip {% if sort == 'old' or (not sort and when == '7d') %}on{% endif %}">Oldest first</a>
+</div>
+{% endif %}
+
 <form class="v2-filters" method="get" action="/v2/expiring-today">
   <input type="hidden" name="when" value="{{ when }}">
+  {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
   <label class="v2-filter-field" style="min-width:12rem;flex:1">
     <span>Search</span>
     <input type="search" name="q" value="{{ q or '' }}" placeholder="Name, login ID, phone">

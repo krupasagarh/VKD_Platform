@@ -48,6 +48,10 @@
       <span>Expired follow-up</span>
       <span class="sub">1d · 2d · 7d+ late</span>
     </a>
+    <a class="v2-menu-item" href="/v2/expiring-today?when=all{% if fixed_provider %}&provider={{ fixed_provider }}{% endif %}">
+      <span>Expired</span>
+      <span class="sub">All expired, not renewed · Hathway · Railtel · ANT · SmartPlay</span>
+    </a>
     {% if can('packages') %}
     <a class="v2-menu-item" href="/packages">
       <span>Plans</span>

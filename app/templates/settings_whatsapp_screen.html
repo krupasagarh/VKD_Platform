@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% set active = "settings" %}
+{% block title %}WhatsApp screen · VK Platform{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>WhatsApp screen</h1>
+    <div class="subtle">
+      What the automated WhatsApp browser shows right now. If it says “Scan to log in”, open
+      WhatsApp on the office phone → Linked devices → Link a device, and scan the QR below.
+      Refreshes every 15 seconds.
+    </div>
+  </div>
+</div>
+{% include "_settings_tabs.html" %}
+
+<div class="card">
+  <img id="wa-screen" alt="WhatsApp Web screen" style="max-width:100%;border:1px solid var(--line);border-radius:8px"
+       src="/settings/whatsapp-screen.png?t={{ range(1, 1000000)|random }}">
+  <p class="subtle" id="wa-screen-note" style="margin-bottom:0">Loading… the first picture can take up to a minute if the browser was closed.</p>
+</div>
+
+<script>
+(function () {
+  var img = document.getElementById("wa-screen");
+  var note = document.getElementById("wa-screen-note");
+  img.addEventListener("load", function () { note.textContent = "Updated " + new Date().toLocaleTimeString(); });
+  img.addEventListener("error", function () { note.textContent = "WhatsApp browser is not available — check the server log."; });
+  setInterval(function () { img.src = "/settings/whatsapp-screen.png?t=" + Date.now(); }, 15000);
+})();
+</script>
+{% endblock %}

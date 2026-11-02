@@ -36,7 +36,7 @@
 
   {% set timing_short = 'Tonight' %}
 
-{% elif when == '7d' and left is not none and left < 0 %}
+{% elif when in ('7d', 'all') and left is not none and left < 0 %}
 
   {% set timing_short = (-left)|string ~ (' day late' if -left == 1 else ' days late') %}
 

@@ -1,0 +1,6 @@
+# Provider portal + WhatsApp automation (railtel_debugger/vk_agent, app/whatsapp_send.py).
+# Keep playwright pinned to the version the laptop runs.
+playwright==1.59.0
+pytesseract>=0.3.10
+Pillow>=10.0
+requests>=2.31

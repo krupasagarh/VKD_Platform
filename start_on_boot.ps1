@@ -55,10 +55,36 @@ if (-not $Cloudflared) {
     exit 1
 }
 
+function Get-TunnelEdgeArgs {
+    # The router's DNS (192.168.0.1) sometimes refuses Cloudflare's tunnel lookups and
+    # cloudflared then exits at once. Resolve the edge via 1.1.1.1 and pass the IPs.
+    # Retries cover Wi-Fi not being up yet right after boot.
+    for ($try = 1; $try -le 12; $try++) {
+        $ips = @()
+        foreach ($h in "region1.v2.argotunnel.com", "region2.v2.argotunnel.com") {
+            foreach ($server in "1.1.1.1", "8.8.8.8") {
+                $found = Resolve-DnsName $h -Type A -Server $server -ErrorAction SilentlyContinue |
+                    Where-Object { $_.IPAddress } | Select-Object -ExpandProperty IPAddress -First 2
+                if ($found) { $ips += $found; break }
+            }
+        }
+        if ($ips.Count) {
+            return ($ips | ForEach-Object { "--edge $($_):7844" }) -join " "
+        }
+        Start-Sleep -Seconds 10
+    }
+    return ""
+}
+
 if (-not (Test-CloudflaredRunning)) {
-    Write-BootLog "starting Cloudflare tunnel vk-platform"
+    $edgeArgs = Get-TunnelEdgeArgs
+    if ($edgeArgs) {
+        Write-BootLog "starting Cloudflare tunnel vk-platform ($edgeArgs)"
+    } else {
+        Write-BootLog "starting Cloudflare tunnel vk-platform (edge lookup failed, using system DNS)"
+    }
     $tunLog = Join-Path $LogDir "cloudflared.log"
-    $tunCmd = "`"`"$Cloudflared`" tunnel run vk-platform >> `"$tunLog`" 2>&1`""
+    $tunCmd = "`"`"$Cloudflared`" tunnel $edgeArgs run vk-platform >> `"$tunLog`" 2>&1`""
     Start-Process -FilePath "cmd.exe" -ArgumentList @("/c", $tunCmd) `
         -WorkingDirectory $Root -WindowStyle Hidden
 } else {

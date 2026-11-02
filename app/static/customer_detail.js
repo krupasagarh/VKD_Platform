@@ -396,7 +396,9 @@
         return;
       }
       if (followDue()) {
-        hint.textContent = "Already renewed. This only records the payment — no new renewal.";
+        hint.textContent = renewBox && renewBox.checked
+          ? "Records the payment and queues a new portal renewal."
+          : "Already renewed. This only records the payment — tick Also renew for a new renewal.";
         return;
       }
       var paid = currentPaise();
@@ -473,19 +475,20 @@
       updateSubmit();
       updateHint();
     }
+    var syncedConn = null;
     function syncMode() {
       var onFollow = !!followDue();
-      if (onFollow && modeValue() === "collect_later") {
-        var first = form.querySelector("[name=mode]");
-        if (first) first.checked = true;
+      var connNow = conn ? conn.value : "";
+      if (connNow !== syncedConn) {
+        syncedConn = connNow;
+        if (onFollow && renewBox) renewBox.checked = false;
       }
-      if (laterOpt) laterOpt.style.display = onFollow ? "none" : "";
-      if (onFollow && renewBox) renewBox.checked = false;
+      if (laterOpt) laterOpt.style.display = "";
       var later = modeValue() === "collect_later";
       var cash = modeValue() === "cash";
       if (amount) amount.required = !later;
       if (amountField) amountField.style.display = later ? "none" : "";
-      if (renewRow) renewRow.style.display = (later || onFollow) ? "none" : "";
+      if (renewRow) renewRow.style.display = later ? "none" : "";
       if (promiseRow) promiseRow.style.display = later ? "" : "none";
       if (waRow) waRow.style.display = later ? "none" : "";
       if (refRow) refRow.style.display = (!later && !cash) ? "" : "none";
