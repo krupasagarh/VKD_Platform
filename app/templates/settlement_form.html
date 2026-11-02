@@ -130,10 +130,11 @@
         <div class="field">
           <label>Provider</label>
           <select name="cash_cust_provider" class="js-cust-provider">
-            <option value="railtel" {% if line and line.provider == 'railtel' %}selected{% endif %}>Railtel</option>
-            <option value="hathway" {% if line and line.provider == 'hathway' %}selected{% endif %}>Hathway</option>
-            <option value="iptv" {% if line and line.provider == 'iptv' %}selected{% endif %}>ANT IPTV</option>
-            <option value="ott" {% if line and line.provider == 'ott' %}selected{% endif %}>SmartPlay</option>
+            {% for prov, prov_label in [('railtel', 'Railtel'), ('hathway', 'Hathway'), ('iptv', 'ANT IPTV'), ('ott', 'SmartPlay')] %}
+            {% if prov in enabled_providers or (line and line.provider == prov) %}
+            <option value="{{ prov }}" {% if line and line.provider == prov %}selected{% endif %}>{{ prov_label }}</option>
+            {% endif %}
+            {% endfor %}
           </select>
         </div>
         <div class="field">

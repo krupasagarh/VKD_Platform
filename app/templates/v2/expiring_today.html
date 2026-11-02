@@ -40,7 +40,7 @@
 
 <div class="v2-chips">
   {% for key, _spec in when_choices.items() %}
-  {% if key != 'term_month' or not fixed_provider or fixed_provider == 'railtel' %}
+  {% if key != 'term_month' or shows('railtel', fixed_provider) %}
   <a href="/v2/expiring-today?when={{ key }}{% if provider %}&provider={{ provider }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}{% if sort and key != 'tonight' %}&sort={{ sort }}{% endif %}"
      class="v2-chip {% if when == key %}on{% endif %}">
     {% if key == 'tonight' %}Tonight{% elif key == 'term_month' %}This month{% elif key == '1d' %}1 day late{% elif key == '2d' %}2 days late{% elif key == 'all' %}All expired{% else %}7+ days late{% endif %}

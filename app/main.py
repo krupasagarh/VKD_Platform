@@ -241,7 +241,27 @@ def _plain_error(text: str | None) -> str:
 
 templates.env.filters["plain_error"] = _plain_error
 templates.env.globals["settings"] = settings
-templates.env.globals["provider_scopes"] = auth.PROVIDER_SCOPES
+templates.env.globals["provider_scopes"] = auth.provider_scope_choices()
+
+from .upstream.providers import ENABLED_PROVIDERS, provider_enabled
+
+
+def _shows_provider(provider: str, fixed_provider: str | None = None) -> bool:
+    """Whether a screen should show this provider's menus, tiles and filters.
+
+    The provider must be enabled for this installation. Railtel / Hathway also
+    follow the agent's provider scope; ANT and SmartPlay are only for unscoped
+    logins, as they were before providers could be switched off.
+    """
+    if not provider_enabled(provider):
+        return False
+    if not fixed_provider:
+        return True
+    return provider in ("railtel", "hathway") and provider == fixed_provider
+
+
+templates.env.globals["shows"] = _shows_provider
+templates.env.globals["enabled_providers"] = ENABLED_PROVIDERS
 from .railtel_accounts import RAILTEL_DEALER_LABELS, RAILTEL_DEALER_SHORT, RAILTEL_DEALERS
 
 templates.env.globals["railtel_dealers"] = RAILTEL_DEALERS
@@ -331,6 +351,32 @@ def _field_duty_block(request: Request):
     return RedirectResponse(f"{target}?{urlencode(params)}", status_code=303)
 
 
+_PROVIDER_PATHS = (
+    ("/railtel-check", "railtel"),
+    ("/v2/railtel-check", "railtel"),
+    ("/v2/railtel-online", "railtel"),
+    ("/api/railtel-online", "railtel"),
+    ("/providers/online", "railtel"),
+    ("/railtel-invoices", "railtel"),
+    ("/providers/railtel", "railtel"),
+    ("/stbs", "hathway"),
+    ("/settings/hathway-expiry", "hathway"),
+    ("/providers/hathway", "hathway"),
+    ("/iptv", "iptv"),
+    ("/providers/iptv", "iptv"),
+    ("/ott", "ott"),
+    ("/providers/ott", "ott"),
+)
+
+
+def _disabled_provider_for(path: str) -> str | None:
+    """Provider that owns this page when it is switched off for this installation."""
+    for prefix, provider in _PROVIDER_PATHS:
+        if (path == prefix or path.startswith(prefix + "/")) and not provider_enabled(provider):
+            return provider
+    return None
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="VK Platform", version="0.1.0", lifespan=lifespan)
 
@@ -366,6 +412,14 @@ def create_app() -> FastAPI:
             needed = auth.path_permission(request.url.path)
             if needed and not auth.can(request.state.agent, needed):
                 return auth.redirect_forbidden()
+            disabled = _disabled_provider_for(request.url.path)
+            if disabled:
+                from .upstream.providers import provider_label
+
+                message = f"{provider_label(disabled)} is not enabled in this installation."
+                if request.url.path.startswith("/api/"):
+                    return JSONResponse({"detail": message}, status_code=404)
+                return auth.redirect_forbidden(message)
             blocked = _field_duty_block(request)
             if blocked is not None:
                 return blocked

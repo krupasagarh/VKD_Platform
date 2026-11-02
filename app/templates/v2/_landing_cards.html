@@ -50,7 +50,7 @@
         <div class="v2-tile-num{% if xa.customers %} is-bad{% endif %}">{{ xa.customers or 0 }}</div>
         <div class="v2-tile-label">Expired · not renewed</div>
       </a>
-      {% if not fixed_provider or fixed_provider == 'railtel' %}
+      {% if shows('railtel', fixed_provider) %}
       <a class="v2-tile" href="/v2/expiring-today?when=term_month&provider=railtel">
         <div class="v2-tile-num{% if tm.customers %} is-warn{% endif %}">{{ tm.customers or 0 }}</div>
         <div class="v2-tile-label">Railtel renewals</div>
@@ -114,7 +114,7 @@
   <section class="v2-home-services">
     <div class="v2-sec-title">Services</div>
     <div class="v2-tiles v2-tiles-svc">
-      {% if (not fixed_provider or fixed_provider == 'railtel') and (can('customers_view') or can('providers') or can('payments')) %}
+      {% if (shows('railtel', fixed_provider)) and (can('customers_view') or can('providers') or can('payments')) %}
       <a class="v2-tile" href="/v2/railtel-online">
         <div class="v2-tile-num">{{ rt.portal_active or rt.live or 0 }}</div>
         <div class="v2-tile-label">Railtel</div>
@@ -125,7 +125,7 @@
         </div>
       </a>
       {% endif %}
-      {% if (not fixed_provider or fixed_provider == 'hathway') and (can('customers_view') or can('payments')) %}
+      {% if (shows('hathway', fixed_provider)) and (can('customers_view') or can('payments')) %}
       <a class="v2-tile" href="{% if hw.territory %}/v2/customers?view=hathway_live{% elif fixed_provider %}/v2/customers{% else %}/customers?view=hathway{% endif %}">
         <div class="v2-tile-num">{{ hw.live_customers or 0 }}</div>
         <div class="v2-tile-label">Hathway</div>
@@ -136,7 +136,7 @@
         </div>
       </a>
       {% endif %}
-      {% if not fixed_provider and (can('customers_view') or can('portal_actions')) %}
+      {% if shows('iptv', fixed_provider) and (can('customers_view') or can('portal_actions')) %}
       <a class="v2-tile" href="/iptv">
         <div class="v2-tile-num">{{ iptv.live or 0 }}</div>
         <div class="v2-tile-label">ANT IPTV</div>
@@ -146,6 +146,8 @@
           {% else %}ok{% endif %}
         </div>
       </a>
+      {% endif %}
+      {% if shows('ott', fixed_provider) and (can('customers_view') or can('portal_actions')) %}
       <a class="v2-tile" href="/ott">
         <div class="v2-tile-num">{{ ott.live or 0 }}</div>
         <div class="v2-tile-label">SmartPlay</div>
@@ -166,7 +168,7 @@
     <div class="v2-sec-title">Un-assigned customers</div>
     <div class="v2-tiles v2-tiles-2">
       {% for prov in ['hathway', 'railtel'] %}
-        {% if prov in ua and (not fixed_provider or fixed_provider == prov) %}
+        {% if prov in ua and shows(prov, fixed_provider) %}
       <a class="v2-tile" href="/v2/customers?view=unassigned&provider={{ prov }}">
         <div class="v2-tile-num{% if ua[prov] %} is-warn{% endif %}">{{ ua[prov] }}</div>
         <div class="v2-tile-label">{{ 'Hathway' if prov == 'hathway' else 'Railtel' }}</div>

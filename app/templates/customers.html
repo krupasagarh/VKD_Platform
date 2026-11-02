@@ -43,13 +43,15 @@
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=due" class="{% if view == 'due' %}on{% endif %}">Has dues</a>
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=expiring" class="{% if view == 'expiring' %}on{% endif %}">Expiring soon</a>
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=expired" class="{% if view == 'expired' %}on{% endif %}">Expired</a>
-  {% if not fixed_provider or fixed_provider == 'hathway' %}
+  {% if shows('hathway', fixed_provider) %}
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=hathway_live" class="{% if view == 'hathway_live' %}on{% endif %}">Hathway live</a>
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=hathway" class="{% if view == 'hathway' %}on{% endif %}">Hathway all</a>
   {% endif %}
-  {% if not fixed_provider %}
+  {% if shows('iptv', fixed_provider) %}
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=iptv_live" class="{% if view == 'iptv_live' %}on{% endif %}">IPTV live</a>
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=iptv" class="{% if view == 'iptv' %}on{% endif %}">IPTV all</a>
+  {% endif %}
+  {% if shows('ott', fixed_provider) %}
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=ott_live" class="{% if view == 'ott_live' %}on{% endif %}">OTT live</a>
   <a href="/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=ott" class="{% if view == 'ott' %}on{% endif %}">OTT all</a>
   {% endif %}
@@ -61,7 +63,7 @@
   {% endif %}
 </div>
 
-{% if not fixed_provider or fixed_provider == 'railtel' %}
+{% if shows('railtel', fixed_provider) %}
 <div class="tabs tabs-dealers">
   <span class="tabs-label">Railtel dealer</span>
   <a href="/customers?{% if dealer_filter_q %}{{ dealer_filter_q }}&{% endif %}provider=railtel" class="{% if provider == 'railtel' and not railtel_account %}on{% endif %}">All Railtel</a>
@@ -141,7 +143,7 @@
       <td>
         <a href="/customers/{{ c.id }}"><strong>{{ c.name }}</strong></a>
         {% if c.code %}<span class="badge">{{ c.code }}</span>{% endif %}
-        {% if not fixed_provider or fixed_provider == 'railtel' %}
+        {% if shows('railtel', fixed_provider) %}
         {{ railtel_dealer_tags(c.railtel_dealers, compact=true) }}
         {% endif %}
         {% if c.status != 'active' %}<span class="badge badge-warn">{{ c.status }}</span>{% endif %}

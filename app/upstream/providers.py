@@ -22,6 +22,15 @@ from ..money import fmt_date, fmt_datetime, parse_date
 
 PROVIDERS = ("railtel", "hathway", "iptv", "ott")
 
+# VK_PLATFORM_PROVIDERS picks a subset per installation; PROVIDERS stays the full
+# list so rows imported before a provider was switched off still get a label.
+ENABLED_PROVIDERS = tuple(p for p in PROVIDERS if p in settings.enabled_providers)
+
+
+def provider_enabled(provider: str | None) -> bool:
+    return (provider or "").strip().lower() in ENABLED_PROVIDERS
+
+
 PROVIDER_LABELS = {
     "railtel": "Railtel",
     "hathway": "Hathway",
@@ -812,6 +821,8 @@ def run_action(
 
     if provider not in PROVIDERS:
         raise UpstreamUnsupported(f"Unknown provider '{provider}'")
+    if not provider_enabled(provider):
+        raise UpstreamUnsupported(f"{PROVIDER_LABELS[provider]} is not enabled in this installation")
 
     is_account_action = action in ACCOUNT_ACTIONS.get(provider, ())
     if not is_account_action and action not in PROVIDER_ACTIONS[provider]:

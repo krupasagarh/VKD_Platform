@@ -18,6 +18,7 @@
 
 {% block content %}
 <div class="v2-menu-list">
+  {% if 'railtel' in enabled_providers %}
   <div class="v2-menu-group">
     <div class="v2-menu-group-title">Quick check</div>
     <a class="v2-menu-item" href="/v2/railtel-check">
@@ -25,10 +26,11 @@
       <span class="sub">Phone or Railtel ID · online now?</span>
     </a>
   </div>
+  {% endif %}
   {% if can('customers_view') or can('payments') or can('portal_actions') %}
   <div class="v2-menu-group">
     <div class="v2-menu-group-title">Customers</div>
-    {% if not fixed_provider or fixed_provider == 'railtel' %}
+    {% if shows('railtel', fixed_provider) %}
     <a class="v2-menu-item" href="/v2/expiring-today?when=term_month&provider=railtel">
       <span>Railtel term renewals</span>
       <span class="sub">x3 · x6 · x10 · this month</span>
@@ -38,7 +40,7 @@
       <span>Expiring today</span>
       <span class="sub">{% if fixed_provider %}{{ provider_labels.get(fixed_provider, fixed_provider)|capitalize }} · tonight{% else %}All providers · tonight{% endif %}</span>
     </a>
-    {% if not fixed_provider or fixed_provider == 'hathway' %}
+    {% if shows('hathway', fixed_provider) %}
     <a class="v2-menu-item" href="/stbs/expiry-report">
       <span>Hathway expiry report</span>
       <span class="sub">PlanExpiry sheet · count by day</span>
@@ -50,7 +52,7 @@
     </a>
     <a class="v2-menu-item" href="/v2/expiring-today?when=all{% if fixed_provider %}&provider={{ fixed_provider }}{% endif %}">
       <span>Expired</span>
-      <span class="sub">All expired, not renewed · Hathway · Railtel · ANT · SmartPlay</span>
+      <span class="sub">All expired, not renewed{% for prov in enabled_providers %} · {{ provider_labels.get(prov, prov) }}{% endfor %}</span>
     </a>
     {% if can('packages') %}
     <a class="v2-menu-item" href="/packages">
@@ -115,10 +117,12 @@
     </a>
     {% endif %}
     {% if can('providers') and fixed_provider != 'hathway' %}
+    {% if 'railtel' in enabled_providers %}
     <a class="v2-menu-item" href="/v2/railtel-online">
       <span>Railtel online (live)</span>
       <span class="sub">dash.php · name + duration</span>
     </a>
+    {% endif %}
     <a class="v2-menu-item" href="/providers">
       <span>Providers</span>
       <span class="sub">Wallet &amp; sync</span>
