@@ -6,8 +6,15 @@
 #   cd vk_digital_hub
 #   docker build -f vk_platform/Dockerfile -t vk-platform:latest .
 #
+# Hathway-only image for other cable operators (Railtel, ANT and SmartPlay switched off):
+#
+#   docker build -f vk_platform/Dockerfile --build-arg VK_PROVIDERS=hathway -t vk-platform:hathway .
+#
 # Data (SQLite DB, WhatsApp login, invoices, screenshots) lives in the /data volume.
 FROM python:3.12-slim-bookworm
+
+# Baked-in default for VK_PLATFORM_PROVIDERS; blank = all four. An env file can still override it.
+ARG VK_PROVIDERS=""
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -38,6 +45,7 @@ RUN sed -i 's/\r$//' docker/entrypoint.sh && chmod +x docker/entrypoint.sh \
 
 ENV VK_PLATFORM_HOST=0.0.0.0 \
     VK_PLATFORM_PORT=8800 \
+    VK_PLATFORM_PROVIDERS=${VK_PROVIDERS} \
     VK_BIX_HISTORY_DB=/data/vk_digital_history.db
 
 VOLUME ["/data"]
