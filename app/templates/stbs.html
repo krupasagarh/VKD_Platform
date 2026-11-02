@@ -9,7 +9,7 @@
   <div>
     <h1>Hathway STBs</h1>
     <div class="subtle">
-      Only Hathway set-top boxes — Railtel accounts are not on this list.
+      Only Hathway set-top boxes{% if 'railtel' in enabled_providers %} — Railtel accounts are not on this list{% endif %}.
       Portal last said
       <strong>{{ mapping.portal_active }}</strong> active +
       <strong>{{ mapping.portal_inactive }}</strong> inactive

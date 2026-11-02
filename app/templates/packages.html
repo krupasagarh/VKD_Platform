@@ -8,8 +8,8 @@
   <div>
     <h1>Plans</h1>
     <div class="subtle">Price is what the customer pays for one full term.
-      Railtel term plans (" x3", " x6", " x10") get their validity from the plan name automatically.
-      ANT IPTV and SmartPlay OTT packs are 30-day prepaid.</div>
+      {% if 'railtel' in enabled_providers %}Railtel term plans (" x3", " x6", " x10") get their validity from the plan name automatically.{% endif %}
+      {% if 'iptv' in enabled_providers and 'ott' in enabled_providers %}ANT IPTV and SmartPlay OTT packs are 30-day prepaid.{% elif 'iptv' in enabled_providers %}ANT IPTV packs are 30-day prepaid.{% elif 'ott' in enabled_providers %}SmartPlay OTT packs are 30-day prepaid.{% endif %}</div>
   </div>
 </div>
 

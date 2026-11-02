@@ -108,7 +108,13 @@ def item_visible(item, scope: str | None) -> bool:
 
 
 def ensure_catalog(conn: sqlite3.Connection) -> None:
+    from .config import settings
+
     for order, (code, name, category, unit, scope) in enumerate(CATALOG, start=1):
+        # Fiber, couplers and patch cords are used on cable networks too; only the
+        # Railtel ONTs are meaningless without Railtel.
+        if category == "Railtel ONT" and "railtel" not in settings.enabled_providers:
+            continue
         conn.execute(
             "INSERT INTO inventory_items(code, name, category, unit, provider_scope, sort_order, active) "
             "VALUES(?, ?, ?, ?, ?, ?, 1) "

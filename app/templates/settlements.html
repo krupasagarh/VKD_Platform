@@ -15,7 +15,7 @@
   <div>
     <h1>{% if everyone %}Agent settlements{% else %}My settlements{% endif %}</h1>
     <div class="subtle">
-      Cable (Hathway) and internet (Railtel) collections for the dates you pick.
+      {% if 'railtel' in enabled_providers %}Cable (Hathway) and internet (Railtel) collections{% else %}Collections{% endif %} for the dates you pick.
       {% if everyone %}
       You are the owner ({{ owner_name }}). Money collected on your login is already in the shop — field agents do not hand that over.
       Scanner and your UPI are already with you. Cash and agent UPI stay with the field agent until they settle with you.

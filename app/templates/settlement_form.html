@@ -8,7 +8,7 @@
 <div class="page-head">
   <div>
     <h1>{% if r %}Edit settlement{% else %}Expenses &amp; proofs{% endif %}</h1>
-    <div class="subtle">Collections already in the ledger load below. If a customer paid you cash — including Railtel customers you cannot open — search their name and enter the amount.</div>
+    <div class="subtle">Collections already in the ledger load below. If a customer paid you cash{% if 'railtel' in enabled_providers and 'hathway' in enabled_providers %} — including Railtel customers you cannot open —{% endif %} search their name and enter the amount.</div>
   </div>
   <div class="spacer"></div>
   <a class="btn" href="/settlements">← All settlements</a>
@@ -101,7 +101,7 @@
   <div class="card">
     <div class="card-head"><h2>Cash collected from a customer</h2></div>
     <p class="subtle" style="margin-top:0">
-      Type a name or phone. Every customer is listed — Hathway and Railtel — with area.
+      Type a name or phone. Every customer is listed{% if 'railtel' in enabled_providers and 'hathway' in enabled_providers %} — Hathway and Railtel —{% endif %} with area.
       Use this when someone pays you cash in the field.
     </p>
     <div id="cash-cust-rows">

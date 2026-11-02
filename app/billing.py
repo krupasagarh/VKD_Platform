@@ -334,6 +334,20 @@ PLAN_BUNDLES = (
 )
 BUNDLE_LABELS = dict(PLAN_BUNDLES)
 
+_BUNDLE_PART_PROVIDER = {"internet": "railtel", "hathway": "hathway", "iptv": "iptv", "ott": "ott"}
+
+
+def enabled_plan_bundles() -> tuple[tuple[str, str], ...]:
+    """Bundles whose every service is enabled for this installation."""
+    enabled = set(settings.enabled_providers)
+
+    def providers_of(key: str) -> set[str]:
+        if key == "all_four":
+            return set(_BUNDLE_PART_PROVIDER.values())
+        return {_BUNDLE_PART_PROVIDER[part] for part in key.split("_")}
+
+    return tuple((key, label) for key, label in PLAN_BUNDLES if providers_of(key) <= enabled)
+
 
 def customer_custom_plan(conn: sqlite3.Connection, customer_id: int) -> dict | None:
     """Household plan used for collection and printed bills. None if not set."""

@@ -13,14 +13,14 @@
       {% elif fixed_provider == 'railtel' %}
       Railtel portal jobs for this login, one at a time.
       {% else %}
-      Everything that touches Railtel, Hathway, ANT IPTV, or SmartPlay OTT runs here, one at a time.
+      Everything that touches {{ provider_names('or') }} runs here, one at a time.
       {% endif %}
     </div>
     {% if settings.upstream_mode != 'live' %}
     <div class="flash flash-warn" style="margin-top:10px">
       <strong>Simulate mode.</strong> No portal is contacted and no provider wallet is spent.
       A job marked <span class="badge badge-warn">simulated</span> reported success without
-      ever opening Railtel or Hathway, so its expiry date came from the plan's validity
+      ever opening {{ provider_names('or') }}, so its expiry date came from the plan's validity
       rather than the portal. Set <span class="mono">VK_PLATFORM_UPSTREAM_MODE=live</span>
       in <span class="mono">.env</span> and restart to run these for real.
     </div>

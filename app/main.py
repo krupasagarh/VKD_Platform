@@ -260,8 +260,17 @@ def _shows_provider(provider: str, fixed_provider: str | None = None) -> bool:
     return provider in ("railtel", "hathway") and provider == fixed_provider
 
 
+def _provider_names(conjunction: str = "and") -> str:
+    """Enabled provider names as a sentence fragment: "Railtel, Hathway and ANT IPTV"."""
+    names = [provider_label(p) for p in ENABLED_PROVIDERS]
+    if len(names) < 2:
+        return "".join(names)
+    return f"{', '.join(names[:-1])} {conjunction} {names[-1]}"
+
+
 templates.env.globals["shows"] = _shows_provider
 templates.env.globals["enabled_providers"] = ENABLED_PROVIDERS
+templates.env.globals["provider_names"] = _provider_names
 from .railtel_accounts import RAILTEL_DEALER_LABELS, RAILTEL_DEALER_SHORT, RAILTEL_DEALERS
 
 templates.env.globals["railtel_dealers"] = RAILTEL_DEALERS

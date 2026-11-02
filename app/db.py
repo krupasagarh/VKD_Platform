@@ -1119,9 +1119,11 @@ def _bootstrap_data(conn: sqlite3.Connection) -> None:
     grant_collector_complaints(conn)
     grant_collector_inventory(conn)
     ensure_catalog(conn)
-    ensure_iptv_packages(conn)
-    ensure_iptv_subscriptions(conn)
-    ensure_ott_packages(conn)
+    if "iptv" in settings.enabled_providers:
+        ensure_iptv_packages(conn)
+        ensure_iptv_subscriptions(conn)
+    if "ott" in settings.enabled_providers:
+        ensure_ott_packages(conn)
     try:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_bills_followup ON bills(collect_later, status)"

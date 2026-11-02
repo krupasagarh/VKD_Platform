@@ -1819,7 +1819,7 @@ async def customer_detail(request: Request, customer_id: int):
         custom_plan=custom_plan,
         plan_cover=plan_cover,
         paid_through=paid_through,
-        plan_bundles=billing.PLAN_BUNDLES,
+        plan_bundles=billing.enabled_plan_bundles(),
         plan_terms=PLAN_TERMS,
         free_reasons=billing.FREE_REASONS,
         owner_reasons=billing.OWNER_REASONS,

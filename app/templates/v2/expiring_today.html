@@ -24,17 +24,17 @@
 {% block content %}
 <p class="v2-page-note">
   {% if is_tonight %}
-  Paid-through date tonight. Term plans use the portal term end (Subscription Expiry,
-  then the stored Railtel date). Tap WhatsApp to send an expiring-tonight reminder.
+  Paid-through date tonight.{% if 'railtel' in enabled_providers %} Term plans use the portal term end (Subscription Expiry,
+  then the stored Railtel date).{% endif %} Tap WhatsApp to send an expiring-tonight reminder.
   {% elif is_term_month %}
   Railtel term plans (<span class="mono">x3</span>, <span class="mono">x6</span>, <span class="mono">x10</span>, …) whose
   <strong>portal renewal date</strong> falls this calendar month — active, inactive, or suspended; already renewed or not.
   {% elif when == 'all' %}
-  Every Hathway, Railtel, ANT and SmartPlay connection whose paid-through date has passed and
+  Every {{ provider_names('and') }} connection whose paid-through date has passed and
   was not renewed — newest first. Terminated connections are left out.
   {% else %}
-  Paid-through from the portal: term plans (x3/x6/x10) use Subscription Expiry, then the
-  stored Railtel date. Monthly packs use the portal expiry. Use Check if you need a live date.
+  Paid-through from the portal.{% if 'railtel' in enabled_providers %} Term plans (x3/x6/x10) use Subscription Expiry, then the
+  stored Railtel date. Monthly packs use the portal expiry.{% endif %} Use Check if you need a live date.
   {% endif %}
 </p>
 

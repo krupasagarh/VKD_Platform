@@ -81,6 +81,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8801)
+    parser.add_argument("--username", default="admin")
     parser.add_argument("--password", default="vkdigital")
     args = parser.parse_args()
 
@@ -89,7 +90,7 @@ def main() -> int:
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
 
     body = urllib.parse.urlencode(
-        {"username": "admin", "password": args.password, "next": "/"}
+        {"username": args.username, "password": args.password, "next": "/"}
     ).encode()
     with opener.open(f"{base}/login", data=body) as response:
         print(f"login -> {response.status}")
