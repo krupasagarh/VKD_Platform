@@ -10,7 +10,7 @@
       {{ stats.customers_total }} customers ·
       {{ stats.connections_active }} of {{ stats.connections_total }} connections active
       {% for p in stats.by_provider %}
-        {% if not fixed_provider or p.provider == fixed_provider %}
+        {% if shows(p.provider, fixed_provider) %}
         · {{ provider_labels.get(p.provider, p.provider) }}: {{ p.n }}
         {% endif %}
       {% endfor %}
@@ -109,7 +109,7 @@
         <div class="value">{{ stats.expiring }}</div>
         <div class="hint">view customers</div>
       </a>
-      {% if not fixed_provider or fixed_provider == 'railtel' %}
+      {% if shows('railtel', fixed_provider) %}
       <button type="button" class="stat stat-btn neutral" data-dash="railtel" aria-expanded="false">
         <div class="label">Railtel</div>
         <div class="value">{{ rt.portal_active or rt.live }}</div>
@@ -121,7 +121,7 @@
         </div>
       </button>
       {% endif %}
-      {% if not fixed_provider or fixed_provider == 'hathway' %}
+      {% if shows('hathway', fixed_provider) %}
       {% if hw.territory %}
       <a class="stat neutral" href="/customers?view=hathway_live">
         <div class="label">Hathway</div>
@@ -138,7 +138,7 @@
       {% endif %}
       {% set ua = stats.unassigned or {} %}
       {% for prov in ['hathway', 'railtel'] %}
-        {% if prov in ua and (not fixed_provider or fixed_provider == prov) %}
+        {% if prov in ua and shows(prov, fixed_provider) %}
       <a class="stat {% if ua[prov] %}warn{% else %}neutral{% endif %}" href="/customers?view=unassigned&provider={{ prov }}">
         <div class="label">{{ 'Hathway' if prov == 'hathway' else 'Railtel' }}</div>
         <div class="value">{{ ua[prov] }}</div>
@@ -158,12 +158,14 @@
         <div class="hint">{% if stats.owner.due_paise %}₹{{ stats.owner.due_paise|rupees }} due · {% endif %}friends · combos</div>
       </a>
       {% endif %}
-      {% if not fixed_provider %}
+      {% if shows('iptv', fixed_provider) %}
       <button type="button" class="stat stat-btn {% if iptv.expired %}warn{% else %}neutral{% endif %}" data-dash="iptv" aria-expanded="false">
         <div class="label">ANT IPTV</div>
         <div class="value">{{ iptv.live }}</div>
         <div class="hint">{% if iptv.expired %}{{ iptv.expired }} expired · {% endif %}{{ iptv.expiring }} soon</div>
       </button>
+      {% endif %}
+      {% if shows('ott', fixed_provider) %}
       <button type="button" class="stat stat-btn {% if ott.expired %}warn{% else %}neutral{% endif %}" data-dash="ott" aria-expanded="false">
         <div class="label">SmartPlay TV</div>
         <div class="value">{{ ott.live }}</div>
@@ -172,7 +174,7 @@
       {% endif %}
     </div>
 
-    {% if not fixed_provider or fixed_provider == 'railtel' %}
+    {% if shows('railtel', fixed_provider) %}
     <div class="card dash-panel" data-dash-panel="railtel" hidden>
     <div class="dash-panel-head">
       <strong>Railtel</strong>
@@ -227,7 +229,7 @@
   </div>
     {% endif %}
 
-    {% if (not fixed_provider or fixed_provider == 'hathway') and not hw.territory %}
+    {% if (shows('hathway', fixed_provider)) and not hw.territory %}
   <div class="card dash-panel" data-dash-panel="hathway" hidden>
     <div class="dash-panel-head">
       <strong>Hathway</strong>
@@ -261,7 +263,7 @@
   </div>
     {% endif %}
 
-    {% if not fixed_provider %}
+    {% if shows('iptv', fixed_provider) %}
   <div class="card dash-panel" data-dash-panel="iptv" hidden>
     <div class="dash-panel-head">
       <strong>ANT IPTV</strong>
@@ -293,7 +295,9 @@
       </div>
     </div>
   </div>
+    {% endif %}
 
+    {% if shows('ott', fixed_provider) %}
   <div class="card dash-panel" data-dash-panel="ott" hidden>
     <div class="dash-panel-head">
       <strong>SmartPlay TV</strong>

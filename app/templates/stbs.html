@@ -9,7 +9,7 @@
   <div>
     <h1>Hathway STBs</h1>
     <div class="subtle">
-      Only Hathway set-top boxes — Railtel accounts are not on this list.
+      Only Hathway set-top boxes{% if 'railtel' in enabled_providers %} — Railtel accounts are not on this list{% endif %}.
       Portal last said
       <strong>{{ mapping.portal_active }}</strong> active +
       <strong>{{ mapping.portal_inactive }}</strong> inactive
@@ -21,10 +21,10 @@
 
 <div class="tabs">
   <a href="/providers" class="{% if providers_tab == 'overview' %}on{% endif %}">Overview</a>
-  <a href="/providers/online" class="{% if providers_tab == 'online' %}on{% endif %}">Railtel online</a>
-  <a href="/stbs" class="{% if providers_tab == 'hathway' %}on{% endif %}">Hathway STBs</a>
-  <a href="/iptv" class="{% if providers_tab == 'iptv' %}on{% endif %}">ANT IPTV</a>
-  <a href="/ott" class="{% if providers_tab == 'ott' %}on{% endif %}">SmartPlay OTT</a>
+  {% if 'railtel' in enabled_providers %}<a href="/providers/online" class="{% if providers_tab == 'online' %}on{% endif %}">Railtel online</a>{% endif %}
+  {% if 'hathway' in enabled_providers %}<a href="/stbs" class="{% if providers_tab == 'hathway' %}on{% endif %}">Hathway STBs</a>{% endif %}
+  {% if 'iptv' in enabled_providers %}<a href="/iptv" class="{% if providers_tab == 'iptv' %}on{% endif %}">ANT IPTV</a>{% endif %}
+  {% if 'ott' in enabled_providers %}<a href="/ott" class="{% if providers_tab == 'ott' %}on{% endif %}">SmartPlay OTT</a>{% endif %}
 </div>
 
 <div class="stats">

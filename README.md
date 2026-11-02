@@ -72,6 +72,40 @@ before the config loads, and refuses to start if it ever finds itself in live mo
 because its fixtures use invented ids that would send real portal logins looking for
 boxes that do not exist.
 
+### Which providers this copy runs
+
+`VK_PLATFORM_PROVIDERS` lists the providers a copy uses, e.g. `hathway` for a
+cable-only operator or `railtel,hathway`. Blank means all four
+(`railtel, hathway, iptv, ott`), which is how VK Digital runs. A name the app does
+not know stops it from starting rather than silently switching everything on.
+
+A provider that is switched off disappears from menus, dashboard tiles, filters,
+the agent access choices and the household bundle list; its pages refuse to open;
+the job queue and the portal robots refuse its jobs; and its startup data (ANT
+packs and subscriber list, SmartPlay packs, Railtel ONT stock) is not seeded.
+
+### Hathway-only Docker image for other cable operators
+
+Build on the laptop (it needs `railtel_debugger/vk_agent` next to `vk_platform`):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File docker\build-image.ps1 -Providers hathway -Save
+```
+
+That makes `vk-platform:hathway` and `vk-platform-hathway.tar`. On any server with
+Docker, copy the `.tar` and the `docker/hathway/` folder, then:
+
+```bash
+docker load -i vk-platform-hathway.tar
+cd hathway && cp lco.env.example lco1.env    # fill in passwords and the Hathway login
+docker compose up -d                         # LCO 1 on http://SERVER:8811/
+```
+
+Each LCO is one service in `docker/hathway/docker-compose.yml` with its own env
+file, data volume and port: one image, one container per operator. A single
+container cannot serve several operators — the database, settings, portal logins,
+job worker and WhatsApp session all belong to one company.
+
 ## What the seed importer loads
 
 From `cableway_automation/data/`:
@@ -182,10 +216,11 @@ ended. It reports a count per skip reason rather than failing quietly:
 python scripts/smoke_test.py                 # money flow, on a throwaway database
 python scripts/test_sweep.py                 # bulk status sweep: priority, retries, cancelling
 python scripts/test_schedule.py              # the nightly scheduler fires once a day
+python scripts/test_provider_modules.py      # a Hathway-only copy never reaches Railtel / ANT / SmartPlay
 python scripts/check_pages.py --port 8800    # every page and API endpoint, needs the app running
 ```
 
-The first three use their own scratch database and force simulate mode, so they never
+The first four use their own scratch database and force simulate mode, so they never
 contact a provider portal.
 
 ## API

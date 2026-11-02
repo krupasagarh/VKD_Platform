@@ -25,7 +25,7 @@
   </a>
   {% endif %}
   <form class="topbar-search" action="/customers" method="get">
-    {{ search_field('q', q|default(''), 'Name, phone, STB' ~ ('' if fixed_provider == 'hathway' else ', Railtel id') ~ ' — press /', 'topbar-search-field') }}
+    {{ search_field('q', q|default(''), 'Name, phone, STB' ~ (', Railtel id' if shows('railtel', fixed_provider) else '') ~ ' — press /', 'topbar-search-field') }}
   </form>
   <div class="topbar-right">
     {% if current_agent %}
@@ -63,25 +63,31 @@
     <div class="nav-group">
       <div class="nav-group-label">Customers</div>
       <a href="/customers" class="{% if active == 'customers' %}on{% endif %}">Customers</a>
-      {% if not fixed_provider or fixed_provider == 'hathway' %}
+      {% if shows('hathway', fixed_provider) %}
       <a href="/stbs" class="{% if active == 'stbs' %}on{% endif %}">Hathway STBs</a>
       {% if can('customers_view') %}
       <a href="/stbs/lookup" class="{% if active == 'stb_lookup' %}on{% endif %}">STB lookup</a>
       {% endif %}
       {% endif %}
-      {% if not fixed_provider %}
+      {% if shows('iptv', fixed_provider) %}
       <a href="/iptv" class="{% if active == 'iptv' %}on{% endif %}">ANT IPTV</a>
+      {% endif %}
+      {% if shows('ott', fixed_provider) %}
       <a href="/ott" class="{% if active == 'ott' %}on{% endif %}">SmartPlay OTT</a>
       {% endif %}
       {% if can('packages') %}
       <a href="/packages" class="{% if active == 'packages' %}on{% endif %}">Plans</a>
       {% endif %}
+      {% if 'railtel' in enabled_providers %}
       <a href="/railtel-check" class="{% if active == 'railtel_check' %}on{% endif %}">Railtel status check</a>
+      {% endif %}
     </div>
     {% else %}
     <div class="nav-group">
       <div class="nav-group-label">Customers</div>
+      {% if 'railtel' in enabled_providers %}
       <a href="/railtel-check" class="{% if active == 'railtel_check' %}on{% endif %}">Railtel status check</a>
+      {% endif %}
       {% if can('packages') %}
       <a href="/packages" class="{% if active == 'packages' %}on{% endif %}">Plans</a>
       {% endif %}

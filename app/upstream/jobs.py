@@ -32,7 +32,8 @@ from ..money import fmt_datetime, now_iso, parse_date, today
 from .providers import (
     ACCOUNT_ACTIONS,
     ACTION_LABELS,
-    PROVIDERS,
+    ENABLED_PROVIDERS,
+    PROVIDER_LABELS,
     UpstreamUnsupported,
     card_number_from,
     id_problem,
@@ -122,6 +123,18 @@ class RenewNotAllowed(Exception):
     """Railtel renew rejected — account is still valid on or after today."""
 
 
+class ProviderNotEnabled(RenewNotAllowed):
+    """Job for a provider this installation has switched off (VK_PLATFORM_PROVIDERS).
+
+    Subclasses RenewNotAllowed so every route that already flashes a refused renew
+    shows this message the same way.
+    """
+
+    def __init__(self, provider: str):
+        super().__init__(f"{PROVIDER_LABELS.get(provider, provider)} is not enabled in this installation.")
+        self.provider = provider
+
+
 # --------------------------------------------------------------------------- #
 # Queue management
 # --------------------------------------------------------------------------- #
@@ -147,6 +160,8 @@ def enqueue_job(
     ).fetchone()
     if row is None:
         raise ValueError(f"Connection {connection_id} not found")
+    if (row["provider"] or "").lower() not in ENABLED_PROVIDERS:
+        raise ProviderNotEnabled((row["provider"] or "").lower())
 
     if (row["provider"] or "").lower() == "railtel" and action == "renew":
         from ..railtel_sync import railtel_renew_block_reason_from_conn
@@ -210,7 +225,7 @@ def enqueue_status_batch(
     """Queue one multi-subscriber status job (single portal login)."""
     prov = (provider or "").strip().lower()
     ids = [int(x) for x in connection_ids if int(x or 0) > 0]
-    if not ids or prov not in ("railtel", "hathway"):
+    if not ids or prov not in ("railtel", "hathway") or prov not in ENABLED_PROVIDERS:
         return None
 
     open_batch = conn.execute(
@@ -252,6 +267,8 @@ def enqueue_customer_status(
     job_ids: list[int] = []
     skipped: list[str] = []
     for row in rows:
+        if (row["provider"] or "").lower() not in ENABLED_PROVIDERS:
+            continue
         problem = id_problem(row["provider"], row["upstream_id"] or "")
         if problem:
             skipped.append(f"{row['upstream_id'] or 'no id'}: {problem}")
@@ -299,6 +316,8 @@ def enqueue_provider_job(
     needs_confirmation: bool = False,
 ) -> int:
     """Queue a dealer-account job (wallet balance, STB counts) with no customer attached."""
+    if (provider or "").lower() not in ENABLED_PROVIDERS:
+        raise ProviderNotEnabled((provider or "").lower())
     if action not in ACCOUNT_ACTIONS.get(provider, ()):
         raise ValueError(f"{provider} has no account action '{action}'")
 
@@ -458,10 +477,10 @@ def _wanted_providers(providers: str | None) -> list[str]:
     """'both' stays Railtel + Hathway so a daily sweep never hits ANT or SmartPlay."""
     raw = (providers or "both").strip().lower()
     if raw in ("all", "all_three"):
-        return [p for p in PROVIDERS if p != "ott"]
+        return [p for p in ENABLED_PROVIDERS if p != "ott"]
     if raw in ("both", ""):
-        return [p for p in PROVIDERS if p not in ("iptv", "ott")]
-    return [raw]
+        return [p for p in ENABLED_PROVIDERS if p not in ("iptv", "ott")]
+    return [raw] if raw in ENABLED_PROVIDERS else []
 
 
 def sweep_candidates(
@@ -476,6 +495,8 @@ def sweep_candidates(
     provider could not look up anyway.
     """
     wanted = _wanted_providers(providers)
+    if not wanted:
+        return []
     cutoff = (datetime.now() - timedelta(days=max(0, int(stale_days)))).strftime(
         "%Y-%m-%d %H:%M:%S"
     )

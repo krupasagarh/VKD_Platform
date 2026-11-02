@@ -36,6 +36,7 @@ from ..upstream.providers import (
     PROVIDER_LABELS,
     PROVIDER_LABELS_VIEW,
     PROVIDERS,
+    ENABLED_PROVIDERS,
     provider_label,
     id_problem,
     normalise_upstream_id,
@@ -1342,7 +1343,7 @@ async def customers_list(request: Request):
         railtel_account=railtel_account,
         sort=sort,
         late_days=late_days,
-        providers=PROVIDERS,
+        providers=ENABLED_PROVIDERS,
         areas=areas,
         none_area=repo.NONE_AREA,
         filter_q=filter_q,
@@ -1668,7 +1669,7 @@ async def customer_new_form(request: Request):
         packages = repo.list_packages(conn, only_active=True)
         areas = repo.list_area_options(conn)
     return _render(request, "customer_form.html", customer=None, packages=packages,
-                   providers=PROVIDERS, areas=areas)
+                   providers=ENABLED_PROVIDERS, areas=areas)
 
 
 @router.post("/customers/new")
@@ -1797,7 +1798,7 @@ async def customer_detail(request: Request, customer_id: int):
         jobs=jobs,
         statement=list(reversed(statement)),
         plan_names=plan_names,
-        providers=PROVIDERS,
+        providers=ENABLED_PROVIDERS,
         provider_actions=PROVIDER_ACTIONS,
         destructive_actions=DESTRUCTIVE_ACTIONS,
         id_problems=id_problems,
@@ -1818,7 +1819,7 @@ async def customer_detail(request: Request, customer_id: int):
         custom_plan=custom_plan,
         plan_cover=plan_cover,
         paid_through=paid_through,
-        plan_bundles=billing.PLAN_BUNDLES,
+        plan_bundles=billing.enabled_plan_bundles(),
         plan_terms=PLAN_TERMS,
         free_reasons=billing.FREE_REASONS,
         owner_reasons=billing.OWNER_REASONS,
@@ -2194,8 +2195,13 @@ async def connection_add(
     if not auth.can(request.state.agent, "customers_edit"):
         return _forbidden()
     provider = provider.strip().lower()
-    if provider not in PROVIDERS:
-        return _redirect(f"/customers/{customer_id}", flash="Unknown provider.", level="err")
+    if provider not in ENABLED_PROVIDERS:
+        flash = (
+            f"{provider_label(provider)} is not enabled in this installation."
+            if provider in PROVIDERS
+            else "Unknown provider."
+        )
+        return _redirect(f"/customers/{customer_id}", flash=flash, level="err")
     stb = normalise_upstream_id(provider, upstream_id)
     if not stb:
         return _redirect(
@@ -3003,7 +3009,7 @@ async def payments_followup(request: Request):
         followup_kind=kind,
         followup_period=period,
         provider=provider,
-        providers=PROVIDERS,
+        providers=ENABLED_PROVIDERS,
         list_next=list_next,
         export_href=export_url("/payments/follow-up", kind=kind, period=period, provider=provider),
         fixed_provider=auth.agent_provider_scope(request.state.agent),
@@ -3290,7 +3296,7 @@ async def providers_page(request: Request):
         pending_counts = {
             p: len(job_queue.sweep_candidates(
                 conn, providers=p, stale_days=int(schedule["sync_schedule_stale_days"])))
-            for p in PROVIDERS
+            for p in ENABLED_PROVIDERS
         }
     problems = {int(row["id"]): id_problem(row["provider"], row["upstream_id"] or "")
                 for row in broken}
@@ -3969,7 +3975,7 @@ async def packages_list(request: Request):
         view=view,
         provider=provider,
         q=query,
-        providers=PROVIDERS,
+        providers=ENABLED_PROVIDERS,
         truncated=len(rows) >= PACKAGE_LIST_LIMIT,
         limit=PACKAGE_LIST_LIMIT,
         export_href=export_url("/packages", q=query, provider=provider, view=view),
@@ -4131,7 +4137,7 @@ async def agents_page(request: Request):
         "settings_agents.html",
         agents=agents,
         permissions=auth.PERMISSIONS,
-        provider_scopes=auth.PROVIDER_SCOPES,
+        provider_scopes=auth.provider_scope_choices(),
         settings_tab="agents",
         complaint_whatsapp_group=complaint_group or settings.complaint_whatsapp_group,
         area_options=area_options,

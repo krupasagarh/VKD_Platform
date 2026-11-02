@@ -10,7 +10,7 @@ from .. import auth, repo
 from ..config import settings
 from ..db import connection, transaction
 from ..upstream import jobs as job_queue
-from ..upstream.providers import PROVIDERS
+from ..upstream.providers import ENABLED_PROVIDERS, PROVIDERS
 from .pages import _list_qs, _render, railtel_check_context
 from .pay_portal import pay_admin_context
 
@@ -141,7 +141,7 @@ async def v2_customers(request: Request):
         filter_q=filter_q,
         dealer_filter_q=dealer_filter_q,
         railtel_account=railtel_account,
-        providers=PROVIDERS,
+        providers=ENABLED_PROVIDERS,
         areas=areas,
         none_area=repo.NONE_AREA,
         list_next=list_next,
@@ -244,7 +244,7 @@ async def v2_expiring_today(request: Request):
         rows=rows,
         stats=stats,
         provider=provider,
-        providers=PROVIDERS,
+        providers=ENABLED_PROVIDERS,
         areas=areas,
         list_next=list_next,
         when=when,
@@ -324,7 +324,7 @@ async def v2_unpaid_renewals(request: Request):
         stats=stats,
         period=period,
         provider=provider,
-        providers=PROVIDERS,
+        providers=ENABLED_PROVIDERS,
         areas=areas,
         list_next=list_next,
         payment_modes=("cash", "upi", "scanner", "owner_upi", "bank"),

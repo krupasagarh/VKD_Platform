@@ -71,6 +71,14 @@ PROVIDER_SCOPES = (
 )
 PROVIDER_SCOPE_KEYS = tuple(key for key, _label in PROVIDER_SCOPES)
 
+
+def provider_scope_choices() -> tuple[tuple[str, str], ...]:
+    """Scope options worth offering: a split only exists when both ISPs are enabled."""
+    enabled = settings.enabled_providers
+    if "railtel" in enabled and "hathway" in enabled:
+        return PROVIDER_SCOPES
+    return (("both", "All services"),)
+
 # First matching prefix wins. More specific paths must come first.
 PATH_PERMISSIONS = (
     ("/settings/agents", "agents"),

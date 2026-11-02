@@ -60,6 +60,31 @@ def _complaint_whatsapp_group() -> str:
     return (os.getenv("COMPLAINT_WHATSAPP_GROUP") or "").strip()
 
 
+KNOWN_PROVIDERS = ("railtel", "hathway", "iptv", "ott")
+
+_PROVIDER_ALIASES = {
+    "railwire": "railtel",
+    "cable": "hathway",
+    "ant": "iptv",
+    "smartplay": "ott",
+}
+
+
+def _enabled_providers() -> tuple[str, ...]:
+    """Providers this copy runs. Blank means all of them, as VK Digital does."""
+    raw = (os.getenv("VK_PLATFORM_PROVIDERS") or "").strip().lower()
+    wanted = {
+        _PROVIDER_ALIASES.get(part, part) for part in re.split(r"[\s,]+", raw) if part
+    }
+    unknown = sorted(wanted - set(KNOWN_PROVIDERS))
+    if unknown:
+        raise ValueError(
+            f"VK_PLATFORM_PROVIDERS has unknown provider(s) {', '.join(unknown)}; "
+            f"use any of {', '.join(KNOWN_PROVIDERS)}"
+        )
+    return tuple(p for p in KNOWN_PROVIDERS if p in wanted) or KNOWN_PROVIDERS
+
+
 def _float(name: str, default: float) -> float:
     try:
         return float((os.getenv(name) or "").strip())
@@ -87,6 +112,7 @@ class Settings:
     complaint_whatsapp_notify_customer: bool
     complaint_whatsapp_group: str
     upstream_mode: str
+    enabled_providers: tuple[str, ...]
     worker_enabled: bool
     job_poll_seconds: int
     job_retry_minutes: int
@@ -142,6 +168,7 @@ def load_settings() -> Settings:
         complaint_whatsapp_notify_customer=_flag("COMPLAINT_WHATSAPP_NOTIFY_CUSTOMER", True),
         complaint_whatsapp_group=_complaint_whatsapp_group(),
         upstream_mode=mode,
+        enabled_providers=_enabled_providers(),
         worker_enabled=_flag("VK_PLATFORM_WORKER_ENABLED", True),
         job_poll_seconds=max(1, _int("VK_PLATFORM_JOB_POLL_SECONDS", 5)),
         job_retry_minutes=max(1, _int("VK_PLATFORM_JOB_RETRY_MINUTES", 10)),

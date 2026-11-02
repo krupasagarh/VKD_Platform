@@ -1,0 +1,41 @@
+# Hathway-only VK Platform for cable operators, one container per LCO.
+#
+# On the server (only Docker needed; the image comes from `docker load` or a registry):
+#
+#   cp lco.env.example lco1.env        # fill in passwords and the Hathway login
+#   docker compose up -d
+#   open http://SERVER:8811/  ->  sign in as admin with VK_PLATFORM_PASSWORD
+#
+# Add an LCO: copy the lco1 block, rename it (service, container_name, env_file,
+# volume) and give it the next free port. Each LCO has its own SQLite database and
+# WhatsApp login in its own volume, so their customers never mix.
+x-lco: &lco
+  image: ${VK_HATHWAY_IMAGE:-vk-platform:hathway}
+  restart: unless-stopped
+  # Chromium needs more shared memory than Docker's 64 MB default.
+  shm_size: "1gb"
+
+services:
+  lco1:
+    <<: *lco
+    container_name: vk-lco1
+    env_file: lco1.env
+    ports:
+      - "8811:8800"
+    volumes:
+      - lco1_data:/data
+      - ./secrets:/secrets:ro
+
+  # lco2:
+  #   <<: *lco
+  #   container_name: vk-lco2
+  #   env_file: lco2.env
+  #   ports:
+  #     - "8812:8800"
+  #   volumes:
+  #     - lco2_data:/data
+  #     - ./secrets:/secrets:ro
+
+volumes:
+  lco1_data:
+  # lco2_data:

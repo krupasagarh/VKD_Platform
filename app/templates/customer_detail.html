@@ -949,7 +949,7 @@
         </p>
         {% if custom_plan.details %}<p class="subtle">{{ custom_plan.details }}</p>{% endif %}
         {% else %}
-        <p class="subtle">No household plan yet. Example: Railtel + IPTV, 6 months + 1 month free, ₹3600.</p>
+        <p class="subtle">No household plan yet. Example: {% if 'railtel' in enabled_providers %}Railtel + IPTV{% else %}2 STBs{% endif %}, 6 months + 1 month free, ₹3600.</p>
         {% endif %}
         {% if can('customers_edit') or can('payments') %}
         <form method="post" action="/customers/{{ customer.id }}/custom-plan">
@@ -958,7 +958,7 @@
               <label>Plan name</label>
               <input type="text" name="plan_name"
                      value="{{ custom_plan.name if custom_plan and custom_plan.name != 'Custom plan' else '' }}"
-                     placeholder="Railtel + IPTV bundle">
+                     placeholder="{% if 'railtel' in enabled_providers %}Railtel + IPTV bundle{% else %}Household bundle{% endif %}">
             </div>
             <div class="field">
               <label>Amount they pay (₹){% if custom_plan and custom_plan.discount_paise %} <i class="cd-tip" title="Before the ₹{{ custom_plan.discount_paise|rupees }} monthly discount set on the connection.">i</i>{% endif %}</label>
@@ -992,7 +992,7 @@
             <label>Details printed on the bill</label>
             <input type="text" name="details"
                    value="{{ custom_plan.details if custom_plan else '' }}"
-                   placeholder="Railtel broadband + ANT IPTV · 6 months + 1 month free">
+                   placeholder="{% if 'railtel' in enabled_providers %}Railtel broadband + ANT IPTV{% else %}Hathway 2 STBs{% endif %} · 6 months + 1 month free">
           </div>
           <div class="cd-form-actions">
             <button class="btn" type="submit">Save customer plan</button>
@@ -1436,7 +1436,7 @@
       <button type="button" class="btn" data-close>Close</button>
     </div>
     <form class="cd-sheet-body" method="post" action="/customers/{{ customer.id }}/connections">
-      <p class="subtle">A customer can have two Railtel lines if the logins are different (ka.one and ka.two). The same login cannot be added twice. Household collect amount is the Custom plan on the Plan tab.</p>
+      <p class="subtle">{% if 'railtel' in enabled_providers %}A customer can have two Railtel lines if the logins are different (ka.one and ka.two). {% endif %}The same {% if 'railtel' in enabled_providers %}login{% else %}STB{% endif %} cannot be added twice. Household collect amount is the Custom plan on the Plan tab.</p>
       <div class="form-grid">
         <div class="field"><label>Provider</label>
           <select name="provider" id="new-conn-provider" required>

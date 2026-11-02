@@ -15,7 +15,7 @@
   <div>
     <h1>{% if everyone %}Agent settlements{% else %}My settlements{% endif %}</h1>
     <div class="subtle">
-      Cable (Hathway) and internet (Railtel) collections for the dates you pick.
+      {% if 'railtel' in enabled_providers %}Cable (Hathway) and internet (Railtel) collections{% else %}Collections{% endif %} for the dates you pick.
       {% if everyone %}
       You are the owner ({{ owner_name }}). Money collected on your login is already in the shop — field agents do not hand that over.
       Scanner and your UPI are already with you. Cash and agent UPI stay with the field agent until they settle with you.
@@ -130,7 +130,7 @@
     <div class="value">₹{{ office.cable.total_paise|rupees }}</div>
     <div class="hint">Hathway · agents hold ₹{{ office.cable.agent_paise|rupees }} · shop ₹{{ office.cable.owner_paise|rupees }}</div>
   </div>
-  {% if not fixed_provider or fixed_provider == 'railtel' %}
+  {% if shows('railtel', fixed_provider) %}
   <div class="stat">
     <div class="label">Internet</div>
     <div class="value">₹{{ office.internet.total_paise|rupees }}</div>
@@ -169,7 +169,7 @@
         <div class="value">₹{{ a.cable.total_paise|rupees }}</div>
         <div class="hint">{{ a.cable.payment_count }} payment{{ "s" if a.cable.payment_count != 1 else "" }}{% if not a.is_owner %} · they hold ₹{{ a.cable.agent_paise|rupees }}{% endif %}</div>
       </div>
-      {% if not fixed_provider or fixed_provider == 'railtel' %}
+      {% if shows('railtel', fixed_provider) %}
       <div class="stat">
         <div class="label">Internet</div>
         <div class="value">₹{{ a.internet.total_paise|rupees }}</div>

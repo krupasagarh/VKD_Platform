@@ -53,13 +53,12 @@
     <a href="/v2/customers?{% if filter_q %}{{ filter_q }}&{% endif %}view=inactive" class="v2-chip {% if view in ('inactive', 'inactive_stb', 'terminated_stb') %}on{% endif %}">Inactive</a>
   </div>
 
-  {% if not fixed_provider %}
+  {% if not fixed_provider and enabled_providers|length > 1 %}
   <div class="v2-cust-row" aria-label="Service">
     <a href="/v2/customers?{{ qs_core }}" class="v2-chip {% if not provider %}on{% endif %}">All services</a>
-    <a href="/v2/customers?{{ qs_core }}provider=railtel" class="v2-chip {% if provider == 'railtel' %}on{% endif %}">Railtel</a>
-    <a href="/v2/customers?{{ qs_core }}provider=hathway" class="v2-chip {% if provider == 'hathway' %}on{% endif %}">Hathway</a>
-    <a href="/v2/customers?{{ qs_core }}provider=iptv" class="v2-chip {% if provider == 'iptv' %}on{% endif %}">IPTV</a>
-    <a href="/v2/customers?{{ qs_core }}provider=ott" class="v2-chip {% if provider == 'ott' %}on{% endif %}">OTT</a>
+    {% for prov, chip in [('railtel', 'Railtel'), ('hathway', 'Hathway'), ('iptv', 'IPTV'), ('ott', 'OTT')] if prov in enabled_providers %}
+    <a href="/v2/customers?{{ qs_core }}provider={{ prov }}" class="v2-chip {% if provider == prov %}on{% endif %}">{{ chip }}</a>
+    {% endfor %}
   </div>
   {% endif %}
 

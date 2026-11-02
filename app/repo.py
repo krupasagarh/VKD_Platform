@@ -1596,7 +1596,7 @@ def payment_allocations(conn: sqlite3.Connection, payment_id: int) -> list[sqlit
 
 def provider_overview(conn: sqlite3.Connection) -> list[dict]:
     """Per-provider dealer snapshot plus what we hold locally for that provider."""
-    from .upstream import PROVIDERS, id_problem, provider_label
+    from .upstream import ENABLED_PROVIDERS, id_problem, provider_label
 
     snapshots = {
         row["provider"]: row
@@ -1604,7 +1604,7 @@ def provider_overview(conn: sqlite3.Connection) -> list[dict]:
     }
 
     out: list[dict] = []
-    for provider in PROVIDERS:
+    for provider in ENABLED_PROVIDERS:
         counts = conn.execute(
             "SELECT COUNT(*) AS total, "
             "SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active "
