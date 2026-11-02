@@ -2196,7 +2196,12 @@ async def connection_add(
         return _forbidden()
     provider = provider.strip().lower()
     if provider not in ENABLED_PROVIDERS:
-        return _redirect(f"/customers/{customer_id}", flash="Unknown provider.", level="err")
+        flash = (
+            f"{provider_label(provider)} is not enabled in this installation."
+            if provider in PROVIDERS
+            else "Unknown provider."
+        )
+        return _redirect(f"/customers/{customer_id}", flash=flash, level="err")
     stb = normalise_upstream_id(provider, upstream_id)
     if not stb:
         return _redirect(
